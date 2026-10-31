@@ -1,0 +1,717 @@
+/* EXACT STYLES FOR STUDENT ENROLLMENT MATCHING ORIGINAL REFERENCE DESIGN */
+
+.enrollment-page-bg {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #1a225a;
+    background-image:
+        radial-gradient(ellipse at 85% 15%, rgba(245, 158, 11, 0.16) 0%, transparent 45%),
+        radial-gradient(ellipse at 15% 70%, rgba(251, 191, 36, 0.10) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(26, 34, 90, 0.65) 0%, rgba(20, 27, 72, 0.78) 50%, rgba(13, 17, 50, 0.88) 100%),
+        url('/pictures/deped_matatag_banner.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 48px 20px 64px;
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+}
+
+.enrollment-page-wrapper {
+    width: 100%;
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+.enrollment-card {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow:
+        0 10px 25px -5px rgba(10, 14, 42, 0.22),
+        0 25px 50px -12px rgba(10, 14, 42, 0.35);
+    padding: 44px 48px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle decorative top bar in school colors */
+.enrollment-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #1a225a 0%, #24307d 60%, #f59e0b 100%);
+}
+
+/* ====== HEADER ====== */
+.enrollment-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.enrollment-logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.enrollment-school-logo img {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #1a225a;
+    box-shadow: 0 4px 14px rgba(26, 34, 90, 0.25);
+}
+
+.enrollment-school-name h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1a225a;
+    letter-spacing: 0.5px;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.enrollment-school-name p {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+
+.enrollment-header h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 10px;
+    letter-spacing: -0.5px;
+}
+
+.enrollment-header h2 .highlight {
+    color: #1a225a;
+}
+
+.enrollment-header h2 .highlight2 {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.enrollment-subtitle {
+    color: #64748b;
+    font-size: 14.5px;
+    margin-top: 6px;
+    font-weight: 400;
+}
+
+/* ====== FORM SECTIONS ====== */
+.enrollment-section {
+    margin-bottom: 32px;
+    padding-bottom: 28px;
+    border-bottom: 1.5px solid #f1f5f9;
+}
+
+.enrollment-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.enrollment-section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a225a;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.2px;
+}
+
+.enrollment-section-title i,
+.enrollment-section-title svg {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1a225a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* ====== FORM INPUTS & LAYOUT ====== */
+.enrollment-group {
+    margin-bottom: 18px;
+}
+
+.enrollment-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 13.5px;
+    color: #334155;
+    margin-bottom: 7px;
+}
+
+.enrollment-group label span {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.enrollment-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.enrollment-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+}
+
+.enrollment-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.enrollment-input-wrap input,
+.enrollment-input-wrap select,
+.enrollment-input-wrap textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #dbe3ee;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+}
+
+.enrollment-input-wrap input::placeholder,
+.enrollment-input-wrap textarea::placeholder {
+    color: #94a3b8;
+}
+
+.enrollment-input-wrap input:hover,
+.enrollment-input-wrap select:hover,
+.enrollment-input-wrap textarea:hover {
+    border-color: #cbd5e1;
+    background: #ffffff;
+}
+
+.enrollment-input-wrap input:focus,
+.enrollment-input-wrap select:focus,
+.enrollment-input-wrap textarea:focus {
+    outline: none;
+    border-color: #1a225a;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(26, 34, 90, 0.14);
+}
+
+.enrollment-input-wrap textarea {
+    resize: vertical;
+    min-height: 60px;
+    line-height: 1.5;
+}
+
+/* ====== STUDENT TYPE SELECTOR (4 TILES) ====== */
+.student-type-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.student-type-tile {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    background: #f8fafc;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.student-type-tile:hover {
+    border-color: #93c5fd;
+    background: #f0f6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 34, 90, 0.08);
+}
+
+.student-type-tile.active {
+    border-color: #1a225a;
+    background: #eff6ff;
+    box-shadow: 0 0 0 2px #1a225a, 0 6px 16px rgba(26, 34, 90, 0.16);
+    transform: translateY(-2px);
+}
+
+.student-type-tile .tile-title {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: #334155;
+    margin: 0;
+}
+
+.student-type-tile.active .tile-title {
+    color: #1a225a;
+}
+
+/* ====== GRADE OPTIONS (INTERACTIVE TILES) ====== */
+.grade-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.grade-option-tile {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 13px 16px;
+    text-align: center;
+    background: #f8fafc;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    user-select: none;
+    font-weight: 700;
+    font-size: 14.5px;
+    color: #334155;
+}
+
+.grade-option-tile:hover {
+    border-color: #93c5fd;
+    background: #f0f6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 34, 90, 0.08);
+}
+
+.grade-option-tile.active {
+    border-color: #1a225a;
+    background: #eff6ff;
+    box-shadow: 0 0 0 2px #1a225a, 0 6px 16px rgba(26, 34, 90, 0.16);
+    color: #1a225a;
+    transform: translateY(-2px);
+}
+
+/* ====== STRAND OPTIONS ====== */
+.strand-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 8px;
+}
+
+.strand-option-card {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.strand-option-card:hover {
+    border-color: #93c5fd;
+    background: #f0f6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 34, 90, 0.08);
+}
+
+.strand-option-card.active {
+    border-color: #1a225a;
+    background: #eff6ff;
+    box-shadow: 0 0 0 2px #1a225a, 0 6px 16px rgba(26, 34, 90, 0.16);
+    transform: translateY(-2px);
+}
+
+.strand-option-card .strand-title {
+    font-weight: 800;
+    font-size: 15px;
+    color: #1a225a;
+    margin-bottom: 3px;
+}
+
+.strand-option-card .strand-sub {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+/* ====== TVL SUB-OPTIONS ====== */
+.tvl-spec-box {
+    margin-top: 14px;
+    padding: 16px;
+    background: #f4f7fe;
+    border: 1.5px solid #cce0fc;
+    border-radius: 16px;
+}
+
+.tvl-spec-box-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a225a;
+    margin-bottom: 10px;
+}
+
+.tvl-spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.tvl-spec-tile {
+    background: #ffffff;
+    border: 1.5px solid #dbe3ee;
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tvl-spec-tile:hover {
+    border-color: #1a225a;
+    transform: translateY(-2px);
+}
+
+.tvl-spec-tile.active {
+    border-color: #1a225a;
+    background: #eef4ff;
+    box-shadow: 0 0 0 2px #1a225a;
+}
+
+/* ====== BUTTONS ====== */
+.enrollment-footer-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1.5px solid #f1f5f9;
+}
+
+.btn-enroll-submit {
+    background: linear-gradient(135deg, #1a225a 0%, #24307d 100%);
+    color: #ffffff;
+    padding: 14px 44px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(26, 34, 90, 0.35);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+}
+
+.btn-enroll-submit:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #070526;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
+.btn-enroll-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.enrollment-back-link {
+    text-align: center;
+    margin-top: 24px;
+}
+
+.enrollment-back-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+}
+
+.enrollment-back-link a:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    transform: translateX(-3px);
+}
+
+/* ====== REQUIRED DOCUMENTS SECTION ====== */
+.requirements-container {
+    margin-top: 26px;
+    padding: 24px 24px 12px;
+    border-radius: 18px;
+    border: 1.5px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.requirements-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16.5px;
+    font-weight: 800;
+    color: #1a225a;
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+}
+
+.requirements-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.transferee-info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-size: 12.5px;
+    color: #1e3a8a;
+    line-height: 1.45;
+}
+
+.transferee-info-banner strong {
+    color: #1a225a;
+}
+
+.requirement-item {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.requirement-item:hover {
+    border-color: #cbd5e1;
+}
+
+.requirement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.requirement-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.requirement-title-wrap svg {
+    color: #334155;
+    flex-shrink: 0;
+}
+
+.req-badge-required {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 2.5px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.file-upload-box {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 22px 16px;
+    text-align: center;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.file-upload-box:hover {
+    border-color: #1a225a;
+    background: #eff6ff;
+    transform: translateY(-1px);
+}
+
+.file-upload-box-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.file-upload-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.file-upload-hint {
+    font-size: 11.5px;
+    color: #64748b;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+.file-uploaded-preview {
+    border: 1.5px solid #86efac;
+    background: #f0fdf4;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    animation: fadeIn 0.2s ease-in;
+}
+
+.file-uploaded-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.file-uploaded-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: #166534;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 380px;
+}
+
+.file-uploaded-size {
+    font-size: 11.5px;
+    color: #15803d;
+    font-weight: 500;
+}
+
+.file-uploaded-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.file-change-btn {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #1a225a;
+    background: #e0e7ff;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.file-change-btn:hover {
+    background: #c7d2fe;
+}
+
+.file-remove-btn {
+    color: #dc2626;
+    font-size: 11.5px;
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.file-remove-btn:hover {
+    background: #fee2e2;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 640px) {
+    .enrollment-page-bg {
+        padding: 24px 12px;
+    }
+
+    .enrollment-card {
+        padding: 28px 20px;
+        border-radius: 18px;
+    }
+
+    .enrollment-row-2,
+    .enrollment-row-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .student-type-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grade-options-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .strand-options-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tvl-spec-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-enroll-submit {
+        width: 100%;
+        justify-content: center;
+    }
+}
