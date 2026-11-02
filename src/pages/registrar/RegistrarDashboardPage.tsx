@@ -423,49 +423,50 @@ export const RegistrarDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
-      {/* DepEd Institutional Header */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-6 text-white shadow-md relative overflow-hidden border border-slate-800">
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-6 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              DepEd Region VII · Division of City of Naga · School ID: 303035
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white flex items-center gap-3">
-              <GraduationCap className="h-7 w-7 text-amber-400 shrink-0" />
-              Registrar Dashboard
-            </h1>
+      {/* 1. Institutional DepEd Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 border border-emerald-200">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              DepEd Admissions &amp; Registrar Office
+            </span>
+            <span className="text-xs text-slate-400 font-mono">School ID: 303035</span>
           </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+            Registrar Dashboard
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500">
+            Placido L. Señor NHS Student Records, LRN Assignments, and Enrollment Admissions.
+          </p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-center">
-            <Link
-              to="/registrar/enrollments"
-              className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 text-xs font-bold text-white shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02] cursor-pointer"
-            >
-              <ClipboardList className="h-4 w-4" /> Full Admissions Queue
-            </Link>
+        {/* Header Action Controls */}
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <Link
+            to="/registrar/enrollments"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
+          >
+            <ClipboardList className="h-4 w-4" /> Full Admissions Queue
+          </Link>
 
-            <Link
-              to="/registrar/requirements"
-              className="flex h-10 items-center gap-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 px-3.5 text-xs font-semibold text-slate-200 transition-all cursor-pointer"
-            >
-              <FileCheckIcon className="h-4 w-4 text-amber-400" /> Audit Credentials
-            </Link>
+          <Link
+            to="/registrar/requirements"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
+          >
+            <FileCheckIcon className="h-4 w-4 text-emerald-700" /> Audit Credentials
+          </Link>
 
-            <button
-              onClick={exportToCSV}
-              className="flex h-10 items-center gap-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 px-3.5 text-xs font-semibold text-slate-200 transition-all cursor-pointer"
-              title="Export review queue to CSV"
-            >
-              <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Export CSV
-            </button>
+          <button
+            type="button"
+            onClick={exportToCSV}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
+            title="Export review queue to CSV"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
+          </button>
 
-            <div className="border-l border-slate-700 pl-2">
-              <PageHeaderNotificationSlot />
-            </div>
-          </div>
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 
