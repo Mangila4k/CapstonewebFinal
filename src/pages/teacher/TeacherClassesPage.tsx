@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import type { Student } from '../../types';
 
 export interface SentScheduleSlot {
@@ -622,6 +623,21 @@ export const TeacherClassesPage: React.FC = () => {
         // ignore
       }
 
+      // Best-effort update to Supabase sections table so students instantly see the official schedule
+      try {
+        if (activeClassForSchedule.id) {
+          await supabase.from('sections').update({
+            schedule_doc_url: uploadedFileDataUrl || null,
+            schedule_doc_name: newRecord.file_name,
+            schedule_doc_type: 'csv',
+            schedule_doc_uploaded_by: teacherName,
+            schedule_doc_updated_at: new Date().toISOString(),
+          }).eq('id', activeClassForSchedule.id);
+        }
+      } catch (secErr) {
+        console.warn('Section schedule update note:', secErr);
+      }
+
       // Best-effort insert to Supabase notifications
       try {
         await supabase.from('notifications').insert([
@@ -631,6 +647,20 @@ export const TeacherClassesPage: React.FC = () => {
             role: 'student',
             type: 'schedule',
             link: '/student/schedule',
+          },
+        ]);
+      } catch {
+        // ignore
+      }
+
+      // Record in activity_logs
+      try {
+        await supabase.from('activity_logs').insert([
+          {
+            role: 'teacher',
+            action: 'Schedule Broadcasted',
+            details: `${teacherName} distributed class schedule file "${newRecord.file_name}" to ${activeClassForSchedule.grade_level} - Section ${activeClassForSchedule.name}.`,
+            timestamp: new Date().toISOString(),
           },
         ]);
       } catch {
@@ -653,13 +683,18 @@ export const TeacherClassesPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      <div className="border-b border-slate-200 pb-4 sm:pr-12">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-          My Teaching Sections
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Enrolled learner rosters, subject schedules, and class schedule distribution for students to print or download.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+            My Teaching Sections
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Enrolled learner rosters, subject schedules, and class schedule distribution for students to print or download.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

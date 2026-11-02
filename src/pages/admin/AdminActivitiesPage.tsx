@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   Calendar,
   Plus,
@@ -316,7 +317,7 @@ export const AdminActivitiesPage: React.FC = () => {
         onChange={handleQuickCardPhotoChange}
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-14">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 font-display">
             School Activities & Events
@@ -326,12 +327,15 @@ export const AdminActivitiesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="h-4 w-4" /> Add Activity
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={openAddModal}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="h-4 w-4" /> Add Activity
+          </button>
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

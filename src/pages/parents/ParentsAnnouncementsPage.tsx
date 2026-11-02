@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   Bell,
   Calendar,
@@ -12,6 +13,13 @@ import {
   UserCheck,
   FileText,
   ArrowUpRight,
+  Users,
+  AlertTriangle,
+  Clock,
+  MapPin,
+  X,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../lib/utils';
@@ -19,6 +27,55 @@ import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 
 const READ_STORAGE_KEY = 'plsnhs_parent_read_announcements';
+
+function getCategoryInfo(title: string = '', content: string = '') {
+  const text = `${title} ${content}`.toLowerCase();
+  if (text.includes('pta') || text.includes('assembly') || text.includes('parent') || text.includes('guardian') || text.includes('meeting') || text.includes('conference')) {
+    return { label: 'PTA Assembly & Meeting', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+  }
+  if (text.includes('exam') || text.includes('quarter') || text.includes('card') || text.includes('grade') || text.includes('academic')) {
+    return { label: 'Academic & Examination', color: 'bg-blue-50 text-blue-800 border-blue-200' };
+  }
+  if (text.includes('id') || text.includes('gate') || text.includes('qr') || text.includes('attendance') || text.includes('safety')) {
+    return { label: 'Campus Safety & Protocol', color: 'bg-purple-50 text-purple-800 border-purple-200' };
+  }
+  return { label: 'Official School Advisory', color: 'bg-slate-100 text-slate-800 border-slate-200' };
+}
+
+function formatDisplayTitle(rawTitle: string): string {
+  if (!rawTitle) return 'Official School Circular';
+  const trimmed = rawTitle.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === 'meeting') {
+    return '1st General PTA Consultation & Homeroom Meeting';
+  }
+  if (lower === 'pta meeting') {
+    return 'General Parent-Teacher Association (PTA) Assembly';
+  }
+  if (lower === 'exam date') {
+    return 'Quarterly Academic Examination Schedule';
+  }
+  if (trimmed === trimmed.toUpperCase() && trimmed.length > 3) {
+    return trimmed
+      .toLowerCase()
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function detectVenueTag(content: string = ''): string | null {
+  if (!content) return null;
+  const match = content.match(/(ward\s+[ivx\d]+(?:,\s*[\w\s]+)?|covered\s+court|school\s+gym|campus\s+grounds|avr|audio-visual\s+room)/i);
+  if (match) {
+    return match[0].trim();
+  }
+  if (content.toLowerCase().includes('langtad')) {
+    return 'PLSNHS Campus / Langtad';
+  }
+  return null;
+}
 
 const FALLBACK_ANNOUNCEMENTS = [
   {
@@ -47,7 +104,7 @@ export const ParentsAnnouncementsPage: React.FC = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'important' | 'unread'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pta' | 'important' | 'unread'>('all');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
   const [readIds, setReadIds] = useState<string[]>(() => {
     try {
@@ -129,6 +186,10 @@ export const ParentsAnnouncementsPage: React.FC = () => {
 
       if (!matchesSearch) return false;
 
+      if (activeFilter === 'pta') {
+        const text = `${a.title || ''} ${a.content || ''}`.toLowerCase();
+        return text.includes('pta') || text.includes('parent') || text.includes('meeting') || text.includes('conference') || text.includes('assembly');
+      }
       if (activeFilter === 'important') {
         const p = (a.priority || '').toLowerCase();
         return p === 'important' || p === 'urgent' || p === 'high';
@@ -194,99 +255,244 @@ export const ParentsAnnouncementsPage: React.FC = () => {
     printWin.document.close();
   };
 
+  const totalCount = announcements.length;
+  const ptaCount = announcements.filter((a) => {
+    const text = `${a.title || ''} ${a.content || ''}`.toLowerCase();
+    return text.includes('pta') || text.includes('parent') || text.includes('meeting') || text.includes('conference') || text.includes('assembly');
+  }).length;
+  const urgentCount = announcements.filter((a) => {
+    const p = (a.priority || '').toLowerCase();
+    return p === 'important' || p === 'urgent' || p === 'high';
+  }).length;
   const unreadCount = announcements.filter((a) => !readIds.includes(String(a.id))).length;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-14">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
-            PTA & School Announcements
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
+            PTA &amp; School Announcements
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Official general circulars, parent-teacher conferences, and academic advisories. Click any announcement to view the full circular.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Official general circulars, parent-teacher conferences, and academic advisories · S.Y. 2026–2027
           </p>
         </div>
 
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={markAllAsRead}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-700 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            Mark All Read ({unreadCount})
-          </button>
-        )}
+        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-98"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              Mark All Read ({unreadCount})
+            </button>
+          )}
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80 self-start">
-          <button
-            type="button"
-            onClick={() => setActiveFilter('all')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-              activeFilter === 'all'
-                ? 'bg-[#1B2A4A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            All Circulars ({announcements.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFilter('important')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-              activeFilter === 'important'
-                ? 'bg-[#1B2A4A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Important / Urgent
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFilter('unread')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-              activeFilter === 'unread'
-                ? 'bg-[#1B2A4A] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Unread ({unreadCount})
-          </button>
+      {/* 4 Executive Overview KPI Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Bulletins */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Total Circulars
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#152e69]/10 text-[#152e69]">
+              <Calendar className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-black text-slate-900 font-display">{totalCount}</p>
+            <span className="text-xs font-bold text-slate-500">Active Notices</span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+            <span>Official S.Y. 2026–2027 bulletins</span>
+          </div>
         </div>
 
-        <div className="relative flex-1 sm:max-w-xs">
+        {/* Card 2: PTA Assemblies */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              PTA Conferences
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <Users className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-black text-slate-900 font-display">{ptaCount}</p>
+            <span className="text-xs font-bold text-slate-500">Scheduled</span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>Homeroom &amp; General Body</span>
+          </div>
+        </div>
+
+        {/* Card 3: Priority Notices */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Priority Actions
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-black text-slate-900 font-display">{urgentCount}</p>
+            <span className="text-xs font-bold text-slate-500">Important</span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-amber-700 font-semibold">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Parent acknowledgement required</span>
+          </div>
+        </div>
+
+        {/* Card 4: Unread Circulars */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Unread Bulletins
+            </span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <Bell className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-black text-slate-900 font-display">{unreadCount}</p>
+            <span className="text-xs font-bold text-slate-500">Pending</span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+            {unreadCount === 0 ? (
+              <span className="text-emerald-700 font-bold">All bulletins acknowledged</span>
+            ) : (
+              <span>Review updates below</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Toolbar Card */}
+      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* Search Input */}
+        <div className="relative flex-1">
           <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search circulars or topics..."
-            className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#1B2A4A] focus:outline-none"
+            placeholder="Search circulars, agenda, keywords, or administrative topics..."
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-9 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#152e69] focus:outline-none focus:ring-2 focus:ring-[#152e69]/20 transition-all"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveFilter('all')}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-98 ${
+              activeFilter === 'all'
+                ? 'bg-[#152e69] text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+            }`}
+          >
+            <span>All Circulars</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-md ${
+              activeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {totalCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveFilter('pta')}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-98 ${
+              activeFilter === 'pta'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100/70'
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span>PTA Meetings</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-md ${
+              activeFilter === 'pta' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-900'
+            }`}>
+              {ptaCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveFilter('important')}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-98 ${
+              activeFilter === 'important'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100/70'
+            }`}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Priority</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-md ${
+              activeFilter === 'important' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-900'
+            }`}>
+              {urgentCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveFilter('unread')}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-98 ${
+              activeFilter === 'unread'
+                ? 'bg-[#152e69] text-white shadow-xs'
+                : 'bg-blue-50 text-blue-800 border border-blue-200/80 hover:bg-blue-100/70'
+            }`}
+          >
+            <Bell className="h-3.5 w-3.5" />
+            <span>Unread</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-md ${
+              activeFilter === 'unread' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-900'
+            }`}>
+              {unreadCount}
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Announcements List */}
+      {/* 2-Column Responsive Institutional Circulars Grid */}
       {loading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((n) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
+          {[1, 2, 3, 4].map((n) => (
             <div
               key={n}
               className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs animate-pulse space-y-3"
             >
               <div className="h-4 w-32 bg-slate-200 rounded" />
               <div className="h-5 w-64 bg-slate-200 rounded" />
-              <div className="h-12 w-full bg-slate-100 rounded" />
+              <div className="h-16 w-full bg-slate-100 rounded" />
             </div>
           ))}
         </div>
       ) : filteredAnnouncements.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center space-y-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center space-y-2 shadow-xs">
           <Bell className="h-8 w-8 text-slate-300 mx-auto" />
           <h3 className="text-sm font-extrabold text-slate-800">No Announcements Found</h3>
           <p className="text-xs text-slate-500">
@@ -294,7 +500,7 @@ export const ParentsAnnouncementsPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
           {filteredAnnouncements.map((a, idx) => {
             const isRead = readIds.includes(String(a.id));
             const priorityLower = (a.priority || 'general').toLowerCase();
@@ -302,6 +508,9 @@ export const ParentsAnnouncementsPage: React.FC = () => {
               priorityLower === 'urgent' ||
               priorityLower === 'important' ||
               priorityLower === 'high';
+            const cat = getCategoryInfo(a.title, a.content);
+            const displayTitle = formatDisplayTitle(a.title);
+            const venue = detectVenueTag(a.content);
 
             return (
               <div
@@ -315,58 +524,70 @@ export const ParentsAnnouncementsPage: React.FC = () => {
                     handleOpenAnnouncement(a);
                   }
                 }}
-                className={`group relative rounded-2xl border bg-white p-6 shadow-xs transition-all duration-200 cursor-pointer select-none hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 ${
-                  isRead
-                    ? 'border-slate-200 hover:border-[#1B2A4A]/60'
-                    : 'border-l-4 border-l-[#1B2A4A] border-slate-200 hover:border-[#1B2A4A]'
+                className={`group relative rounded-2xl border bg-white p-5.5 shadow-xs transition-all duration-200 cursor-pointer select-none hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between ${
+                  !isRead
+                    ? 'border-l-4 border-l-[#152e69] border-slate-200 hover:border-[#152e69]'
+                    : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                      <Calendar className="h-3.5 w-3.5 text-emerald-600" />
-                      {formatDate(a.created_at)}
-                    </span>
-
-                    {!isRead ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        New Circular
+                <div>
+                  {/* Top Badge Strip */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-bold border ${cat.color}`}>
+                        {cat.label}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                        Viewed
-                      </span>
-                    )}
-                  </div>
+                      {!isRead ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          New Circular
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                          Acknowledged
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <Badge variant={isUrgent ? 'info' : 'neutral'} size="sm">
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      isUrgent
+                        ? 'bg-rose-50 border border-rose-200 text-rose-800'
+                        : 'bg-slate-100 border border-slate-200 text-slate-600'
+                    }`}>
                       {a.priority || 'General'}
-                    </Badge>
+                    </span>
                   </div>
+
+                  {/* Title */}
+                  <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#152e69] transition-colors leading-snug line-clamp-2">
+                    {displayTitle}
+                  </h3>
+
+                  {/* Content Preview */}
+                  <p className="mt-2 text-xs text-slate-600 leading-relaxed line-clamp-3 whitespace-pre-line">
+                    {a.content}
+                  </p>
+
+                  {/* Optional Venue / Location Badge */}
+                  {venue && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-50/80 border border-amber-200/80 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
+                      <MapPin className="h-3 w-3 text-amber-600 shrink-0" />
+                      <span>Assembly Venue: {venue}</span>
+                    </div>
+                  )}
                 </div>
 
-                <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#1B2A4A] transition-colors">
-                  {a.title}
-                </h3>
+                {/* Card Footer */}
+                <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                    <span>{formatDate(a.created_at)}</span>
+                  </div>
 
-                <p className="mt-1.5 text-xs text-slate-600 leading-relaxed line-clamp-2 whitespace-pre-line">
-                  {a.content}
-                </p>
-
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]">
-                  <span className="text-slate-400">
-                    Published by{' '}
-                    <strong className="font-semibold text-slate-600">
-                      {a.author || 'Placido L. Señor NHS Administration'}
-                    </strong>
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 font-extrabold text-[#1B2A4A] group-hover:translate-x-0.5 transition-transform">
+                  <span className="inline-flex items-center gap-1 font-bold text-xs text-[#152e69] group-hover:translate-x-0.5 transition-transform">
                     <Eye className="h-3.5 w-3.5 text-amber-500" />
-                    Read Full Circular
+                    <span>Read Notice</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>
                 </div>

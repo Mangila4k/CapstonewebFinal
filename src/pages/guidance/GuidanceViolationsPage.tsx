@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Plus, Search, CheckCircle2, Clock } from 'lucide-react';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
 import { Badge } from '../../components/common/Badge';
@@ -8,6 +10,7 @@ import { formatDate } from '../../lib/utils';
 import type { Violation } from '../../types';
 
 export const GuidanceViolationsPage: React.FC = () => {
+  const { user } = useAuth();
   const [violations, setViolations] = useState<Violation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,13 +27,23 @@ export const GuidanceViolationsPage: React.FC = () => {
   const fetchViolations = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('student_violations')
         .select('*')
-        .order('date_reported', { ascending: false });
+        .order('created_at', { ascending: false });
 
-      if (data && data.length > 0) {
-        setViolations(data);
+      if (!error && data && data.length > 0) {
+        const mapped: Violation[] = data.map((v: any) => ({
+          id: v.id,
+          student_name: v.student_name,
+          violation_type: v.violation_title || v.violation_type,
+          severity: (v.violation_category || 'Minor') as 'Minor' | 'Moderate' | 'Major',
+          description: v.description || '',
+          action_taken: v.action_taken || '',
+          status: v.status || 'Reported',
+          date_reported: v.incident_date || (v.created_at ? v.created_at.split('T')[0] : '2026-10-19'),
+        }));
+        setViolations(mapped);
       } else {
         setViolations([
           { id: 1, student_name: 'Carlos Mendoza', violation_type: 'Late Attendance Pattern', severity: 'Minor', description: 'Repeated late arrival during morning flag ceremony.', action_taken: 'Parent notified', status: 'Resolved', date_reported: '2026-10-19' },
@@ -53,16 +66,20 @@ export const GuidanceViolationsPage: React.FC = () => {
     try {
       const payload = {
         student_name: form.studentName.trim(),
+        violation_title: form.violationType,
         violation_type: form.violationType,
-        severity: form.severity,
+        violation_category: form.severity,
         description: form.description.trim(),
         action_taken: form.actionTaken.trim(),
+        reported_by: user?.full_name || 'Guidance Counselor',
+        reporter_role: user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guidance',
+        incident_date: new Date().toISOString().split('T')[0],
         status: 'Under Investigation',
-        date_reported: new Date().toISOString(),
       };
 
-      await supabase.from('student_violations').insert([payload]);
-      setNotice({ type: 'success', message: 'Incident record filed.' });
+      const { error } = await supabase.from('student_violations').insert([payload]);
+      if (error) throw error;
+      setNotice({ type: 'success', message: 'Incident record successfully saved to database.' });
       setIsModalOpen(false);
       setForm({ studentName: '', violationType: 'Uniform / Dress Code Policy', severity: 'Minor', description: '', actionTaken: 'Verbal Warning & Counseling' });
       fetchViolations();
@@ -73,7 +90,7 @@ export const GuidanceViolationsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-14">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 font-display">
             Student Incident & Behavioral Violations
@@ -83,12 +100,15 @@ export const GuidanceViolationsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
-        >
-          <Plus className="h-4 w-4" /> Log Incident
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Log Incident
+          </button>
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   ClipboardList,
   GraduationCap,
@@ -337,7 +338,7 @@ export const RegistrarDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
             Registrar Dashboard
@@ -347,12 +348,9 @@ export const RegistrarDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <Link
-          to="/registrar/enrollments"
-          className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
-        >
-          <ClipboardList className="h-4 w-4" /> Process Queue ({stats.pendingEnrollments})
-        </Link>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

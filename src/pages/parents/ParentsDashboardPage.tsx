@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   User,
   FileText,
@@ -65,12 +66,12 @@ export const ParentsDashboardPage: React.FC = () => {
   useEffect(() => {
     async function loadParentDashboard() {
       try {
-        // 1. Find linked child in students or enrollments matching guardian or last_name
+        // 1. Find linked child in students or enrollments matching guardian, parent_name, or last_name
         const { data: studentsData } = await supabase
           .from('students')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(25);
+          .limit(50);
 
         let matched: LinkedChild[] = [];
         if (studentsData && studentsData.length > 0) {
@@ -78,6 +79,8 @@ export const ParentsDashboardPage: React.FC = () => {
             (s: any) =>
               (s.last_name &&
                 s.last_name.toLowerCase() === parentLastName.toLowerCase()) ||
+              (s.parent_name &&
+                s.parent_name.toLowerCase().includes(parentLastName.toLowerCase())) ||
               (s.guardian_name &&
                 s.guardian_name.toLowerCase().includes(parentLastName.toLowerCase()))
           );
@@ -93,8 +96,8 @@ export const ParentsDashboardPage: React.FC = () => {
             strand: s.strand || '',
             section: s.section || '',
             status: s.status || 'Enrolled',
-            guardian_name: s.guardian_name || parentFullName,
-            guardian_contact: s.guardian_contact || user?.phone || '0912-345-6789',
+            guardian_name: s.parent_name || s.guardian_name || parentFullName,
+            guardian_contact: s.parent_contact || s.guardian_contact || user?.phone || '0912-345-6789',
             photo_url: s.photo_url || s.two_by_two_picture_url || '',
           }));
         }
@@ -178,6 +181,90 @@ export const ParentsDashboardPage: React.FC = () => {
     guardian_contact: user?.phone || '0912-345-6789',
   };
 
+  // Live Child Attendance & Grades from Supabase
+  const [liveAttendance, setLiveAttendance] = useState<any[]>([]);
+  const [liveGrades, setLiveGrades] = useState<any[]>([]);
+  const [liveGpa, setLiveGpa] = useState<string>('92.50');
+
+  useEffect(() => {
+    async function loadChildProgress() {
+      if (!activeChild.id || activeChild.id === 'child-default') return;
+
+      try {
+        const [{ data: attData }, { data: grData }, { data: subData }] = await Promise.all([
+          supabase
+            .from('attendance')
+            .select('*')
+            .or(`student_id.eq.${activeChild.id},qr_code.ilike.%${activeChild.lrn}%`)
+            .order('date', { ascending: false })
+            .limit(5),
+          supabase.from('grades').select('*').eq('student_id', activeChild.id),
+          supabase.from('subjects').select('id, code, name'),
+        ]);
+
+        if (attData && attData.length > 0) {
+          const mappedAtt = attData.map((a: any) => ({
+            date: a.date ? new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today',
+            timeIn: a.time_in ? a.time_in.slice(0, 5) : '07:15 AM',
+            timeOut: a.time_out ? a.time_out.slice(0, 5) : '04:30 PM',
+            mode: a.qr_code ? 'QR Gate Scan' : 'LRN Log',
+            status: String(a.status || 'present').toLowerCase() === 'late' ? 'Late' : 'Present',
+          }));
+          setLiveAttendance(mappedAtt);
+        }
+
+        if (grData && grData.length > 0) {
+          const subMap = new Map<string, { code: string; name: string }>();
+          if (subData) {
+            subData.forEach((s: any) => subMap.set(String(s.id), { code: s.code || 'SUBJ', name: s.name }));
+          }
+
+          const bySubject: Record<string, { code: string; title: string; q1: number | null; q2: number | null }> = {};
+          const allNumericGrades: number[] = [];
+
+          grData.forEach((g: any) => {
+            const sid = String(g.subject_id);
+            const subMeta = subMap.get(sid) || { code: 'SUBJ', name: 'Curriculum Subject' };
+            if (!bySubject[sid]) {
+              bySubject[sid] = { code: subMeta.code, title: subMeta.name, q1: null, q2: null };
+            }
+            const qNum = Number(g.quarter);
+            const val = Number(g.grade);
+            if (!isNaN(val) && val > 0) {
+              allNumericGrades.push(val);
+              if (qNum === 1) bySubject[sid].q1 = val;
+              if (qNum === 2) bySubject[sid].q2 = val;
+            }
+          });
+
+          const gradesList = Object.values(bySubject).map((item) => {
+            const q1Val = item.q1 ?? 90;
+            const q2Val = item.q2 ?? 91;
+            const avg = Math.round((q1Val + q2Val) / 2);
+            return {
+              code: item.code,
+              title: item.title,
+              q1: q1Val,
+              q2: q2Val,
+              status: avg >= 75 ? 'Passed' : 'Failed',
+            };
+          });
+
+          if (gradesList.length > 0) setLiveGrades(gradesList);
+
+          if (allNumericGrades.length > 0) {
+            const sum = allNumericGrades.reduce((a, b) => a + b, 0);
+            setLiveGpa((sum / allNumericGrades.length).toFixed(2));
+          }
+        }
+      } catch (err) {
+        console.warn('Child progress fetch note:', err);
+      }
+    }
+
+    loadChildProgress();
+  }, [activeChild.id, activeChild.lrn]);
+
   // Determine Junior High (7-10) vs Senior High (11-12)
   const rawGrade = String(activeChild.grade_level || 'Grade 10').trim();
   const numMatch = rawGrade.match(/\d+/);
@@ -248,6 +335,21 @@ export const ParentsDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
+      {/* Page Header - Aligned like Admin */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
+            Parent & Guardian Portal
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Monitor real-time academic progress, daily attendance check-ins, and school advisories for your child.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
+      </div>
+
       {/* Linked Child Identity & 4 KPI Summary Strip */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
@@ -302,7 +404,7 @@ export const ParentsDashboardPage: React.FC = () => {
                 General Average
               </span>
               <p className="text-2xl font-black text-slate-900 mt-1 font-display">
-                92.50
+                {liveGpa}
               </p>
               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold mt-1">
                 <Award className="h-3.5 w-3.5" /> With Honors Standing
@@ -407,7 +509,7 @@ export const ParentsDashboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {subjectGradesPreview.map((sub) => {
+                  {(liveGrades.length > 0 ? liveGrades : subjectGradesPreview).map((sub) => {
                     const avg = Math.round((sub.q1 + sub.q2) / 2);
                     return (
                       <tr key={sub.code} className="hover:bg-slate-50/70">
@@ -465,7 +567,7 @@ export const ParentsDashboardPage: React.FC = () => {
             </div>
 
             <div className="divide-y divide-slate-100 text-xs">
-              {recentAttendance.map((log, i) => (
+              {(liveAttendance.length > 0 ? liveAttendance : recentAttendance).map((log, i) => (
                 <div
                   key={i}
                   className="py-3 flex flex-wrap items-center justify-between gap-2"

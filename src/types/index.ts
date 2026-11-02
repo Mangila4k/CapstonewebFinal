@@ -113,11 +113,18 @@ export interface Section {
 export interface Subject {
   id: string | number;
   code: string;
-  title: string;
+  name?: string;
+  title?: string;
   grade_level: string;
-  strand: string;
-  semester?: string;
+  strand?: string | null;
+  semester?: string | null;
   units?: number;
+  hours?: number;
+  subject_type?: 'Core' | 'Applied' | 'Specialized' | string;
+  quarter?: string | null;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Announcement {
@@ -185,11 +192,14 @@ export interface CounselingSession {
 
 export interface ActivityLog {
   id: string | number;
-  user_email: string;
-  user_role: string;
+  user_id?: string | null;
+  user_email?: string;
+  user_role?: string;
+  role?: string;
   action: string;
   details?: string;
-  created_at: string;
+  timestamp?: string;
+  created_at?: string;
 }
 
 export interface Activity {

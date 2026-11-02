@@ -12,6 +12,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import {
   SENT_SCHEDULES_STORAGE_KEY,
   buildSectionScheduleSlots,
@@ -20,6 +21,7 @@ import {
   type SentScheduleRecord,
 } from '../teacher/TeacherClassesPage';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
 export const StudentSchedulePage: React.FC = () => {
   const { user } = useAuth();
@@ -67,7 +69,73 @@ export const StudentSchedulePage: React.FC = () => {
     ];
   });
 
+  // Load live schedules and section document attachments from Supabase
   useEffect(() => {
+    async function loadLiveSchedules() {
+      try {
+        const [secRes, schedRes, subRes] = await Promise.all([
+          supabase.from('sections').select('*'),
+          supabase.from('schedules').select('*'),
+          supabase.from('subjects').select('*'),
+        ]);
+
+        const sections = secRes.data || [];
+        const schedules = schedRes.data || [];
+        const subjects = subRes.data || [];
+
+        const matchedSec =
+          sections.find(
+            (s) =>
+              s.name.toLowerCase() === defaultStudentSection.toLowerCase() ||
+              (s.grade_level === defaultStudentGrade && s.name.toLowerCase() === defaultStudentSection.toLowerCase())
+          ) || sections[0];
+
+        if (matchedSec) {
+          const secSchedules = schedules.filter((sch) => sch.section_id === matchedSec.id);
+          if (secSchedules.length > 0) {
+            const mappedSlots = secSchedules.map((sch) => {
+              const matchedSub = subjects.find((sub) => sub.id === sch.subject_id);
+              return {
+                time: `${sch.start_time || '07:30 AM'} – ${sch.end_time || '08:30 AM'}`,
+                day: sch.day || 'Monday – Friday',
+                days: sch.day || 'Monday – Friday',
+                subject: matchedSub?.name || 'Class Subject',
+                code: matchedSub?.code || 'CORE',
+                room: sch.room || matchedSec.room || 'Rm 201 • Bldg A',
+                teacher: 'Ryan Quiroga',
+                type: 'Core Subject',
+              };
+            });
+
+            setSentSchedules((prev) => [
+              {
+                id: `sb-sched-${matchedSec.id}`,
+                grade_level: matchedSec.grade_level || defaultStudentGrade,
+                section: matchedSec.name,
+                strand: matchedSec.strand || user?.student_strand || null,
+                teacher_name: matchedSec.adviser_name || 'Ryan Quiroga',
+                title: `Official Class Timetable — ${matchedSec.grade_level || defaultStudentGrade} Section ${matchedSec.name}`,
+                note: 'Official DepEd class timetable verified from school database.',
+                file_name: matchedSec.schedule_doc_name || `PLSNHS_Section_${matchedSec.name}_Schedule.csv`,
+                file_size: '32 KB',
+                recipient_mode: 'all',
+                recipient_count: 42,
+                recipient_names: [defaultStudentName],
+                recipient_ids: [],
+                sent_at: matchedSec.schedule_doc_updated_at || new Date().toISOString(),
+                slots: mappedSlots,
+              },
+              ...prev.filter((p) => p.id !== `sb-sched-${matchedSec.id}`),
+            ]);
+          }
+        }
+      } catch (err) {
+        console.warn('Live student schedule load error:', err);
+      }
+    }
+
+    loadLiveSchedules();
+
     const syncSchedules = () => {
       try {
         const raw = localStorage.getItem(SENT_SCHEDULES_STORAGE_KEY);
@@ -84,7 +152,7 @@ export const StudentSchedulePage: React.FC = () => {
 
     window.addEventListener('storage', syncSchedules);
     return () => window.removeEventListener('storage', syncSchedules);
-  }, []);
+  }, [defaultStudentGrade, defaultStudentSection, defaultStudentName, user?.student_strand]);
 
   const activeSchedule = sentSchedules[0];
   const scheduleItems = activeSchedule?.slots || buildSectionScheduleSlots(
@@ -97,13 +165,18 @@ export const StudentSchedulePage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Clean Executive Header */}
-      <div className="border-b border-slate-200 pb-4 sm:pr-12">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-          Weekly Class Schedule
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          View, print, or download the official class schedule sent by your Class Adviser and Subject Teachers for S.Y. 2026–2027.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+            Weekly Class Schedule
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            View, print, or download the official class schedule sent by your Class Adviser and Subject Teachers for S.Y. 2026–2027.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {/* Teacher-Sent Official Schedule File Card (with Print & Download buttons) */}

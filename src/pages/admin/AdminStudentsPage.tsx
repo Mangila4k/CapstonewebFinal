@@ -33,6 +33,7 @@ import {
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
@@ -230,25 +231,32 @@ export const AdminStudentsPage: React.FC = () => {
     try {
       const isTransfer = editFormData.status === 'Transferred';
       const finalSection = isTransfer ? 'Unassigned' : (editFormData.section || 'Unassigned');
+      const matchedSection = sections.find(
+        (s) => s.name.toLowerCase() === finalSection.toLowerCase()
+      );
+      const resolvedSectionId =
+        isTransfer || finalSection === 'Unassigned' ? null : matchedSection?.id || null;
+
+      const updatePayload: any = {
+        first_name: editFormData.first_name,
+        middle_name: editFormData.middle_name,
+        last_name: editFormData.last_name,
+        lrn: editFormData.lrn,
+        grade_level: editFormData.grade_level,
+        section_id: resolvedSectionId,
+        strand: editFormData.strand,
+        gender: editFormData.gender,
+        email: editFormData.email,
+        contact_number: editFormData.contact_number,
+        address: editFormData.address,
+        parent_name: editFormData.guardian_name || (editFormData as any).parent_name,
+        parent_contact: editFormData.guardian_contact || (editFormData as any).parent_contact,
+        updated_at: new Date().toISOString(),
+      };
 
       const { error } = await supabase
         .from('students')
-        .update({
-          first_name: editFormData.first_name,
-          middle_name: editFormData.middle_name,
-          last_name: editFormData.last_name,
-          lrn: editFormData.lrn,
-          grade_level: editFormData.grade_level,
-          section: finalSection,
-          strand: editFormData.strand,
-          gender: editFormData.gender,
-          status: editFormData.status,
-          email: editFormData.email,
-          contact_number: editFormData.contact_number,
-          address: editFormData.address,
-          guardian_name: editFormData.guardian_name,
-          guardian_contact: editFormData.guardian_contact,
-        })
+        .update(updatePayload)
         .eq('id', editingStudent.id);
 
       if (error) {
@@ -293,8 +301,9 @@ export const AdminStudentsPage: React.FC = () => {
       const { error } = await supabase
         .from('students')
         .update({
-          status: 'Transferred',
-          section: 'Unassigned',
+          section_id: null,
+          academic_status: 'Transferred',
+          updated_at: new Date().toISOString(),
         })
         .eq('id', student.id);
 
@@ -706,13 +715,18 @@ export const AdminStudentsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Top Header */}
-      <div className="border-b border-slate-200 pb-4 sm:pr-12">
-        <h1 className="text-2xl font-extrabold text-[#0f172a] font-display tracking-tight">
-          Student Masterlist
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Organize, filter, and manage students by Year Level (Grade 7–12) and Section roster.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#0f172a] font-display tracking-tight">
+            Student Masterlist
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Organize, filter, and manage students by Year Level (Grade 7–12) and Section roster.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {alert && (

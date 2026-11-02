@@ -24,10 +24,11 @@ import { supabase } from '../../lib/supabase';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import type { Student } from '../../types';
 
 export interface ClassroomAssessmentItem {
-  id: number;
+  id: number | string;
   title: string;
   instructions?: string;
   subject: string;
@@ -134,7 +135,7 @@ export const TeacherAssessmentsPage: React.FC = () => {
     return DEFAULT_CLASSROOM_ASSESSMENTS;
   });
 
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState<number>(
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<number | string>(
     () => assessments[0]?.id || DEFAULT_CLASSROOM_ASSESSMENTS[0].id
   );
 
@@ -145,7 +146,7 @@ export const TeacherAssessmentsPage: React.FC = () => {
 
   // Map of assessmentId -> studentId -> StudentSubmissionRecord
   const [submissionsByAssessment, setSubmissionsByAssessment] = useState<
-    Record<number, Record<string | number, StudentSubmissionRecord>>
+    Record<number | string, Record<string | number, StudentSubmissionRecord>>
   >({});
 
   // Filters for student submission & passing tracker
@@ -198,6 +199,7 @@ export const TeacherAssessmentsPage: React.FC = () => {
   useEffect(() => {
     try {
       localStorage.setItem(CLASSROOM_ASSESSMENTS_STORAGE_KEY, JSON.stringify(assessments));
+      window.dispatchEvent(new CustomEvent('plsnhs-assessments-updated'));
     } catch {
       // ignore storage quota errors
     }
@@ -208,9 +210,11 @@ export const TeacherAssessmentsPage: React.FC = () => {
     async function fetchSectionsAndStudents() {
       setLoadingStudents(true);
       try {
-        const [secRes, stuRes] = await Promise.all([
+        const [secRes, stuRes, dbAssRes, dbSubRes] = await Promise.all([
           supabase.from('sections').select('id, name, grade_level').order('grade_level'),
           supabase.from('students').select('*').order('last_name', { ascending: true }).limit(500),
+          supabase.from('assessments').select('*').order('created_at', { ascending: false }),
+          supabase.from('assessment_submissions').select('*'),
         ]);
 
         const secList = (secRes.data || []).sort((a, b) => {
@@ -239,23 +243,65 @@ export const TeacherAssessmentsPage: React.FC = () => {
 
         setAllStudents(enriched);
 
-        // Load saved student submissions or generate realistic Google Classroom file submissions
-        let savedSubmissions: Record<number, Record<string | number, StudentSubmissionRecord>> = {};
+        // Load saved student submissions from Supabase and cache
+        const initialMap: Record<number | string, Record<string | number, StudentSubmissionRecord>> = {};
+
         try {
           const rawSaved = localStorage.getItem(CLASSROOM_SUBMISSIONS_STORAGE_KEY);
           if (rawSaved) {
-            savedSubmissions = JSON.parse(rawSaved);
+            Object.assign(initialMap, JSON.parse(rawSaved));
           }
         } catch {
           // ignore
         }
 
-        const initialMap: Record<number, Record<string | number, StudentSubmissionRecord>> = {
-          ...savedSubmissions,
-        };
+        // Merge Supabase submissions
+        if (dbSubRes.data && dbSubRes.data.length > 0) {
+          dbSubRes.data.forEach((sub: any) => {
+            if (!initialMap[sub.assessment_id]) {
+              initialMap[sub.assessment_id] = {};
+            }
+            initialMap[sub.assessment_id][sub.student_id] = {
+              score: sub.score !== null ? Number(sub.score) : null,
+              submitted: sub.status === 'submitted' || sub.status === 'graded',
+              submittedAt: sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : undefined,
+              fileName: sub.file_name || undefined,
+              fileDataUrl: sub.file_url || undefined,
+              returned: sub.status === 'graded',
+            };
+          });
+        }
+
+        // Check if database has assessments
+        let loadedAssessments = assessments;
+        if (dbAssRes.data && dbAssRes.data.length > 0) {
+          const mappedAss: ClassroomAssessmentItem[] = dbAssRes.data.map((a: any) => ({
+            id: a.id,
+            title: a.title,
+            instructions: a.description || 'Complete the assessment and turn in your work.',
+            subject: a.subject_name || 'General Mathematics',
+            grade_level: a.section_name?.includes('Grade') ? a.section_name.split(' - ')[0] : 'Grade 10',
+            section: a.section_name?.includes(' - ') ? a.section_name.split(' - ')[1] : a.section_name || 'Generosity',
+            type: (a.type || 'Quiz') as any,
+            totalScore: a.total_points || 50,
+            passingScore: Math.round((a.total_points || 50) * 0.75),
+            date: a.due_date ? a.due_date.split('T')[0] : a.created_at.split('T')[0],
+            attachmentName: a.attachment_name || undefined,
+            attachmentDataUrl: a.attachment_url || undefined,
+          }));
+
+          // Merge without duplicates
+          const assMap = new Map<number | string, ClassroomAssessmentItem>();
+          mappedAss.forEach((a) => assMap.set(a.id, a));
+          assessments.forEach((a) => {
+            if (!assMap.has(a.id)) assMap.set(a.id, a);
+          });
+          loadedAssessments = Array.from(assMap.values());
+          setAssessments(loadedAssessments);
+        }
 
         const currentAssessments =
-          assessments.length > 0 ? assessments : DEFAULT_CLASSROOM_ASSESSMENTS;
+          loadedAssessments.length > 0 ? loadedAssessments : DEFAULT_CLASSROOM_ASSESSMENTS;
 
         currentAssessments.forEach((ass, aIdx) => {
           if (!initialMap[ass.id]) {
@@ -668,16 +714,47 @@ export const TeacherAssessmentsPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSaveScores = () => {
+  const handleSaveScores = async () => {
     if (!selectedAssessment) return;
     setSavingScores(true);
-    setTimeout(() => {
+
+    try {
+      // Upsert into Supabase assessment_submissions if assessment ID is a valid uuid
+      const isUuid = typeof selectedAssessment.id === 'string' && selectedAssessment.id.includes('-');
+      if (isUuid) {
+        const recordsToUpsert: any[] = [];
+        filteredRoster.forEach((stu) => {
+          const outcome = getStudentOutcome(selectedAssessment, stu.id);
+          if (outcome.submitted || outcome.record.score !== null) {
+            recordsToUpsert.push({
+              assessment_id: selectedAssessment.id,
+              student_id: stu.id,
+              student_name: `${stu.last_name}, ${stu.first_name}`,
+              student_lrn: stu.lrn || '',
+              score: outcome.record.score,
+              status: outcome.record.score !== null ? 'graded' : 'submitted',
+              file_name: outcome.record.fileName || null,
+              file_url: outcome.record.fileDataUrl || null,
+              submitted_at: new Date().toISOString(),
+            });
+          }
+        });
+
+        if (recordsToUpsert.length > 0) {
+          await supabase
+            .from('assessment_submissions')
+            .upsert(recordsToUpsert, { onConflict: 'assessment_id,student_id' });
+        }
+      }
+    } catch (err) {
+      console.warn('Submissions database save notice:', err);
+    } finally {
       setSavingScores(false);
       setNotice({
         type: 'success',
         message: `Saved classwork submissions & grades for "${selectedAssessment.title}" (${selectedAssessment.grade_level} • Section ${selectedAssessment.section}).`,
       });
-    }, 300);
+    }
   };
 
   const handleCreate = (e: React.FormEvent) => {
@@ -725,6 +802,39 @@ export const TeacherAssessmentsPage: React.FC = () => {
     setGradeFilter(form.grade_level);
     setSectionFilter(form.section);
 
+    // Persist to Supabase assessments
+    try {
+      supabase
+        .from('assessments')
+        .insert([
+          {
+            title: form.title,
+            description: form.instructions,
+            subject_name: form.subject,
+            section_name: `${form.grade_level} - ${form.section}`,
+            type: form.type,
+            total_points: total,
+            due_date: new Date(form.date).toISOString(),
+            attachment_name: form.attachmentName || null,
+            attachment_url: form.attachmentDataUrl || null,
+            status: 'published',
+          },
+        ])
+        .select()
+        .single()
+        .then(({ data: createdAss, error: sbAssErr }) => {
+          if (!sbAssErr && createdAss) {
+            newAss.id = createdAss.id;
+            setAssessments((prev) =>
+              prev.map((a) => (a.id === newId ? { ...a, id: createdAss.id } : a))
+            );
+            setSelectedAssessmentId(createdAss.id);
+          }
+        });
+    } catch {
+      // fallback
+    }
+
     setNotice({
       type: 'success',
       message: `Assessment "${form.title}" published to ${form.grade_level} • Section ${form.section}. Students in Section ${form.section} can now upload their files!`,
@@ -758,7 +868,7 @@ export const TeacherAssessmentsPage: React.FC = () => {
       />
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
             Assessments &amp; Classwork Manager
@@ -768,12 +878,15 @@ export const TeacherAssessmentsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer shrink-0"
-        >
-          <Plus className="h-4 w-4" /> Create Assessment
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="h-4 w-4" /> Create Assessment
+          </button>
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

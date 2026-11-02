@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Bell,
   Megaphone,
@@ -110,14 +111,30 @@ export const NotificationCenter: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [selectedItem, setSelectedItem] = useState<UnifiedNotificationItem | null>(null);
-  const [toastItem, setToastItem] = useState<UnifiedNotificationItem | null>(null);
-  const [dismissedBannerIds, setDismissedBannerIds] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const [slotElement, setSlotElement] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const updateSlot = () => {
+      const el = document.getElementById('page-header-notification-slot');
+      setSlotElement((prev) => (prev !== el ? el : prev));
+    };
+
+    updateSlot();
+    const raf = requestAnimationFrame(updateSlot);
+    const observer = new MutationObserver(updateSlot);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [location.pathname]);
 
   const userKey = user?.id || user?.email || user?.role || 'guest';
   const readStorageKey = `plsnhs_read_notifs_${userKey}`;
   const unreadStorageKey = `plsnhs_unread_override_${userKey}`;
-  const dismissedBannerKey = `plsnhs_dismissed_banners_${userKey}`;
 
   const getStoredList = useCallback((key: string): string[] => {
     try {
@@ -135,10 +152,6 @@ export const NotificationCenter: React.FC = () => {
       // ignore storage errors
     }
   }, []);
-
-  useEffect(() => {
-    setDismissedBannerIds(getStoredList(dismissedBannerKey));
-  }, [dismissedBannerKey, getStoredList]);
 
   const fetchAllNotifications = useCallback(async () => {
     if (!user) return;
@@ -329,20 +342,6 @@ export const NotificationCenter: React.FC = () => {
         (payload) => {
           const newAnn: any = payload.new;
           if (newAnn && isAudienceMatch(newAnn.target_audience, role)) {
-            const liveItem: UnifiedNotificationItem = {
-              uid: `ann_${newAnn.id}`,
-              rawId: newAnn.id,
-              source: 'announcement',
-              title: newAnn.title || 'New School Announcement',
-              content: newAnn.content || '',
-              senderName: newAnn.author || 'School Administration',
-              senderRole: 'ADMIN',
-              priority: (newAnn.priority || 'normal').toLowerCase(),
-              targetAudience: newAnn.target_audience || 'all',
-              createdAt: newAnn.created_at || new Date().toISOString(),
-              isRead: false,
-            };
-            setToastItem(liveItem);
             fetchAllNotifications();
           }
         }
@@ -355,20 +354,6 @@ export const NotificationCenter: React.FC = () => {
           if (!newNotif) return;
           const targetRole = newNotif.role || 'all';
           if (isAudienceMatch(targetRole, role)) {
-            const liveItem: UnifiedNotificationItem = {
-              uid: `notif_${newNotif.id}`,
-              rawId: newNotif.id,
-              source: 'notification',
-              title: newNotif.title || 'New Admin Notification',
-              content: newNotif.message || newNotif.content || '',
-              senderName: newNotif.sender || 'School Administration',
-              senderRole: 'ADMIN',
-              priority: (newNotif.priority || 'normal').toLowerCase(),
-              targetAudience: targetRole,
-              createdAt: newNotif.created_at || new Date().toISOString(),
-              isRead: false,
-            };
-            setToastItem(liveItem);
             fetchAllNotifications();
           }
         }
@@ -378,21 +363,8 @@ export const NotificationCenter: React.FC = () => {
     const handleCustomBroadcast = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail && isAudienceMatch(customEvent.detail.target_audience, role)) {
-        setToastItem({
-          uid: `local_${customEvent.detail.id || Date.now()}`,
-          rawId: customEvent.detail.id || Date.now(),
-          source: 'notification',
-          title: customEvent.detail.title || 'New Admin Notification',
-          content: customEvent.detail.content || '',
-          senderName: customEvent.detail.author || 'School Administration',
-          senderRole: 'ADMIN',
-          priority: (customEvent.detail.priority || 'important').toLowerCase(),
-          targetAudience: customEvent.detail.target_audience || 'all',
-          createdAt: new Date().toISOString(),
-          isRead: false,
-        });
+        fetchAllNotifications();
       }
-      fetchAllNotifications();
     };
 
     const handleStorageChange = (e: StorageEvent) => {
@@ -410,13 +382,6 @@ export const NotificationCenter: React.FC = () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [user, userKey, fetchAllNotifications]);
-
-  // Auto-hide toast after 7 seconds
-  useEffect(() => {
-    if (!toastItem) return;
-    const timer = setTimeout(() => setToastItem(null), 7000);
-    return () => clearTimeout(timer);
-  }, [toastItem]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -480,47 +445,33 @@ export const NotificationCenter: React.FC = () => {
     setDropdownOpen(false);
   };
 
-  const handleDismissBanner = (uid: string) => {
-    const next = [...dismissedBannerIds, uid];
-    setDismissedBannerIds(next);
-    setStoredList(dismissedBannerKey, next);
-  };
-
   const unreadItems = items.filter((it) => !it.isRead);
   const displayedItems = filter === 'unread' ? unreadItems : items;
-  const latestUnreadBannerItem =
-    user?.role !== 'admin' && user?.role !== 'registrar'
-      ? unreadItems.find((it) => !dismissedBannerIds.includes(it.uid))
-      : null;
 
-  return (
-    <div className="w-full">
-      <div className="flex items-start justify-end sm:h-0 sm:overflow-visible mb-2 sm:mb-0">
-        <div className="flex items-center gap-3 shrink-0 sm:mt-1.5 relative z-40">
-          {/* Notification Bell Icon Button & Dropdown */}
-          <div ref={dropdownRef} className="relative z-40">
+  const bellDropdownNode = (
+    <div ref={dropdownRef} className="relative z-40 inline-flex items-center">
             <button
               type="button"
               onClick={() => setDropdownOpen((o) => !o)}
               aria-label="Notifications"
               title="Notifications & Announcements"
-              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer select-none ${
+              className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all cursor-pointer select-none active:scale-95 ${
                 dropdownOpen
-                  ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white shadow-xs'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-[#1B2A4A] hover:text-[#1B2A4A] shadow-2xs'
+                  ? 'border-[#152e69] bg-[#152e69] text-white shadow-sm ring-2 ring-[#152e69]/20'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-2xs hover:shadow-xs'
               }`}
             >
               <Bell
-                className={`h-4 w-4 ${
+                className={`h-4.5 w-4.5 transition-colors ${
                   dropdownOpen
                     ? 'text-amber-400'
                     : unreadItems.length > 0
-                    ? 'text-[#1B2A4A]'
-                    : 'text-slate-500'
+                    ? 'text-[#152e69]'
+                    : 'text-slate-600'
                 }`}
               />
               {unreadItems.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-extrabold text-white shadow-2xs ring-2 ring-white leading-none">
+                <span className="absolute -top-1 -right-1 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-black text-white shadow-xs ring-2 ring-white leading-none">
                   {unreadItems.length > 99 ? '99+' : unreadItems.length}
                 </span>
               )}
@@ -528,7 +479,7 @@ export const NotificationCenter: React.FC = () => {
 
             {/* Dropdown Panel */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-[340px] sm:w-[390px] rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden z-50 animate-fade-in">
+              <div className="absolute right-0 top-full mt-2 w-[340px] sm:w-[390px] rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden z-50 animate-fade-in">
                 {/* Dropdown Header */}
                 <div className="border-b border-slate-100 bg-white px-4 py-3.5 flex items-center justify-between">
                   <div>
@@ -698,92 +649,18 @@ export const NotificationCenter: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      </div>
+    </div>
+  );
 
-      {/* Subtle Executive Unread Advisory Strip */}
-      {latestUnreadBannerItem && (
-        <div className="mt-4 rounded-2xl border border-slate-200 border-l-4 border-l-[#1B2A4A] bg-white px-4 py-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
-          <div className="flex items-start sm:items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-[#1B2A4A] shrink-0">
-              <Megaphone className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1B2A4A]">
-                  New Advisory from Administration
-                </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-[11px] text-slate-400">
-                  {formatTimeAgo(latestUnreadBannerItem.createdAt)}
-                </span>
-              </div>
-              <p className="text-xs font-bold text-slate-900 truncate mt-0.5">
-                {latestUnreadBannerItem.title}{' '}
-                <span className="font-normal text-slate-500">
-                  — {latestUnreadBannerItem.content}
-                </span>
-              </p>
-            </div>
+  return (
+    <>
+      {slotElement ? (
+        createPortal(bellDropdownNode, slotElement)
+      ) : (
+        <div className="w-full flex items-center justify-end mb-4">
+          <div className="flex items-center gap-3 shrink-0 relative z-30">
+            {bellDropdownNode}
           </div>
-
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-            <button
-              type="button"
-              onClick={() => handleOpenItem(latestUnreadBannerItem)}
-              className="inline-flex items-center gap-1 rounded-xl bg-[#1B2A4A] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0f1c3f] transition-colors cursor-pointer"
-            >
-              View Advisory
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDismissBanner(latestUnreadBannerItem.uid)}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
-              title="Dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Realtime Toast Popup */}
-      {toastItem && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            handleOpenItem(toastItem);
-            setToastItem(null);
-          }}
-          className="fixed bottom-20 right-6 z-[9998] max-w-sm rounded-2xl border border-slate-200 border-l-4 border-l-[#1B2A4A] bg-white p-4 text-slate-900 shadow-xl flex items-start gap-3 cursor-pointer animate-fade-in"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1B2A4A] text-white shrink-0">
-            <Bell className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#1B2A4A]">
-              New Admin Notification
-            </p>
-            <h5 className="text-xs font-extrabold text-slate-900 truncate">
-              {toastItem.title}
-            </h5>
-            <p className="text-[11px] text-slate-500 line-clamp-2">
-              {toastItem.content}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setToastItem(null);
-            }}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
       )}
 
@@ -937,6 +814,10 @@ export const NotificationCenter: React.FC = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </>
   );
 };
+
+export const PageHeaderNotificationSlot: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div id="page-header-notification-slot" className={`inline-flex items-center shrink-0 ${className}`} />
+);

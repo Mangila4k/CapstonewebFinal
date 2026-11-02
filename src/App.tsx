@@ -197,6 +197,9 @@ export const App: React.FC = () => {
             }
           />
           <Route path="/admin/create_schedule.html" element={<Navigate to="/admin/create-schedule" replace />} />
+          <Route path="/admin/schedules" element={<Navigate to="/admin/create-schedule" replace />} />
+          <Route path="/admin/schedule" element={<Navigate to="/admin/create-schedule" replace />} />
+          <Route path="/admin/teacher-schedules" element={<Navigate to="/admin/create-schedule" replace />} />
           <Route
             path="/admin/create-schedule"
             element={
@@ -387,6 +390,7 @@ export const App: React.FC = () => {
           />
           <Route path="/teacher/class-program.html" element={<Navigate to="/teacher/class-program" replace />} />
           <Route path="/teacher/teacher-load.html" element={<Navigate to="/teacher/class-program" replace />} />
+          <Route path="/teacher/schedule" element={<Navigate to="/teacher/class-program" replace />} />
           <Route
             path="/teacher/class-program"
             element={

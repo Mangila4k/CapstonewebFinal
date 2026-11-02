@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { supabase } from '../../lib/supabase';
 
 const ROLE_CONFIG: Record<
@@ -219,6 +220,21 @@ export const AdminProfilePage: React.FC = () => {
           onClose={() => setNotice(null)}
         />
       )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
+            User Profile &amp; Account Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Manage your personal profile details, contact information, and security credentials.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
+      </div>
 
       {/* Top Institutional Hero Banner Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f1c3f] via-[#1B2A4A] to-[#243B67] text-white shadow-md border border-slate-800/20">

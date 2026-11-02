@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { parseLrnFromInput, playAttendanceSound } from '../../lib/attendanceParser';
 
 interface ScannedEntry {
@@ -77,46 +78,49 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   useEffect(() => {
     async function initData() {
       try {
-        const { data: secData } = await supabase.from('sections').select('id, name').order('name');
+        const [{ data: secData }, { data: attData }, { data: stData }] = await Promise.all([
+          supabase.from('sections').select('id, name').order('name'),
+          supabase
+            .from('attendance')
+            .select('*')
+            .eq('date', new Date().toISOString().split('T')[0])
+            .order('created_at', { ascending: false }),
+          supabase.from('students').select('id, first_name, last_name, lrn, grade_level, avatar_url, section_id'),
+        ]);
+
         if (secData) setSections(secData);
 
-        // Fetch today's existing attendance records
+        const secMap = new Map<string, string>();
+        if (secData) secData.forEach((s: any) => secMap.set(String(s.id), s.name));
+
+        const stMap = new Map<string, any>();
+        if (stData) {
+          stData.forEach((st: any) => {
+            if (st.id) stMap.set(String(st.id), st);
+            if (st.lrn) stMap.set(String(st.lrn), st);
+          });
+        }
+
         const todayStr = new Date().toISOString().split('T')[0];
-        const { data: attData } = await supabase
-          .from('attendance')
-          .select(`
-            id,
-            student_id,
-            status,
-            time_in,
-            date,
-            students:student_id (
-              id,
-              first_name,
-              last_name,
-              lrn,
-              grade_level,
-              avatar_url,
-              sections:section_id (name)
-            )
-          `)
-          .eq('date', todayStr)
-          .order('created_at', { ascending: false });
 
         if (attData && attData.length > 0) {
           const mapped: ScannedEntry[] = attData.map((a: any) => {
-            const st = a.students;
-            const secName = st?.sections?.name || 'Unassigned';
+            const st = a.student_id ? stMap.get(String(a.student_id)) : null;
+            const secName =
+              (st?.section_id && secMap.get(String(st.section_id))) ||
+              (a.section_id && secMap.get(String(a.section_id))) ||
+              'Unassigned';
+            const rawStatus = String(a.status || 'present').toLowerCase();
             return {
               id: a.id,
               student_id: a.student_id,
-              name: st ? `${st.first_name} ${st.last_name}` : 'Unknown Student',
-              lrn: st?.lrn || '—',
+              name: st ? `${st.first_name} ${st.last_name}` : 'Enrolled Student',
+              lrn: st?.lrn || a.qr_code?.match(/\d{12}/)?.[0] || '—',
               section: secName,
               grade_level: st?.grade_level || '',
               time: a.time_in ? a.time_in.slice(0, 5) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               date: a.date,
-              status: a.status === 'Late' ? 'Late' : 'Present',
+              status: rawStatus === 'late' ? 'Late' : 'Present',
               mode: 'QR',
               avatar_url: st?.avatar_url,
             };
@@ -164,17 +168,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       // 1. Query Supabase for student with this LRN
       const { data: student, error: fetchErr } = await supabase
         .from('students')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          lrn,
-          grade_level,
-          strand,
-          section_id,
-          avatar_url,
-          sections:section_id (name)
-        `)
+        .select('id, first_name, last_name, lrn, grade_level, strand, section_id, avatar_url')
         .eq('lrn', cleanLrn)
         .maybeSingle();
 
@@ -190,7 +184,8 @@ export const TeacherAttendanceQrPage: React.FC = () => {
 
       if (student) {
         studentName = `${student.first_name} ${student.last_name}`;
-        sectionName = (student.sections as any)?.name || student.grade_level || 'Enrolled';
+        const matchedSec = sections.find((s) => String(s.id) === String(student.section_id));
+        sectionName = matchedSec?.name || student.grade_level || 'Enrolled';
         studentId = student.id;
         avatarUrl = student.avatar_url;
         gradeLevel = student.grade_level || '';
@@ -218,12 +213,13 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       // 2. Insert into Supabase attendance tables
       try {
         if (student?.id) {
+          const lowerStatus = computedStatus.toLowerCase(); // 'present' or 'late'
           await supabase.from('attendance').insert({
             student_id: student.id,
             section_id: student.section_id || null,
             date: todayStr,
             time_in: new Date().toTimeString().split(' ')[0],
-            status: computedStatus,
+            status: lowerStatus,
             qr_code: rawScannedText,
           });
 
@@ -231,12 +227,22 @@ export const TeacherAttendanceQrPage: React.FC = () => {
             student_id: student.id,
             section_id: student.section_id || null,
             date: todayStr,
-            mode: scanType,
-            status: computedStatus,
+            mode: scanMode === 'time-out' ? 'time_out' : 'time_in',
+            status: lowerStatus,
             time_in: new Date().toTimeString().split(' ')[0],
             qr_code: cleanLrn,
             raw_payload: rawScannedText,
           });
+
+          // Activity audit log
+          await supabase.from('activity_logs').insert([
+            {
+              role: 'student',
+              action: `Attendance ${computedStatus}`,
+              details: `${studentName} (LRN: ${cleanLrn}) logged ${computedStatus} via ${scanType} scan (${scanMode === 'time-out' ? 'Time-Out' : 'Time-In'}).`,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
         }
       } catch (insertErr) {
         console.warn('Attendance DB sync note:', insertErr);
@@ -428,6 +434,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
             <span>Class Section Sheet</span>
             <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
           </Link>
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 

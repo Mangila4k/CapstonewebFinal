@@ -1,8 +1,10 @@
+// Supabase Project: hiraya-enrollment-system
+// Project ID: tuujlqrfyuazvbvoribz (ap-southeast-2)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+const SUPABASE_PROJECT_NAME = 'hiraya-enrollment-system';
 const SUPABASE_URL = 'https://tuujlqrfyuazvbvoribz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_dYaVB2zNcNNj5gwjzJ4ZRw_N55Djq0D';
-
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -17,5 +19,5 @@ if (typeof window !== 'undefined') {
     window.supabase = supabase;
 }
 
-console.log('✅ Supabase client initialized');
+console.log('✅ Supabase client initialized for project:', SUPABASE_PROJECT_NAME);
 console.log('📍 URL:', SUPABASE_URL);

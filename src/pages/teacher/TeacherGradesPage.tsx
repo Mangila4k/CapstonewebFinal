@@ -25,6 +25,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import type { Student } from '../../types';
 
 interface SectionOption {
@@ -694,13 +695,18 @@ export const TeacherGradesPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-36">
       {/* Clean Executive Header */}
-      <div className="border-b border-slate-200 pb-4 sm:pr-12">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-          Learner Grading & Auto-Calculation System
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Encode quarterly marks or compute raw components under DepEd Order No. 8, s. 2015 transmutation rules.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+            Learner Grading & Auto-Calculation System
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Encode quarterly marks or compute raw components under DepEd Order No. 8, s. 2015 transmutation rules.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

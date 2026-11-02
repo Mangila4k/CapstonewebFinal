@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -20,6 +21,7 @@ import {
   X,
   Eye,
   ChevronDown,
+  Calendar,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -226,7 +228,7 @@ export const AdminDashboardPage: React.FC = () => {
         supabase
           .from('activity_logs')
           .select('*')
-          .order('created_at', { ascending: false })
+          .order('timestamp', { ascending: false })
           .limit(5),
       ]);
 
@@ -408,7 +410,7 @@ export const AdminDashboardPage: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
             PLSNHS Admin Dashboard
@@ -418,25 +420,20 @@ export const AdminDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
           <Link
             to="/admin/generate-id"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#152e69] px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#0f1c3f] transition-all whitespace-nowrap"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#152e69] px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#0f1c3f] transition-all whitespace-nowrap"
           >
             <CreditCard className="h-4 w-4 text-[#F5C518] shrink-0" /> Generate ID
           </Link>
           <Link
             to="/admin/accounts"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all whitespace-nowrap"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all whitespace-nowrap"
           >
             <UserPlus className="h-4 w-4 shrink-0" /> Manage Accounts
           </Link>
-          <Link
-            to="/admin/enrollments"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2.5 text-xs font-bold text-slate-950 shadow-xs hover:bg-amber-400 transition-all whitespace-nowrap"
-          >
-            <ClipboardList className="h-4 w-4 shrink-0" /> Review Queue ({stats.pendingEnrollments})
-          </Link>
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 
@@ -680,13 +677,15 @@ export const AdminDashboardPage: React.FC = () => {
                   >
                     <div>
                       <p className="font-bold text-slate-800">{log.action}</p>
-                      <p className="text-[11px] text-slate-500">{log.user_email}</p>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        {log.user_email || log.details?.match(/\(([^)]+@[^)]+)\)/)?.[1] || (log.role ? `Role: ${log.role}` : 'User')}
+                      </p>
                       {log.details && (
                         <p className="text-[11px] text-slate-400 mt-0.5">{log.details}</p>
                       )}
                     </div>
                     <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">
-                      {formatDate(log.created_at)}
+                      {formatDate(log.timestamp || log.created_at)}
                     </span>
                   </div>
                 ))
@@ -702,6 +701,13 @@ export const AdminDashboardPage: React.FC = () => {
               Quick Shortcuts
             </h3>
             <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+              <Link
+                to="/admin/create-schedule"
+                className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-blue-950 hover:border-blue-400 hover:bg-blue-100/70 transition-colors flex items-center gap-1.5"
+              >
+                <Calendar className="h-3.5 w-3.5 text-blue-700 shrink-0" />
+                <span>Faculty Schedules</span>
+              </Link>
               <Link
                 to="/admin/generate-id"
                 className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-[#152e69] hover:border-amber-400 hover:bg-amber-100/70 transition-colors flex items-center gap-1.5"

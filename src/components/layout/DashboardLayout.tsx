@@ -72,6 +72,7 @@ export const DashboardLayout: React.FC = () => {
               { name: 'Students', path: '/admin/students', icon: GraduationCap },
               { name: 'Generate ID', path: '/admin/generate-id', icon: CreditCard },
               { name: 'Teachers', path: '/admin/teachers', icon: Users },
+              { name: 'Schedules', path: '/admin/create-schedule', icon: Clock },
               { name: 'Sections', path: '/admin/sections', icon: Layers },
               { name: 'Subjects', path: '/admin/subjects', icon: BookOpen },
               { name: 'Enrollments', path: '/admin/enrollments', icon: FileSignature },
@@ -85,7 +86,7 @@ export const DashboardLayout: React.FC = () => {
               { name: 'School Activities', path: '/admin/activities', icon: Calendar },
               { name: 'Guidance & Violations', path: '/admin/guidance-violations', icon: Scale },
               { name: 'Accounts', path: '/admin/accounts', icon: UserCog },
-              { name: 'Teacher Attendance', path: '/admin/attendance', icon: CalendarCheck },
+              { name: 'Attendance Logs', path: '/admin/attendance', icon: CalendarCheck },
                             { name: 'Logs', path: '/admin/logs', icon: History },
               { name: 'Reports', path: '/admin/reports', icon: BarChart3 },
             ],
@@ -308,18 +309,18 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50 print:h-auto print:overflow-visible print:bg-white">
       {/* Mobile Sidebar Backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#1B2A4A] text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#1B2A4A] text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -446,9 +447,9 @@ export const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible print:h-auto">
         {/* Mobile Sidebar Toggle Bar (hidden on desktop) */}
-        <header className="flex lg:hidden h-14 items-center justify-between border-b border-slate-200 bg-white px-4">
+        <header className="flex lg:hidden h-14 items-center justify-between border-b border-slate-200 bg-white px-4 print:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
             className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
@@ -461,8 +462,10 @@ export const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Dashboard Content Body */}
-        <main className="flex-1 overflow-y-auto px-4 pt-5 pb-6 sm:px-6 lg:px-8 bg-slate-50/70">
-          <NotificationCenter />
+        <main className="flex-1 overflow-y-auto px-4 pt-5 pb-6 sm:px-6 lg:px-8 bg-slate-50/70 print:p-0 print:m-0 print:bg-white print:overflow-visible">
+          <div className="print:hidden">
+            <NotificationCenter />
+          </div>
           <Outlet />
         </main>
       </div>

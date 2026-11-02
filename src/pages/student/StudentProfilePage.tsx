@@ -23,6 +23,7 @@ import { Modal } from '../../components/common/Modal';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
 import { supabase } from '../../lib/supabase';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
 export const StudentProfilePage: React.FC = () => {
   const { user, updateCurrentUser } = useAuth();
@@ -138,6 +139,23 @@ export const StudentProfilePage: React.FC = () => {
         await supabase.from('users').update(updates).eq('id', user.id);
       }
 
+      // Sync changes to students table in Supabase
+      if (user?.student_id || user?.student_lrn || user?.email) {
+        const studentUpdates: Record<string, any> = {
+          first_name: cleanFirst,
+          last_name: cleanLast,
+          contact_number: phone.trim(),
+          avatar_url: avatarUrl,
+          two_by_two_picture_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        };
+        let sQ = supabase.from('students').update(studentUpdates);
+        if (user?.student_id) sQ = sQ.eq('id', user.student_id);
+        else if (user?.student_lrn) sQ = sQ.eq('lrn', user.student_lrn);
+        else if (user?.email) sQ = sQ.eq('email', user.email);
+        await sQ;
+      }
+
       updateCurrentUser({
         first_name: cleanFirst,
         last_name: cleanLast,
@@ -173,6 +191,21 @@ export const StudentProfilePage: React.FC = () => {
           onClose={() => setNotice(null)}
         />
       )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
+            Learner Profile &amp; Account Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Review your official school records, emergency contacts, and security credentials.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
+      </div>
 
       {/* Top Student Banner Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f1c3f] via-[#1B2A4A] to-[#243B67] text-white shadow-md border border-slate-800/20">

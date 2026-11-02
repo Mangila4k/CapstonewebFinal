@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
 import { Modal } from '../../components/common/Modal';
@@ -664,35 +665,8 @@ export const RegistrarRequirementsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
-          <button
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all whitespace-nowrap cursor-pointer"
-            title="Download Full Documentary Audit Checklist as CSV"
-          >
-            <Download className="h-3.5 w-3.5 text-slate-500 shrink-0" /> Export CSV
-          </button>
-
-          <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all whitespace-nowrap cursor-pointer"
-            title="Print Official DepEd Documentary Verification Sheet"
-          >
-            <Printer className="h-3.5 w-3.5 text-slate-500 shrink-0" /> Print Sheet
-          </button>
-
-          <button
-            onClick={handleBatchVerifyAll}
-            disabled={saving || loading || filteredStudents.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 disabled:opacity-60 transition-all whitespace-nowrap cursor-pointer"
-          >
-            {saving ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin shrink-0" />
-            ) : (
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-            )}
-            {saving ? 'Verifying...' : 'Batch Verify All'}
-          </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 
@@ -1317,6 +1291,40 @@ export const RegistrarRequirementsPage: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Official Action Controls (Bottom Aligned) */}
+      <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
+        <button
+          onClick={handleExportCSV}
+          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+          title="Download Full Documentary Audit Checklist as CSV"
+        >
+          <Download className="h-4 w-4 text-slate-500" />
+          <span>Export CSV</span>
+        </button>
+
+        <button
+          onClick={() => window.print()}
+          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+          title="Print Official DepEd Documentary Verification Sheet"
+        >
+          <Printer className="h-4 w-4 text-slate-500" />
+          <span>Print Sheet</span>
+        </button>
+
+        <button
+          onClick={handleBatchVerifyAll}
+          disabled={saving || loading || filteredStudents.length === 0}
+          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 text-xs font-bold text-white shadow-xs hover:shadow-md disabled:opacity-60 transition-all cursor-pointer active:scale-98"
+        >
+          {saving ? (
+            <RefreshCw className="h-4 w-4 animate-spin shrink-0" />
+          ) : (
+            <ShieldCheck className="h-4 w-4 shrink-0" />
+          )}
+          <span>{saving ? 'Verifying...' : 'Batch Verify All'}</span>
+        </button>
       </div>
 
       {/* Document Audit & Inspection Modal (Rendered via Portal so it is always centered in the active viewport) */}

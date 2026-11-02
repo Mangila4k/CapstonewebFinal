@@ -337,6 +337,22 @@ export const EnrollmentWizardPage: React.FC = () => {
         console.warn('Notification insert note:', notifErr);
       }
 
+      // Record in activity_logs for audit trail
+      try {
+        const studentFullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
+        const studentEmail = formData.email.trim();
+        const logRecord = {
+          role: 'student',
+          action: 'Enrollment Submitted',
+          details: `${studentFullName} (${studentEmail}) submitted an online enrollment application for ${formData.gradeLevel}${finalStrand ? ` (${finalStrand})` : ''}.`,
+          timestamp: new Date().toISOString(),
+        };
+        await supabase.from('activity_logs').insert([logRecord]);
+        window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
+      } catch {
+        // ignore
+      }
+
       // Prepend to local enrollments cache so Admin & Registrar see it immediately
       try {
         const rawCache = localStorage.getItem('plsnhs_enrollments_cache_v2');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   GraduationCap,
   Calendar,
@@ -140,44 +141,32 @@ export const StudentDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-10">
-      {/* Executive Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f1c3f] via-[#1B2A4A] to-[#1e3a6d] p-6 sm:p-8 text-white shadow-lg border border-slate-800/20">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-amber-400/10 blur-2xl" />
-        <div className="pointer-events-none absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-emerald-400/10 blur-2xl" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 border border-amber-400/35 px-3 py-1 text-xs font-bold text-amber-300">
-              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              <span>PLSNHS Official Learner Portal · S.Y. {schoolYear}</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight">
+      {/* Page Header - Clean & Aligned like Admin */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
               Welcome back, {user?.first_name || fullName.split(' ')[0]}!
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-              Placido L. Señor National High School · Access your official digital student ID, class schedule, academic grades, and documentary compliance.
-            </p>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" /> S.Y. {schoolYear}
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
+            Placido L. Señor National High School · Access your official digital student ID, class schedule, academic grades, and documentary compliance.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+          <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              {enrollmentStatus}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <div className="rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15 px-4 py-2.5 text-left">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 block">
-                Admission Status
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-white mt-0.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                {enrollmentStatus}
-              </span>
-            </div>
-
-            <Link
-              to="/student/profile"
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-amber-400 hover:bg-amber-300 px-4 py-3 text-xs font-extrabold text-slate-950 shadow-sm transition-all"
-            >
-              <GraduationCap className="h-4 w-4" />
-              My Profile
-            </Link>
-          </div>
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 
@@ -312,11 +301,12 @@ export const StudentDashboardPage: React.FC = () => {
                 lrn,
                 grade_level: gradeLevel,
                 strand,
-                parent_name: studentRecord?.guardian_name || 'Parent / Guardian',
-                parent_contact: studentRecord?.guardian_contact || user?.phone || '0912-345-6789',
+                parent_name: studentRecord?.parent_name || studentRecord?.guardian_name || 'Parent / Guardian',
+                parent_contact: studentRecord?.parent_contact || studentRecord?.guardian_contact || user?.phone || '0912-345-6789',
                 photo_url:
+                  studentRecord?.two_by_two_picture_url ||
+                  studentRecord?.avatar_url ||
                   user?.avatar_url ||
-                  localStorage.getItem(`plsnhs_avatar_${user?.email || 'student'}`) ||
                   '',
                 school_year: schoolYear,
               }}

@@ -258,16 +258,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Log login event asynchronously
       try {
-        await supabase.from('activity_logs').insert([
-          {
-            user_email: fullUser.email,
-            user_role: fullUser.role,
-            action: 'LOGIN',
-            details: `User logged in from React app`,
-          },
-        ]);
-      } catch {
-        // continue
+        const userUuid =
+          matchedUser.id &&
+          typeof matchedUser.id === 'string' &&
+          /^[0-9a-fA-F-]{36}$/.test(matchedUser.id)
+            ? matchedUser.id
+            : null;
+
+        const roleFormatted = userRole.toUpperCase();
+        const displayName = fullName || cleanEmail.split('@')[0];
+        const logDetails = `${displayName} (${cleanEmail}) successfully logged in as ${roleFormatted}.`;
+        const nowIso = new Date().toISOString();
+
+        const logRecord = {
+          user_id: userUuid,
+          role: userRole,
+          action: 'User Login',
+          details: logDetails,
+          timestamp: nowIso,
+        };
+
+        // 1. Supabase database insert
+        await supabase.from('activity_logs').insert([logRecord]);
+
+        // 2. Local fallback storage + event broadcast
+        try {
+          const actKey = 'hes_activities';
+          const raw = localStorage.getItem(actKey);
+          const activities = raw ? JSON.parse(raw) : [];
+          activities.unshift({
+            id: `act-${Date.now()}`,
+            ...logRecord,
+          });
+          localStorage.setItem(actKey, JSON.stringify(activities.slice(0, 150)));
+          window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
+        } catch {
+          // ignore
+        }
+      } catch (logErr) {
+        console.warn('Failed to record login audit log:', logErr);
       }
 
       return { success: true, role: userRole };
@@ -278,6 +307,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    if (user) {
+      try {
+        const userUuid =
+          user.id && typeof user.id === 'string' && /^[0-9a-fA-F-]{36}$/.test(user.id)
+            ? user.id
+            : null;
+        const displayName = user.full_name || user.email.split('@')[0];
+        const nowIso = new Date().toISOString();
+        const logRecord = {
+          user_id: userUuid,
+          role: user.role,
+          action: 'User Logout',
+          details: `${displayName} (${user.email}) logged out of the system.`,
+          timestamp: nowIso,
+        };
+
+        supabase.from('activity_logs').insert([logRecord]).then(() => {});
+
+        try {
+          const actKey = 'hes_activities';
+          const raw = localStorage.getItem(actKey);
+          const activities = raw ? JSON.parse(raw) : [];
+          activities.unshift({
+            id: `act-${Date.now()}`,
+            ...logRecord,
+          });
+          localStorage.setItem(actKey, JSON.stringify(activities.slice(0, 150)));
+          window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
+        } catch {
+          // ignore
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     try {
       localStorage.removeItem('currentUser');
     } catch {

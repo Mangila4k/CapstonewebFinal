@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   Calendar,
   UserCheck,
@@ -19,8 +20,29 @@ import { Badge } from '../../components/common/Badge';
 import { formatDate } from '../../lib/utils';
 
 export const AdminAttendancePage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'teachers' ? 'teachers' : 'students';
   // Active Tab: 'students' | 'teachers'
-  const [activeTab, setActiveTab] = useState<'students' | 'teachers'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'teachers'>(initialTab);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'teachers' || tabParam === 'students') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: 'students' | 'teachers') => {
+    setActiveTab(tab);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', tab);
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   // Teacher Attendance State
   const [teacherAttendance, setTeacherAttendance] = useState<any[]>([]);
@@ -67,42 +89,49 @@ export const AdminAttendancePage: React.FC = () => {
     async function fetchStudentAttendance() {
       setLoading(true);
       try {
-        // Query attendance records with joined student information
-        const { data, error } = await supabase
-          .from('attendance')
-          .select(`
-            id,
-            date,
-            status,
-            time_in,
-            qr_code,
-            students:student_id (
-              id,
-              first_name,
-              last_name,
-              lrn,
-              grade_level,
-              strand,
-              sections:section_id (name)
-            )
-          `)
-          .order('date', { ascending: false })
-          .limit(100);
+        const [{ data: attData, error }, { data: stData }, { data: secData }] = await Promise.all([
+          supabase.from('attendance').select('*').order('date', { ascending: false }).limit(100),
+          supabase.from('students').select('id, first_name, last_name, lrn, grade_level, strand, section_id'),
+          supabase.from('sections').select('id, name'),
+        ]);
 
-        if (!error && data && data.length > 0) {
-          const mapped = data.map((item: any) => {
-            const st = item.students;
-            const isQr = item.qr_code && (item.qr_code.includes('http') || item.qr_code.length > 20);
+        const studentMap = new Map<string, any>();
+        if (stData) {
+          stData.forEach((st: any) => {
+            if (st.id) studentMap.set(String(st.id), st);
+            if (st.lrn) studentMap.set(String(st.lrn), st);
+          });
+        }
+
+        const secMap = new Map<string, string>();
+        if (secData) {
+          secData.forEach((sec: any) => {
+            if (sec.id && sec.name) secMap.set(String(sec.id), sec.name);
+          });
+        }
+
+        if (!error && attData && attData.length > 0) {
+          const mapped = attData.map((item: any) => {
+            const st = item.student_id ? studentMap.get(String(item.student_id)) : null;
+            const isQr = item.qr_code && (item.qr_code.includes('http') || item.qr_code.length > 15);
+            const sectionName =
+              (st?.section_id && secMap.get(String(st.section_id))) ||
+              (item.section_id && secMap.get(String(item.section_id))) ||
+              'General';
+
+            const rawStatus = String(item.status || 'present').toLowerCase();
+            const displayStatus = rawStatus === 'late' ? 'Late' : 'Present';
+
             return {
               id: item.id,
               name: st ? `${st.last_name}, ${st.first_name}` : 'Enrolled Student',
-              lrn: st?.lrn || '—',
+              lrn: st?.lrn || item.qr_code?.match(/\d{12}/)?.[0] || '—',
               grade_level: st?.grade_level || 'Grade 10',
               strand: st?.strand || '',
-              section: st?.sections?.name || 'General',
+              section: sectionName,
               date: item.date,
               time_in: item.time_in ? item.time_in.slice(0, 5) : '07:15 AM',
-              status: item.status || 'Present',
+              status: displayStatus,
               mode: isQr ? 'QR' : 'LRN',
             };
           });
@@ -155,7 +184,7 @@ export const AdminAttendancePage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-14">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 font-display">
             Official Attendance Logs
@@ -165,22 +194,23 @@ export const AdminAttendancePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 shrink-0">
           <Link
             to="/teacher/attendance"
-            className="flex items-center gap-1.5 rounded-xl bg-[#1a225a] hover:bg-[#25327d] text-white px-4 py-2.5 text-xs font-bold shadow-xs transition-colors"
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-[#1a225a] hover:bg-[#25327d] text-white px-4 text-xs font-bold shadow-xs transition-colors"
           >
             <UserCheck className="h-4 w-4" />
             <span>Open Attendance Sheet</span>
             <ArrowRight className="h-3.5 w-3.5 opacity-80" />
           </Link>
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 
       {/* TAB SELECTOR */}
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-xs w-full sm:w-auto inline-flex">
         <button
-          onClick={() => setActiveTab('students')}
+          onClick={() => handleTabChange('students')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'students'
               ? 'bg-[#1a225a] text-white shadow-xs'
@@ -197,7 +227,7 @@ export const AdminAttendancePage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('teachers')}
+          onClick={() => handleTabChange('teachers')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'teachers'
               ? 'bg-[#1a225a] text-white shadow-xs'

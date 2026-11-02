@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -718,6 +719,23 @@ export const AdminEnrollmentsPage: React.FC = () => {
 
       window.dispatchEvent(new Event('plsnhs-enrollment-updated'));
       window.dispatchEvent(new Event('plsnhs-broadcast-updated'));
+
+      // Log decision to activity_logs
+      try {
+        const studentName = targetEnr
+          ? `${targetEnr.first_name || ''} ${targetEnr.last_name || ''}`.trim()
+          : 'Student';
+        const logRecord = {
+          role: 'admin',
+          action: `Enrollment ${newStatus}`,
+          details: `Admin ${newStatus.toLowerCase()} enrollment application for ${studentName} (${targetEnr?.grade_level || 'Learner'}).`,
+          timestamp: new Date().toISOString(),
+        };
+        await supabase.from('activity_logs').insert([logRecord]);
+        window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
+      } catch {
+        // ignore
+      }
     } catch (err: any) {
       setNotice({ type: 'error', message: err.message || 'Failed to update status' });
     }
@@ -822,31 +840,6 @@ export const AdminEnrollmentsPage: React.FC = () => {
     };
   }, [enrollments]);
 
-  // Incoming Pending Applications Queue (always sorted newest first so Admin & Registrar see newly enrolled students right at the top)
-  const pendingApplications = useMemo(() => {
-    return enrollments
-      .filter((e) => {
-        if ((e.status || '').toLowerCase() !== 'pending') return false;
-        const q = search.toLowerCase().trim();
-        const name = `${e.first_name || ''} ${e.last_name || ''}`.toLowerCase();
-        const email = (e.email || '').toLowerCase();
-        const lrn = (e.lrn || '').toLowerCase();
-        const sec = (e.section || '').toLowerCase();
-        const matchesSearch =
-          !q || name.includes(q) || email.includes(q) || lrn.includes(q) || sec.includes(q);
-        const matchesGrade = gradeFilter === 'All' || e.grade_level === gradeFilter;
-        const matchesSection = sectionFilter === 'All' || e.section === sectionFilter;
-        const matchesStrand =
-          strandFilter === 'All' ||
-          (e.strand || '').toUpperCase().includes(strandFilter.toUpperCase());
-        return matchesSearch && matchesGrade && matchesSection && matchesStrand;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-      );
-  }, [enrollments, search, gradeFilter, sectionFilter, strandFilter]);
-
   // Filtered AND Sorted enrollments so students in the same Year Level & Section are all in consecutive rows
   const filtered = useMemo(() => {
     const list = enrollments.filter((e) => {
@@ -926,13 +919,18 @@ export const AdminEnrollmentsPage: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* Page Header */}
-      <div className="border-b border-slate-200 pb-4 sm:pr-12">
-        <h1 className="text-2xl font-extrabold text-slate-900 font-display tracking-tight">
-          Enrollment Applications
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Review, verify, and manage student admissions organized by Year Level (Grade 7–12) and Section.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 font-display tracking-tight">
+            Enrollment Applications
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Review, verify, and manage student admissions organized by Year Level (Grade 7–12) and Section.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (
@@ -942,52 +940,6 @@ export const AdminEnrollmentsPage: React.FC = () => {
           onClose={() => setNotice(null)}
         />
       )}
-
-      {/* Year Level Row (Grade 7 to Grade 12) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        <button
-          type="button"
-          onClick={() => {
-            setGradeFilter('All');
-            setSectionFilter('All');
-          }}
-          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-            gradeFilter === 'All' && sectionFilter === 'All'
-              ? 'bg-[#1B2A4A] text-white border-[#1B2A4A] shadow-sm'
-              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <div className="text-[10px] uppercase font-bold tracking-wider opacity-80">
-            All Levels
-          </div>
-          <div className="text-xl font-black mt-0.5">{stats.total}</div>
-        </button>
-
-        {ALL_GRADES.map((g) => {
-          const count = stats.byGrade[g] || 0;
-          const isActive = gradeFilter === g;
-          return (
-            <button
-              key={g}
-              type="button"
-              onClick={() => {
-                setGradeFilter(isActive ? 'All' : g);
-                setSectionFilter('All');
-              }}
-              className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-[#1B2A4A] text-white border-[#1B2A4A] shadow-sm'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-80">
-                {g}
-              </div>
-              <div className="text-xl font-black mt-0.5">{count}</div>
-            </button>
-          );
-        })}
-      </div>
 
       {/* View Mode & Search Filter Bar */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3.5">
@@ -1139,210 +1091,6 @@ export const AdminEnrollmentsPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* INCOMING PENDING APPLICATIONS QUEUE — Always visible at the top for Admin & Registrar to receive & approve students who have enrolled */}
-      {pendingApplications.length > 0 &&
-        (statusFilter === 'All' || statusFilter === 'Pending') && (
-          <div className="rounded-2xl border-2 border-amber-300/80 bg-amber-50/40 shadow-sm overflow-visible">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-[#1B2A4A] to-[#0f1c3f] px-5 py-3.5 text-white rounded-t-2xl">
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400 text-slate-950 font-black text-xs shadow-xs">
-                  {pendingApplications.length}
-                </span>
-                <div>
-                  <h2 className="text-sm font-extrabold tracking-tight text-white flex items-center gap-2">
-                    Incoming Student Enrollment Applications (Awaiting Approval)
-                  </h2>
-                  <p className="text-[11px] text-slate-300">
-                    Students who recently submitted an online enrollment form — click Manage to review, approve, or reject.
-                  </p>
-                </div>
-              </div>
-              {statusFilter !== 'Pending' && (
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('Pending')}
-                  className="rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1.5 text-[11px] font-bold text-amber-300 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
-                >
-                  Filter Pending Only ({pendingApplications.length})
-                </button>
-              )}
-            </div>
-
-            <div className="overflow-visible bg-white rounded-b-2xl">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-amber-50/70 border-b border-amber-200/70 text-slate-700 font-bold uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="px-5 py-3 whitespace-nowrap">Applicant Name & Type</th>
-                    <th className="px-5 py-3 whitespace-nowrap">Year Level & Assign Section</th>
-                    <th className="px-5 py-3 whitespace-nowrap">Status</th>
-                    <th className="px-5 py-3 whitespace-nowrap">Submitted</th>
-                    <th className="px-5 py-3 text-right whitespace-nowrap">Quick Decision</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {pendingApplications.map((enr, idx) => {
-                    const gradeSecs = getSectionsForGrade(
-                      normalizeGradeLevel(enr.grade_level)
-                    );
-                    const topManageKey = `pending-${enr.id}`;
-                    const isTopManageOpen = activeManageId === topManageKey;
-                    const openUpward =
-                      pendingApplications.length > 2 &&
-                      idx >= pendingApplications.length - 2;
-
-                    return (
-                      <tr
-                        key={`pending-top-${enr.id}`}
-                        className="hover:bg-amber-50/30 transition-colors"
-                      >
-                        <td className="px-5 py-3.5 align-middle">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-extrabold text-slate-900 text-[13px]">
-                              {enr.first_name} {enr.last_name}
-                            </span>
-                            <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-[#1B2A4A] capitalize">
-                              {enr.student_type || 'New Student'}
-                            </span>
-                          </div>
-                          <div className="text-[10.5px] text-slate-400 font-mono truncate max-w-xs sm:max-w-md mt-0.5">
-                            LRN: {enr.lrn || 'N/A'} · {enr.email}
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5 align-middle whitespace-nowrap">
-                          <div className="inline-flex items-center gap-2">
-                            <span className="font-extrabold text-slate-900 text-xs">
-                              {enr.grade_level}
-                            </span>
-                            {enr.strand &&
-                              parseInt(String(enr.grade_level).replace(/\D/g, '') || '10', 10) >=
-                                11 && (
-                                <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 font-bold text-emerald-800 text-[10.5px]">
-                                  {enr.strand}
-                                </span>
-                              )}
-                            <select
-                              value={enr.section || gradeSecs[0] || 'Wisdom'}
-                              onChange={(e) => handleAssignSection(enr, e.target.value)}
-                              className="rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-[#1B2A4A] focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden cursor-pointer"
-                              title="Assign Section before or after approving"
-                            >
-                              {gradeSecs.map((sec) => (
-                                <option key={sec} value={sec}>
-                                  Section {sec}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5 align-middle whitespace-nowrap">
-                          <Badge variant="warning" size="sm">
-                            Pending Approval
-                          </Badge>
-                        </td>
-
-                        <td className="px-5 py-3.5 align-middle text-slate-500 whitespace-nowrap">
-                          {formatDate(enr.created_at)}
-                        </td>
-
-                        <td className="px-5 py-3.5 align-middle text-right whitespace-nowrap">
-                          <div className="relative inline-block text-left">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveManageId(isTopManageOpen ? null : topManageKey);
-                              }}
-                              className={`inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border px-3.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-                                isTopManageOpen
-                                  ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              <span>Manage</span>
-                              <ChevronDown
-                                className={`h-3.5 w-3.5 transition-transform ${
-                                  isTopManageOpen ? 'rotate-180' : ''
-                                }`}
-                              />
-                            </button>
-
-                            {isTopManageOpen && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-40"
-                                  onClick={() => setActiveManageId(null)}
-                                />
-                                <div
-                                  className={`absolute right-0 z-50 w-52 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
-                                    openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-                                  }`}
-                                >
-                                  <div className="py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveManageId(null);
-                                        setSelectedEnr(enr);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                                    >
-                                      <Eye className="h-3.5 w-3.5 text-slate-500" />
-                                      <span>Review Application</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveManageId(null);
-                                        setIdCardSide('both');
-                                        setIdCardFlipped(false);
-                                        setGeneratingIdEnr(enr);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-900 hover:bg-amber-50/70 cursor-pointer"
-                                    >
-                                      <CreditCard className="h-3.5 w-3.5 text-amber-600" />
-                                      <span>Generate ID</span>
-                                    </button>
-                                  </div>
-                                  <div className="py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveManageId(null);
-                                        handleUpdateStatus(enr.id, 'Approved');
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                                    >
-                                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                      <span>Approve Application</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveManageId(null);
-                                        handleUpdateStatus(enr.id, 'Rejected');
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                    >
-                                      <X className="h-3.5 w-3.5 text-rose-500" />
-                                      <span>Reject Application</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
       {/* VIEW MODE 1: TABLE GROUPED BY SECTION ROWS */}
       {viewMode === 'list' && (

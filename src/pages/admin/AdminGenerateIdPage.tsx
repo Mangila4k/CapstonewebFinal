@@ -32,6 +32,7 @@ import { StudentIdCard, type StudentIdCardData } from '../../components/common/S
 import { printOfficialStudentId } from '../../lib/printIdCard';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
 interface CreatedStudentIdRecord extends StudentIdCardData {
   created_at?: string;
@@ -406,9 +407,11 @@ export const AdminGenerateIdPage: React.FC = () => {
               lrn: updatedRecord.lrn,
               grade_level: updatedRecord.grade_level,
               strand: updatedRecord.strand,
-              guardian_name: updatedRecord.parent_name,
-              guardian_contact: updatedRecord.parent_contact,
+              parent_name: updatedRecord.parent_name,
+              parent_contact: updatedRecord.parent_contact,
               two_by_two_picture_url: updatedRecord.photo_url,
+              avatar_url: updatedRecord.photo_url,
+              updated_at: new Date().toISOString(),
             })
             .eq('id', sid);
 
@@ -612,6 +615,22 @@ export const AdminGenerateIdPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 no-print">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
+            Student ID Card Generator
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Design, preview, encode QR credentials, and print standard DepEd CR80 student identification cards.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
+      </div>
+
       {/* Real-time Alert Notification */}
       {alert && (
         <div className="no-print animate-fade-in">

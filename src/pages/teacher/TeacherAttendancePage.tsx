@@ -17,6 +17,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { parseLrnFromInput, playAttendanceSound } from '../../lib/attendanceParser';
 import type { Student, Section } from '../../types';
 
@@ -558,9 +559,9 @@ export const TeacherAttendancePage: React.FC = () => {
         student_id: s.id,
         section_id: matchedSection?.id || null,
         date: todayStr,
-        status: attendanceMap[s.id] || 'Present',
+        status: (attendanceMap[s.id] || 'present').toLowerCase(),
         time_in: currentTime,
-        mode: attendanceModes[s.id] || 'Manual',
+        remarks: attendanceModes[s.id] || 'Manual',
       }));
 
       const { error } = await supabase
@@ -599,13 +600,18 @@ export const TeacherAttendancePage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Clean Executive Header */}
-      <div className="border-b border-slate-200 pb-4 sm:pr-12">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-          Daily Attendance Logger
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Record and submit daily class attendance organized by Year Level and Section for official DepEd SF2 compliance.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+            Daily Attendance Logger
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Record and submit daily class attendance organized by Year Level and Section for official DepEd SF2 compliance.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

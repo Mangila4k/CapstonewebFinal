@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Users, Clock, CheckCircle2 } from 'lucide-react';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
@@ -8,6 +10,7 @@ import { formatDate } from '../../lib/utils';
 import type { CounselingSession } from '../../types';
 
 export const GuidanceCounselingPage: React.FC = () => {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<CounselingSession[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -21,8 +24,12 @@ export const GuidanceCounselingPage: React.FC = () => {
 
   const fetchSessions = async () => {
     try {
-      const { data } = await supabase.from('counseling_sessions').select('*');
-      if (data && data.length > 0) {
+      const { data, error } = await supabase
+        .from('counseling_sessions')
+        .select('*')
+        .order('session_date', { ascending: false });
+
+      if (!error && data && data.length > 0) {
         setSessions(data);
       } else {
         setSessions([
@@ -47,11 +54,13 @@ export const GuidanceCounselingPage: React.FC = () => {
         purpose: form.purpose.trim(),
         session_date: form.date,
         notes: form.notes.trim(),
+        counselor_name: user?.full_name || 'Sarah Guidance Counselor',
         status: 'Scheduled',
       };
 
-      await supabase.from('counseling_sessions').insert([payload]);
-      setNotice({ type: 'success', message: 'Counseling session booked.' });
+      const { error } = await supabase.from('counseling_sessions').insert([payload]);
+      if (error) throw error;
+      setNotice({ type: 'success', message: 'Counseling session booked and saved in database.' });
       setIsModalOpen(false);
       setForm({ studentName: '', purpose: 'Academic Performance & Goal Setting', date: new Date().toISOString().split('T')[0], notes: '' });
       fetchSessions();
@@ -62,7 +71,7 @@ export const GuidanceCounselingPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-14">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 font-display">
             Student Counseling Sessions
@@ -72,12 +81,15 @@ export const GuidanceCounselingPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
-        >
-          <Plus className="h-4 w-4" /> Book Session
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Book Session
+          </button>
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {notice && (

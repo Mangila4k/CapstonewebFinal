@@ -15,8 +15,10 @@ import {
   Building2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
 export interface AdminSentTeacherScheduleFile {
   id: string;
@@ -172,7 +174,48 @@ export const TeacherClassProgramPage: React.FC = () => {
       }
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('plsnhs-schedule-files-updated', handleStorage);
+
+    async function loadSupabaseWorkloads() {
+      try {
+        const { data } = await supabase
+          .from('teacher_workloads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          const sbFiles: AdminSentTeacherScheduleFile[] = data.map((tw: any) => ({
+            id: tw.id,
+            title: 'Official Faculty Teaching Schedule & Load',
+            fileName: tw.file_name,
+            fileSize: '450 KB',
+            fileType: tw.file_type ? tw.file_type.split('/').pop()?.toUpperCase() || 'PDF' : 'PDF',
+            fileDataUrl: tw.file_url,
+            schoolYear: 'S.Y. 2026–2027',
+            semester: 'Full Academic Year',
+            recipientType: 'all',
+            recipientTeacherNames: ['All Faculty Teachers'],
+            sentBy: tw.uploaded_by || 'Admin Office',
+            sentAt: new Date(tw.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            notes: 'Official DepEd teaching assignment and class program document.',
+          }));
+
+          setAdminFiles((prev) => {
+            const existingIds = new Set(prev.map((f) => f.id));
+            const newFiles = sbFiles.filter((f) => !existingIds.has(f.id));
+            return [...newFiles, ...prev];
+          });
+        }
+      } catch (err) {
+        console.warn('Teacher workloads fetch warning:', err);
+      }
+    }
+    loadSupabaseWorkloads();
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('plsnhs-schedule-files-updated', handleStorage);
+    };
   }, []);
 
   // Filter schedule files sent to all teachers or specifically to this logged-in teacher
@@ -287,7 +330,7 @@ export const TeacherClassProgramPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
             Faculty Teaching Program &amp; Workload
@@ -297,13 +340,16 @@ export const TeacherClassProgramPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer shrink-0"
-        >
-          <Printer className="h-4 w-4 text-slate-500" />
-          Print Class Program
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer shrink-0"
+          >
+            <Printer className="h-4 w-4 text-slate-500" />
+            Print Class Program
+          </button>
+          <PageHeaderNotificationSlot />
+        </div>
       </div>
 
       {/* Official Schedule Files Received from School Admin */}

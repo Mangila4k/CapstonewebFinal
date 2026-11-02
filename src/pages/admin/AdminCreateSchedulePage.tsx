@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   Calendar,
   Plus,
@@ -13,6 +15,9 @@ import {
   FileText,
   CheckCircle2,
   Trash2,
+  Download,
+  Eye,
+  Printer,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -23,13 +28,17 @@ import {
   DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
   type AdminSentTeacherScheduleFile,
 } from '../teacher/TeacherClassProgramPage';
-import { INITIAL_PLSNHS_TEACHERS } from './AdminTeachersPage';
+import { loadCachedTeachers, type FacultyRecord } from './AdminTeachersPage';
 
 export const AdminCreateSchedulePage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const preselectedTeacher = searchParams.get('teacher');
+
   const [schedules, setSchedules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSendFileModalOpen, setIsSendFileModalOpen] = useState(false);
+  const [teachersList, setTeachersList] = useState<FacultyRecord[]>(loadCachedTeachers);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -62,6 +71,41 @@ export const AdminCreateSchedulePage: React.FC = () => {
     fileType: 'PDF',
     fileDataUrl: '',
   });
+
+  // Handle pre-selected teacher from query param (e.g., from Teachers page "Send Schedule" action)
+  useEffect(() => {
+    if (preselectedTeacher) {
+      setFileForm((prev) => ({
+        ...prev,
+        recipientType: 'selected',
+        selectedTeachers: [preselectedTeacher],
+      }));
+      setIsSendFileModalOpen(true);
+    }
+  }, [preselectedTeacher]);
+
+  // Sync teachers dynamically from database
+  useEffect(() => {
+    supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'teacher')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const mapped: FacultyRecord[] = data.map((u) => ({
+            id: u.id,
+            user_id: u.id,
+            employee_id: u.employee_id || `PLSNHS-TCH-${u.id.slice(0, 6)}`,
+            first_name: u.first_name || '',
+            last_name: u.last_name || '',
+            email: u.email || '',
+            specialization: u.specialization || 'General Education',
+            status: 'Active',
+          }));
+          setTeachersList(mapped);
+        }
+      });
+  }, []);
 
   const [form, setForm] = useState({
     subject: 'General Mathematics',
@@ -186,6 +230,58 @@ export const AdminCreateSchedulePage: React.FC = () => {
     setSentScheduleFiles(next);
     try {
       localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
+    } catch {
+      // ignore
+    }
+
+    // Persist to Supabase teacher_workloads
+    try {
+      let targetTeacherId: string | null = null;
+      if (newEntry.recipientType === 'selected' && fileForm.selectedTeachers.length > 0) {
+        const foundTeacher = teachersList.find((t) =>
+          fileForm.selectedTeachers.some((name) =>
+            `${t.first_name} ${t.last_name}`.toLowerCase().includes(name.toLowerCase())
+          )
+        );
+        if (foundTeacher) targetTeacherId = foundTeacher.user_id || foundTeacher.id;
+      }
+
+      supabase
+        .from('teacher_workloads')
+        .insert([
+          {
+            teacher_id: targetTeacherId,
+            file_name: newEntry.fileName,
+            file_url:
+              newEntry.fileDataUrl ||
+              'https://tuujlqrfyuazvbvoribz.supabase.co/storage/v1/object/public/teacher-schedules/faculty_load.pdf',
+            file_type: newEntry.fileType === 'PDF' ? 'application/pdf' : 'image/jpeg',
+            uploaded_by: 'Admin',
+          },
+        ])
+        .then(({ error }) => {
+          if (error) console.warn('Supabase teacher_workloads insert notice:', error);
+        });
+    } catch {
+      // ignore
+    }
+
+    // Log to activity_logs
+    try {
+      const recipientStr =
+        newEntry.recipientType === 'all'
+          ? 'All Faculty Teachers'
+          : newEntry.recipientTeacherNames.join(', ');
+      const logRecord = {
+        role: 'admin',
+        action: 'Faculty Schedule Sent',
+        details: `Attached and sent schedule file "${newEntry.fileName}" (${newEntry.fileType}, ${newEntry.fileSize}) to ${recipientStr}.`,
+        timestamp: new Date().toISOString(),
+      };
+      supabase.from('activity_logs').insert([logRecord]).then(() => {});
+      window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
     } catch {
       // ignore
     }
@@ -201,11 +297,89 @@ export const AdminCreateSchedulePage: React.FC = () => {
     setIsSendFileModalOpen(false);
   };
 
+  const handleDownloadFile = (file: AdminSentTeacherScheduleFile) => {
+    if (file.fileDataUrl) {
+      const a = document.createElement('a');
+      a.href = file.fileDataUrl;
+      a.download = file.fileName || 'Official_Teacher_Schedule.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    const docHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${file.title}</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #0f172a; margin: 36px; }
+    .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 20px; }
+    .header h1 { margin: 4px 0; font-size: 18px; text-transform: uppercase; }
+    .header p { margin: 2px 0; font-size: 12px; color: #475569; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 18px; font-size: 13px; background: #f8fafc; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .content { padding: 18px; border: 1px dashed #94a3b8; border-radius: 8px; background: #fafafa; font-size: 13px; line-height: 1.6; }
+    .signoff { margin-top: 40px; display: flex; justify-content: space-between; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p>Republic of the Philippines • Department of Education</p>
+    <h1>Placido L. Señor National High School</h1>
+    <p><strong>${file.title}</strong> (${file.schoolYear} • ${file.semester})</p>
+  </div>
+  <div class="meta">
+    <div>
+      <p><strong>Recipients:</strong> ${file.recipientType === 'all' ? 'All Faculty Teachers' : file.recipientTeacherNames.join(', ')}</p>
+      <p><strong>Issued By:</strong> ${file.sentBy}</p>
+    </div>
+    <div>
+      <p><strong>Date Issued:</strong> ${file.sentAt}</p>
+      <p><strong>Official File:</strong> ${file.fileName} (${file.fileSize})</p>
+    </div>
+  </div>
+  <div class="content">
+    <p><strong>Administrative Notice & Instructions:</strong></p>
+    <p>${file.notes || 'Official teaching assignments and class schedules are certified and active for School Year 2026–2027.'}</p>
+  </div>
+  <div class="signoff">
+    <div>
+      <p><strong>Certified Correct:</strong></p>
+      <br /><br />
+      <p><u><strong>ADMINISTRATIVE OFFICE</strong></u><br />Placido L. Señor National High School</p>
+    </div>
+    <div>
+      <p><strong>Approved:</strong></p>
+      <br /><br />
+      <p><u><strong>OFFICE OF THE PRINCIPAL</strong></u><br />School Head / Principal</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([docHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.fileName.replace(/\.pdf$/i, '') + '.html';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintFile = (file: AdminSentTeacherScheduleFile) => {
+    handleDownloadFile(file);
+  };
+
   const handleDeleteSentFile = (id: string) => {
     const next = sentScheduleFiles.filter((f) => f.id !== id);
     setSentScheduleFiles(next);
     try {
       localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
     } catch {
       // ignore
     }
@@ -248,7 +422,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 font-display">
             Class Schedule &amp; Faculty Timetable Distribution
@@ -258,11 +432,11 @@ export const AdminCreateSchedulePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsSendFileModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer whitespace-nowrap"
           >
             <Send className="h-4 w-4" /> Send Schedule File to Teachers
           </button>
@@ -270,10 +444,12 @@ export const AdminCreateSchedulePage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Add Schedule Slot
           </button>
+
+          <PageHeaderNotificationSlot />
         </div>
       </div>
 
@@ -325,18 +501,38 @@ export const AdminCreateSchedulePage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between border-t border-slate-200/70 pt-2.5 text-[11px]">
+              <div className="flex flex-wrap items-center justify-between border-t border-slate-200/70 pt-2.5 text-[11px] gap-2">
                 <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to Teacher Class Program
                 </span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteSentFile(file.id)}
-                  className="text-slate-400 hover:text-rose-600 cursor-pointer"
-                  title="Remove distributed file"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadFile(file)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                    title="Download schedule file"
+                  >
+                    <Download className="h-3.5 w-3.5 text-emerald-700" />
+                    Download
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePrintFile(file)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                    title="Print schedule document"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-slate-600" />
+                    Print
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSentFile(file.id)}
+                    className="text-slate-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                    title="Remove distributed file"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -505,8 +701,8 @@ export const AdminCreateSchedulePage: React.FC = () => {
 
             {fileForm.recipientType === 'selected' && (
               <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2.5 grid grid-cols-2 gap-1.5">
-                {INITIAL_PLSNHS_TEACHERS.map((t) => {
-                  const fullName = `${t.first_name} ${t.last_name}`;
+                {teachersList.map((t) => {
+                  const fullName = `${t.first_name} ${t.last_name}`.trim();
                   const checked = fileForm.selectedTeachers.includes(fullName);
                   return (
                     <label
