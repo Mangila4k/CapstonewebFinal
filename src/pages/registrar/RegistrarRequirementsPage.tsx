@@ -671,20 +671,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
               <FileCheck2 className="h-7 w-7 text-amber-400 shrink-0" />
               Documentary Compliance & Requirements Audit
             </h1>
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 pt-1">
-              <span className="flex items-center gap-1.5">
-                <Building className="h-3.5 w-3.5 text-emerald-400" />
-                Placido L. Señor National High School
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5 text-amber-400" />
-                Academic Year 2026–2027
-              </span>
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
-                SF9 (Form 138), PSA Birth Certificate & Credentials Verification
-              </span>
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-center">
