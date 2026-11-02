@@ -494,10 +494,6 @@ export const GuidanceViolationsPage: React.FC = () => {
               <ShieldAlert className="h-7 w-7 text-amber-400 shrink-0" />
               Student Incident & Behavioral Violations
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Official DepEd child protection case docket, progressive positive discipline tracking,
-              and confidential student guidance intervention records (DO 40, s. 2012).
-            </p>
             <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 pt-1">
               <span className="flex items-center gap-1.5">
                 <Building className="h-3.5 w-3.5 text-emerald-400" />
@@ -528,15 +524,6 @@ export const GuidanceViolationsPage: React.FC = () => {
               title="Export filtered records to CSV"
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Export CSV
-            </button>
-
-            <button
-              onClick={fetchViolations}
-              disabled={loading}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-slate-200 transition-all cursor-pointer"
-              title="Refresh database records"
-            >
-              <RefreshCw className={`h-4 w-4 text-slate-300 ${loading ? 'animate-spin' : ''}`} />
             </button>
 
             <div className="border-l border-slate-700 pl-2">
