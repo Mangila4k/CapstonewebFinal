@@ -519,22 +519,6 @@ export const GuidanceDashboardPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
-            onClick={() => setIsLogIncidentOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
-          >
-            <ShieldAlert className="h-4 w-4" /> Log Incident
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsBookCounselingOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
-          >
-            <Calendar className="h-4 w-4 text-blue-600" /> Book Session
-          </button>
-
-          <button
-            type="button"
             onClick={() => setIsGoodMoralModalOpen(true)}
             className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1B2A4A] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#15233d] transition-all cursor-pointer active:scale-98"
           >
