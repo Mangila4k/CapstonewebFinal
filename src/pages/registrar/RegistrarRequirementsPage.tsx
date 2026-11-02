@@ -29,6 +29,9 @@ import {
   CreditCard,
   RotateCw,
   ChevronDown,
+  Building,
+  Calendar,
+  FileSpreadsheet,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -654,19 +657,56 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Page Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5 sm:pr-12">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight">
-            Documentary Compliance & Requirements Audit
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 max-w-2xl">
-            Audit, verify, and validate official hard copies and scanned submissions for Form 138 (SF9), PSA Birth Certificates, Good Moral Clearance, and 2x2 ID Photos.
-          </p>
-        </div>
+      {/* DepEd Institutional Header */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-6 text-white shadow-md relative overflow-hidden border border-slate-800">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-6 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <PageHeaderNotificationSlot />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              DepEd Region VII · Division of City of Naga · School ID: 303035
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white flex items-center gap-3">
+              <FileCheck2 className="h-7 w-7 text-amber-400 shrink-0" />
+              Documentary Compliance & Requirements Audit
+            </h1>
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 pt-1">
+              <span className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-emerald-400" />
+                Placido L. Señor National High School
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                Academic Year 2026–2027
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
+                SF9 (Form 138), PSA Birth Certificate & Credentials Verification
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-center">
+            <Link
+              to="/registrar/dashboard"
+              className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 text-xs font-bold text-white shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              <GraduationCap className="h-4 w-4" /> Registrar Dashboard
+            </Link>
+
+            <button
+              onClick={handleExportCSV}
+              className="flex h-10 items-center gap-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 px-3.5 text-xs font-semibold text-slate-200 transition-all cursor-pointer"
+              title="Download Full Documentary Audit Checklist as CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Export CSV
+            </button>
+
+            <div className="border-l border-slate-700 pl-2">
+              <PageHeaderNotificationSlot />
+            </div>
+          </div>
         </div>
       </div>
 

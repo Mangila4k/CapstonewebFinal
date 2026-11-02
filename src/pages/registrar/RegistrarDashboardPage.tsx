@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
@@ -12,9 +12,21 @@ import {
   X,
   Eye,
   ChevronDown,
+  Building,
+  Calendar,
+  FileSpreadsheet,
+  FileText,
+  ShieldCheck,
+  Search,
+  Filter,
+  Users,
+  Award,
+  BookOpen,
+  PhoneCall,
+  UserCheck,
+  IdCard,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { StatCard } from '../../components/common/StatCard';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
 import { formatDate } from '../../lib/utils';
@@ -142,6 +154,8 @@ export const RegistrarDashboardPage: React.FC = () => {
   const [stats, setStats] = useState(loadCachedRegistrarStats);
   const [pendingQueue, setPendingQueue] = useState<Enrollment[]>(loadCachedRegistrarQueue);
   const [activeManageId, setActiveManageId] = useState<string | number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('All');
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -170,7 +184,7 @@ export const RegistrarDashboardPage: React.FC = () => {
           .select(LIGHTWEIGHT_ENROLLMENT_COLS)
           .in('status', ['Pending', 'pending'])
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(20),
       ]);
 
       const nextStats = {
@@ -224,6 +238,7 @@ export const RegistrarDashboardPage: React.FC = () => {
     };
   }, [fetchRegistrarData]);
 
+  // Quick Decision handler (Approve / Reject)
   const handleQuickDecision = async (enr: Enrollment, newStatus: 'Approved' | 'Rejected') => {
     try {
       const { error } = await supabase
@@ -336,20 +351,135 @@ export const RegistrarDashboardPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
-            Registrar Dashboard
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Placido L. Señor NHS Student Records, LRN assignments, and enrollment admissions.
-          </p>
-        </div>
+  // Filter queue
+  const filteredQueue = useMemo(() => {
+    return pendingQueue.filter((enr) => {
+      const q = searchQuery.toLowerCase().trim();
+      const fullName = `${enr.first_name || ''} ${enr.last_name || ''}`.toLowerCase();
+      const matchesSearch =
+        !q ||
+        fullName.includes(q) ||
+        (enr.email && enr.email.toLowerCase().includes(q)) ||
+        (enr.guardian_name && enr.guardian_name.toLowerCase().includes(q)) ||
+        (enr.grade_level && enr.grade_level.toLowerCase().includes(q)) ||
+        (enr.strand && enr.strand.toLowerCase().includes(q));
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <PageHeaderNotificationSlot />
+      const matchesType =
+        typeFilter === 'All' ||
+        (typeFilter === 'shs' &&
+          (enr.grade_level === 'Grade 11' || enr.grade_level === 'Grade 12')) ||
+        (typeFilter === 'jhs' &&
+          enr.grade_level &&
+          enr.grade_level !== 'Grade 11' &&
+          enr.grade_level !== 'Grade 12') ||
+        (enr.student_type && enr.student_type.toLowerCase() === typeFilter.toLowerCase());
+
+      return matchesSearch && matchesType;
+    });
+  }, [pendingQueue, searchQuery, typeFilter]);
+
+  // Export CSV
+  const exportToCSV = () => {
+    const headers = [
+      'Application ID',
+      'First Name',
+      'Last Name',
+      'Email',
+      'Grade Level',
+      'Strand',
+      'Student Type',
+      'Guardian Name',
+      'Guardian Contact',
+      'Status',
+      'Application Date',
+    ];
+    const rows = filteredQueue.map((enr) => [
+      `"${enr.id}"`,
+      `"${enr.first_name || ''}"`,
+      `"${enr.last_name || ''}"`,
+      `"${enr.email || ''}"`,
+      `"${enr.grade_level || ''}"`,
+      `"${enr.strand || ''}"`,
+      `"${enr.student_type || 'New'}"`,
+      `"${enr.guardian_name || ''}"`,
+      `"${enr.guardian_contact || ''}"`,
+      `"${enr.status || 'Pending'}"`,
+      `"${enr.created_at || ''}"`,
+    ]);
+    const csvContent =
+      'data:text/csv;charset=utf-8,\uFEFF' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute(
+      'download',
+      `PLSNHS_Admissions_Review_Queue_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
+      {/* DepEd Institutional Header */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-6 text-white shadow-md relative overflow-hidden border border-slate-800">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-6 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              DepEd Region VII · Division of City of Naga · School ID: 303035
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white flex items-center gap-3">
+              <GraduationCap className="h-7 w-7 text-amber-400 shrink-0" />
+              Registrar Dashboard
+            </h1>
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 pt-1">
+              <span className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-emerald-400" />
+                Placido L. Señor National High School
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                Academic Year 2026–2027
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ClipboardList className="h-3.5 w-3.5 text-sky-400" />
+                Student Records, Admissions & LIS Desk
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-center">
+            <Link
+              to="/registrar/enrollments"
+              className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 text-xs font-bold text-white shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              <ClipboardList className="h-4 w-4" /> Full Admissions Queue
+            </Link>
+
+            <Link
+              to="/registrar/requirements"
+              className="flex h-10 items-center gap-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 px-3.5 text-xs font-semibold text-slate-200 transition-all cursor-pointer"
+            >
+              <FileCheckIcon className="h-4 w-4 text-amber-400" /> Audit Credentials
+            </Link>
+
+            <button
+              onClick={exportToCSV}
+              className="flex h-10 items-center gap-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 px-3.5 text-xs font-semibold text-slate-200 transition-all cursor-pointer"
+              title="Export review queue to CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Export CSV
+            </button>
+
+            <div className="border-l border-slate-700 pl-2">
+              <PageHeaderNotificationSlot />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -361,186 +491,496 @@ export const RegistrarDashboardPage: React.FC = () => {
         />
       )}
 
-      {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="Pending Applications"
-          value={stats.pendingEnrollments}
-          subtitle="Awaiting validation"
-          icon={Clock}
-          color="amber"
-        />
-        <StatCard
-          title="Approved Learners"
-          value={stats.approvedEnrollments}
-          subtitle="Processed this term"
-          icon={CheckCircle}
-          color="emerald"
-        />
-        <StatCard
-          title="Total Masterlist"
-          value={stats.totalStudents}
-          subtitle="Officially enrolled"
-          icon={GraduationCap}
-          color="blue"
-        />
-        <StatCard
-          title="Active Sections"
-          value={stats.totalSections}
-          subtitle="Grade 7 to Grade 12"
-          icon={Layers}
-          color="purple"
-        />
-      </div>
-
-      {/* Review Queue */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-emerald-700" />
-            Admissions Review Queue (Incoming Enrolled Students)
-          </h2>
-          <Link
-            to="/registrar/enrollments"
-            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
-          >
-            Open full queue <ArrowRight className="h-3 w-3" />
-          </Link>
+      {/* Executive Metric Cards (4 KPIs) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI 1 */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Pending Admissions
+            </span>
+            <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+              <Clock className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-slate-900 font-display">
+              {stats.pendingEnrollments}
+            </span>
+            <span className="text-xs text-amber-700 font-medium">awaiting review</span>
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+            Incoming enrollment documents for verification.
+          </p>
         </div>
 
-        <div className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xs">
-          <div className="overflow-visible rounded-2xl">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="px-5 py-3 rounded-tl-2xl">Applicant Name</th>
-                  <th className="px-5 py-3">Type</th>
-                  <th className="px-5 py-3">Grade & Strand</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Application Date</th>
-                  <th className="px-5 py-3 text-right rounded-tr-2xl">Quick Decision</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {pendingQueue.length > 0 ? (
-                  pendingQueue.map((enr, idx) => {
-                    const isManageOpen = activeManageId === enr.id;
-                    const openUpward =
-                      pendingQueue.length > 2 && idx >= pendingQueue.length - 2;
-                    return (
-                      <tr key={enr.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-5 py-3.5 font-bold text-slate-900">
-                          {enr.first_name} {enr.last_name}
-                          <div className="text-[10px] text-slate-400 font-normal">{enr.email}</div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-[#1B2A4A] capitalize">
-                            {enr.student_type || 'New Student'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span className="font-semibold text-slate-800">{enr.grade_level}</span>
-                          {enr.strand &&
-                            parseInt(String(enr.grade_level).replace(/\D/g, '') || '10', 10) >=
-                              11 && (
-                              <span className="ml-2 rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-800">
+        {/* KPI 2 */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Approved Learners
+            </span>
+            <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+              <CheckCircle className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-slate-900 font-display">
+              {stats.approvedEnrollments}
+            </span>
+            <span className="text-xs text-emerald-700 font-medium">processed this term</span>
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+            Validated credentials and section assigned.
+          </p>
+        </div>
+
+        {/* KPI 3 */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Total Student Masterlist
+            </span>
+            <div className="h-9 w-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">
+              <GraduationCap className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-slate-900 font-display">
+              {stats.totalStudents}
+            </span>
+            <span className="text-xs text-blue-700 font-medium">officially enrolled</span>
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+            Active learners in School Form 1 (SF1).
+          </p>
+        </div>
+
+        {/* KPI 4 */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Class Sections
+            </span>
+            <div className="h-9 w-9 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700">
+              <Layers className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-slate-900 font-display">
+              {stats.totalSections}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">active sections</span>
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+            JHS (Grades 7–10) & SHS (Grades 11–12).
+          </p>
+        </div>
+      </div>
+
+      {/* Main 2-Column Responsive Layout (8:4 Grid) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column (8 cols): Admissions Queue */}
+        <div className="lg:col-span-8 space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+            {/* Header & Filter Controls */}
+            <div className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-emerald-700" />
+                    Admissions Review Queue (Incoming Applicants)
+                  </h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Showing {filteredQueue.length} pending enrollment applications awaiting registrar decision.
+                  </p>
+                </div>
+
+                <Link
+                  to="/registrar/enrollments"
+                  className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 shrink-0"
+                >
+                  Open full queue <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+
+              {/* Search & Pills */}
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search applicant by name, email, guardian, grade level..."
+                    className="w-full pl-9 pr-8 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:border-emerald-600 focus:outline-hidden"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                  {[
+                    { label: 'All', value: 'All' },
+                    { label: 'New', value: 'new' },
+                    { label: 'Transferee', value: 'transferee' },
+                    { label: 'Continuing', value: 'continuing' },
+                    { label: 'SHS (11-12)', value: 'shs' },
+                    { label: 'JHS (7-10)', value: 'jhs' },
+                  ].map((pill) => (
+                    <button
+                      key={pill.value}
+                      onClick={() => setTypeFilter(pill.value)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        typeFilter === pill.value
+                          ? 'bg-slate-900 text-white font-bold shadow-2xs'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pill.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-visible">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="px-4 py-3">Applicant Name</th>
+                    <th className="px-4 py-3">Student Type</th>
+                    <th className="px-4 py-3">Grade & Strand</th>
+                    <th className="px-4 py-3">Guardian & Contact</th>
+                    <th className="px-4 py-3">Application Date</th>
+                    <th className="px-4 py-3 text-right">Quick Decision</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredQueue.length > 0 ? (
+                    filteredQueue.map((enr, idx) => {
+                      const isManageOpen = activeManageId === enr.id;
+                      const openUpward =
+                        filteredQueue.length > 2 && idx >= filteredQueue.length - 2;
+                      const initials = `${(enr.first_name || 'S')[0]}${(enr.last_name || 'L')[0]}`.toUpperCase();
+
+                      return (
+                        <tr key={enr.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="h-8 w-8 rounded-full bg-slate-800 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                                {initials}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-900 leading-snug">
+                                  {enr.first_name} {enr.last_name}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                  {enr.email || 'No email provided'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-[#1B2A4A] capitalize">
+                              {enr.student_type || 'New Student'}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <span className="font-semibold text-slate-800">{enr.grade_level}</span>
+                            {enr.strand && (
+                              <span className="ml-1.5 rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
                                 {enr.strand}
                               </span>
                             )}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <Badge variant="warning" size="sm">
-                            Pending Approval
-                          </Badge>
-                        </td>
-                        <td className="px-5 py-3.5 text-slate-400">{formatDate(enr.created_at)}</td>
-                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                          <div className="relative inline-block text-left">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveManageId(isManageOpen ? null : enr.id);
-                              }}
-                              className={`inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border px-3.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-                                isManageOpen
-                                  ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              <span>Manage</span>
-                              <ChevronDown
-                                className={`h-3.5 w-3.5 transition-transform ${
-                                  isManageOpen ? 'rotate-180' : ''
-                                }`}
-                              />
-                            </button>
+                          </td>
 
-                            {isManageOpen && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-40"
-                                  onClick={() => setActiveManageId(null)}
-                                />
-                                <div
-                                  className={`absolute right-0 z-50 w-52 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
-                                    openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                          <td className="px-4 py-3.5">
+                            <div className="font-medium text-slate-700 text-[11px]">
+                              {enr.guardian_name || 'Parent / Guardian'}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              {enr.guardian_contact || '—'}
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">
+                            {formatDate(enr.created_at)}
+                          </td>
+
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                            <div className="relative inline-block text-left">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveManageId(isManageOpen ? null : enr.id);
+                                }}
+                                className={`inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border px-3 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                                  isManageOpen
+                                    ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                <span>Manage</span>
+                                <ChevronDown
+                                  className={`h-3.5 w-3.5 transition-transform ${
+                                    isManageOpen ? 'rotate-180' : ''
                                   }`}
-                                >
-                                  <div className="py-1">
-                                    <Link
-                                      to="/registrar/enrollments"
-                                      onClick={() => setActiveManageId(null)}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                    >
-                                      <Eye className="h-3.5 w-3.5 text-slate-500" />
-                                      <span>Review Application</span>
-                                    </Link>
+                                />
+                              </button>
+
+                              {isManageOpen && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setActiveManageId(null)}
+                                  />
+                                  <div
+                                    className={`absolute right-0 z-50 w-52 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
+                                      openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                                    }`}
+                                  >
+                                    <div className="py-1">
+                                      <Link
+                                        to="/registrar/enrollments"
+                                        onClick={() => setActiveManageId(null)}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                      >
+                                        <Eye className="h-3.5 w-3.5 text-slate-500" />
+                                        <span>Review Full Application</span>
+                                      </Link>
+                                    </div>
+                                    <div className="py-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveManageId(null);
+                                          handleQuickDecision(enr, 'Approved');
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                                      >
+                                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                        <span>Approve & Assign LRN</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveManageId(null);
+                                          handleQuickDecision(enr, 'Rejected');
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                                      >
+                                        <X className="h-3.5 w-3.5 text-rose-500" />
+                                        <span>Reject Application</span>
+                                      </button>
+                                    </div>
                                   </div>
-                                  <div className="py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveManageId(null);
-                                        handleQuickDecision(enr, 'Approved');
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                                    >
-                                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                      <span>Approve Application</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveManageId(null);
-                                        handleQuickDecision(enr, 'Rejected');
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                    >
-                                      <X className="h-3.5 w-3.5 text-rose-500" />
-                                      <span>Reject Application</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                      No pending applications in the review queue.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">
+                        No pending enrollment applications match your search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Table Footer */}
+            <div className="p-3.5 bg-slate-50/80 border-t border-slate-200 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                All student admissions comply with DepEd Order No. 03, s. 2018 (Basic Education Enrollment Policy).
+              </span>
+              <span className="font-semibold text-slate-700">
+                School Form 1 (SF1) · Admissions Desk
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (4 cols): Policy Guidelines & Operations */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* DepEd Enrollment Policy Guidelines */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+            <div className="flex items-center gap-2.5 text-slate-900 border-b border-slate-100 pb-3">
+              <div className="h-8 w-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+                <BookOpen className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                  DepEd Enrollment Protocols
+                </h3>
+                <p className="text-[11px] text-slate-500">DepEd Order No. 03, s. 2018</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Standard admissions checklist required before finalizing learner placement into official class sections:
+            </p>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="h-5 w-5 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  1
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900">School Form 9 (SF9 / Form 138)</div>
+                  <div className="text-[11px] text-slate-500">Official progress report card from previous school.</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="h-5 w-5 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  2
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900">PSA Birth Certificate</div>
+                  <div className="text-[11px] text-slate-500">Mandatory for verifying learner name, age, and LIS assignment.</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="h-5 w-5 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  3
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900">Certificate of Good Moral Character</div>
+                  <div className="text-[11px] text-slate-500">Required for transferees and senior high school applicants.</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="h-5 w-5 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  4
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900">Official 2x2 ID Photo</div>
+                  <div className="text-[11px] text-slate-500">Required for automated Student ID Card generation.</div>
+                </div>
+              </div>
+            </div>
+
+            <Link
+              to="/registrar/requirements"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors"
+            >
+              Open Requirements Audit Desk <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {/* Registrar Quick Operational Links */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-emerald-700" />
+              Quick Registrar Actions
+            </h3>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <Link
+                to="/registrar/students"
+                className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left group"
+              >
+                <Users className="h-4 w-4 text-slate-600 group-hover:text-emerald-700 mb-1" />
+                <div className="font-bold text-slate-900">Student Masterlist</div>
+                <div className="text-[10px] text-slate-500">View all {stats.totalStudents} learners</div>
+              </Link>
+
+              <Link
+                to="/registrar/generate-id"
+                className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left group"
+              >
+                <IdCard className="h-4 w-4 text-slate-600 group-hover:text-emerald-700 mb-1" />
+                <div className="font-bold text-slate-900">Generate Student IDs</div>
+                <div className="text-[10px] text-slate-500">CR80 official ID badge</div>
+              </Link>
+
+              <Link
+                to="/registrar/sections"
+                className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left group"
+              >
+                <Layers className="h-4 w-4 text-slate-600 group-hover:text-emerald-700 mb-1" />
+                <div className="font-bold text-slate-900">Class Sections</div>
+                <div className="text-[10px] text-slate-500">{stats.totalSections} sections</div>
+              </Link>
+
+              <Link
+                to="/registrar/reports"
+                className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left group"
+              >
+                <FileText className="h-4 w-4 text-slate-600 group-hover:text-emerald-700 mb-1" />
+                <div className="font-bold text-slate-900">Official Reports</div>
+                <div className="text-[10px] text-slate-500">SF1, SF5, LIS records</div>
+              </Link>
+            </div>
+          </div>
+
+          {/* DepEd LIS Division Support Desk */}
+          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/60 to-white p-5 shadow-xs space-y-3">
+            <div className="flex items-center gap-2 text-emerald-950 font-bold text-xs uppercase tracking-wider">
+              <PhoneCall className="h-4 w-4 text-emerald-700" />
+              DepEd LIS Division Help Desk
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              For LRN resolution, unblocking learner profiles, or transferring learners from other divisions:
+            </p>
+            <div className="space-y-1.5 text-xs text-slate-700">
+              <div className="flex items-center justify-between py-1 border-b border-emerald-100/80">
+                <span className="text-slate-500">School Registrar:</span>
+                <span className="font-bold text-slate-900">Office of the Registrar</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-emerald-100/80">
+                <span className="text-slate-500">Division Coordinator:</span>
+                <span className="font-bold text-slate-900">DepEd City of Naga</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-slate-500">School ID:</span>
+                <span className="font-mono font-bold text-emerald-800">303035</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+// Internal icon component for credentials
+function FileCheckIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="m9 15 2 2 4-4" />
+    </svg>
+  );
+}
