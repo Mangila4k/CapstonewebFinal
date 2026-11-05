@@ -566,6 +566,47 @@
   font-weight: 800;
 }
 
+/* ========================================================
+   8. RESPONSIVE ADJUSTMENTS FOR PHONES, TABLETS & GADGETS
+   ======================================================== */
+@media screen and (max-width: 560px) {
+  .id-showcase-container {
+    padding: 14px 6px !important;
+    gap: 16px !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+  }
+
+  .id-badge-unit {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .student-id-card {
+    /* Auto-scale smoothly on phones: 500px card scaled to container */
+    transform: scale(calc((100vw - 44px) / 500)) !important;
+    transform-origin: top center !important;
+    margin-bottom: calc(316px * (calc((100vw - 44px) / 500) - 1)) !important;
+  }
+}
+
+@media screen and (min-width: 561px) and (max-width: 768px) {
+  .id-showcase-container {
+    padding: 18px 10px !important;
+  }
+
+  .student-id-card {
+    /* Scaled for tablets portrait mode */
+    transform: scale(0.92) !important;
+    transform-origin: top center !important;
+    margin-bottom: -25px !important;
+  }
+}
+
 @media print {
   @page {
     size: A4 portrait;

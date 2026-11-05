@@ -465,8 +465,8 @@ export const AdminReportsPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="w-full">
-                <table className="official-table w-full text-left text-xs border-collapse border border-black table-fixed">
+              <div className="w-full overflow-x-auto">
+                <table className="official-table w-full text-left text-xs border-collapse border border-black table-fixed min-w-[700px]">
                   <thead>
                     <tr className="bg-slate-100 text-slate-950 font-bold uppercase tracking-wider text-[10px] border-b-2 border-black">
                       <th className="border border-black px-2 py-2 w-[5%] text-center">#</th>

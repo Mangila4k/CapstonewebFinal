@@ -639,8 +639,8 @@ export const RegistrarDashboardPage: React.FC = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-visible">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left text-xs border-collapse min-w-[680px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                     <th className="px-4 py-3">Applicant Name</th>

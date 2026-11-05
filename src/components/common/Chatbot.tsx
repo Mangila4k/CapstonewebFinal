@@ -86,7 +86,7 @@ export const Chatbot: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 print:hidden">
+    <div className="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-40 print:hidden max-w-[calc(100vw-1.5rem)]">
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -104,7 +104,7 @@ export const Chatbot: React.FC = () => {
       )}
 
       {isOpen && (
-        <div className="flex h-[520px] w-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-fade-in">
+        <div className="flex h-[480px] sm:h-[520px] w-[calc(100vw-1.5rem)] max-w-sm sm:w-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between bg-emerald-800 px-4 py-3.5 text-white">
             <div className="flex items-center gap-3">

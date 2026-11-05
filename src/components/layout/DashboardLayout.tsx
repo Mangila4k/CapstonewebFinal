@@ -447,22 +447,44 @@ export const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible print:h-auto">
+      <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible print:h-auto min-w-0">
         {/* Mobile Sidebar Toggle Bar (hidden on desktop) */}
-        <header className="flex lg:hidden h-14 items-center justify-between border-b border-slate-200 bg-white px-4 print:hidden">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-            aria-label="Open menu"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <span className="text-sm font-extrabold text-[#1B2A4A]">PLSNHS Portal</span>
-          <div className="w-10" />
+        <header className="flex lg:hidden h-14 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-4 shrink-0 shadow-2xs z-30 print:hidden">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-xl p-2 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <Link to="/" className="flex items-center gap-2 min-w-0">
+              <img
+                src="/pictures/logo sa skwelahan.png"
+                alt="School Logo"
+                className="h-7 w-7 rounded-full object-cover border border-[#1B2A4A]/20 shrink-0"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+              <span className="text-sm font-extrabold text-[#1B2A4A] tracking-tight truncate">
+                PLS<span className="text-[#F59E0B]">NHS</span> Portal
+              </span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden sm:inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+              {roleTitle}
+            </span>
+            <div className="h-8 w-8 rounded-full bg-[#1B2A4A] text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+              {getInitials()}
+            </div>
+          </div>
         </header>
 
         {/* Dashboard Content Body */}
-        <main className="flex-1 overflow-y-auto px-4 pt-5 pb-6 sm:px-6 lg:px-8 bg-slate-50/70 print:p-0 print:m-0 print:bg-white print:overflow-visible">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-8 bg-slate-50/70 print:p-0 print:m-0 print:bg-white print:overflow-visible">
           <div className="print:hidden">
             <NotificationCenter />
           </div>

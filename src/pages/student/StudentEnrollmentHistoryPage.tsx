@@ -629,8 +629,8 @@ export const StudentEnrollmentHistoryPage: React.FC = () => {
                         <span className="text-[10.5px] font-bold text-emerald-800">Curriculum Matrix Active</span>
                       </div>
 
-                      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                        <table className="w-full text-left text-xs">
+                      <div className="overflow-x-auto w-full rounded-xl border border-slate-200 bg-white">
+                        <table className="w-full text-left text-xs min-w-[550px]">
                           <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[9.5px]">
                             <tr>
                               <th className="px-4 py-2.5">Subject Title</th>
