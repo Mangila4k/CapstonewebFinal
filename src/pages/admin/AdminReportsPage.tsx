@@ -262,7 +262,7 @@ export const AdminReportsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-24">
-      {/* Inline Print Styles for Official Bond Paper Output */}
+      {/* Inline Print Styles: Formats onto standard short bond paper (8.5" x 11") ONLY when printing */}
       <style>{`
         @page {
           size: letter portrait;
@@ -287,9 +287,13 @@ export const AdminReportsPage: React.FC = () => {
           nav {
             display: none !important;
           }
-          .bond-paper-document {
+          .print-bond-paper {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-height: 10in !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
@@ -297,10 +301,6 @@ export const AdminReportsPage: React.FC = () => {
             background: #ffffff !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            min-height: 10in !important;
           }
           .official-table {
             width: 100% !important;
@@ -373,9 +373,230 @@ export const AdminReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Official Bond Paper Document Sheet (Preview & Print Target) */}
-      <div className="flex justify-center w-full">
-        <div className="bond-paper-document w-full max-w-[8.5in] min-h-[11in] bg-white border border-slate-300 shadow-xl rounded-sm p-7 sm:p-9 text-slate-900 font-sans transition-all flex flex-col justify-between">
+      {/* ================================================================ */}
+      {/* 1. SCREEN VIEW: MODERN DIGITAL WEB DASHBOARD (NO BOND PAPER)     */}
+      {/* ================================================================ */}
+      <div className="no-print space-y-6">
+        {/* KPI Metrics Summary Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Enrollees</span>
+              <span className="rounded-xl bg-blue-50 p-2 text-blue-700">
+                <Users className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 font-display">
+              {totalStudents}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              Male: 213 (45.0%) · Female: 253 (53.5%)
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">SHS Population</span>
+              <span className="rounded-xl bg-emerald-50 p-2 text-emerald-700">
+                <GraduationCap className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 font-display">
+              {shsTotals.total}
+            </p>
+            <p className="mt-1 text-xs text-emerald-700 font-medium">
+              {((shsTotals.total / totalStudents) * 100).toFixed(1)}% of total school population
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Sections</span>
+              <span className="rounded-xl bg-amber-50 p-2 text-amber-700">
+                <Layers className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 font-display">
+              {totalSectionsCount}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              8 SHS tracks &amp; 27 JHS sections
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Certification</span>
+              <span className="rounded-xl bg-teal-50 p-2 text-teal-700">
+                <CheckCircle2 className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-base sm:text-lg font-black text-slate-900 font-display">
+              S.Y. 2026–2027
+            </p>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
+              LIS Verified &amp; Signed SF4
+            </p>
+          </div>
+        </div>
+
+        {/* Modern Tabular Card: Table 1 SHS Track & Strand Distribution Matrix */}
+        <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 font-display">
+                  Senior High School (SHS) Track &amp; Strand Distribution Matrix
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Grades 11 &amp; 12
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Disaggregated by gender, curricular track, learning specialization, and official section assignments.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 transition-all cursor-pointer whitespace-nowrap self-start sm:self-auto"
+            >
+              <Printer className="h-3.5 w-3.5 text-slate-600" />
+              <span>Print to Bond Paper</span>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th className="px-5 py-3.5 w-[5%] text-center">#</th>
+                  <th className="px-5 py-3.5 w-[20%]">Track / Program</th>
+                  <th className="px-5 py-3.5 w-[35%]">Strand / Learning Specialization</th>
+                  <th className="px-4 py-3.5 text-center">Male</th>
+                  <th className="px-4 py-3.5 text-center">Female</th>
+                  <th className="px-5 py-3.5 text-center font-bold text-slate-900">Total Enrolled</th>
+                  <th className="px-4 py-3.5 text-center">% Share</th>
+                  <th className="px-5 py-3.5">Official Sections</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {shsData.map((item, idx) => (
+                  <tr key={item.strand} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-4 text-center font-mono font-medium text-slate-500 text-xs">
+                      {idx + 1}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
+                        item.track.includes('Technical')
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200/80'
+                          : 'bg-blue-50 text-blue-800 border border-blue-200/80'
+                      }`}>
+                        {item.track}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="font-bold text-slate-900 text-xs">{item.strand}</p>
+                    </td>
+                    <td className="px-4 py-4 text-center font-mono text-slate-700 text-xs">
+                      {item.male}
+                    </td>
+                    <td className="px-4 py-4 text-center font-mono text-slate-700 text-xs">
+                      {item.female}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span className="font-mono font-black text-slate-900 text-sm">{item.total}</span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-slate-100 text-slate-800">
+                        {item.percentage}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-slate-600 text-xs font-medium">
+                      {item.sections}
+                    </td>
+                  </tr>
+                ))}
+                {/* SHS Subtotal Row */}
+                <tr className="bg-slate-50/80 font-bold border-t-2 border-slate-200">
+                  <td colSpan={3} className="px-5 py-4 uppercase tracking-wider text-xs text-slate-900">
+                    Senior High School Total Enrollment Subtotal
+                  </td>
+                  <td className="px-4 py-4 text-center font-mono text-slate-900 text-xs">{shsTotals.male}</td>
+                  <td className="px-4 py-4 text-center font-mono text-slate-900 text-xs">{shsTotals.female}</td>
+                  <td className="px-5 py-4 text-center font-mono font-black text-sm text-slate-950">
+                    {shsTotals.total}
+                  </td>
+                  <td className="px-4 py-4 text-center font-mono text-xs text-emerald-800">
+                    {((shsTotals.total / totalStudents) * 100).toFixed(1)}%
+                  </td>
+                  <td className="px-5 py-4 text-xs text-slate-700 font-semibold">
+                    8 SHS Sections
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* DepEd Institutional Validation & Official Signatories Card */}
+        <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-7 shadow-xs space-y-5">
+          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="text-xs sm:text-sm font-bold text-emerald-950 uppercase tracking-wide">
+                  Official DepEd SF4 Certification Statement
+                </h4>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  I hereby certify that the official enrollment statistical figures, track distributions, and gender-disaggregated learner metrics detailed herein have been cross-verified with student permanent records (DepEd Form 137 / SF10), validated against the official Department of Education Learner Information System (LIS), and represent the true and certified enrollment population of <strong>Placido L. Señor National High School</strong> for School Year 2026–2027.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+              Authorized Institutional Signatories
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Prepared &amp; Consolidated by:
+                </span>
+                <p className="font-extrabold text-slate-900 text-sm mt-1">MARIA ELENA R. REGISTRAR</p>
+                <p className="text-xs font-medium text-slate-600">School Registrar II</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">LIS &amp; Student Records In-Charge</p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Reviewed &amp; Verified by:
+                </span>
+                <p className="font-extrabold text-slate-900 text-sm mt-1">JHERICO MAURIN</p>
+                <p className="text-xs font-medium text-slate-600">SHS Program Coordinator</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Master Teacher I / Academics</p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Certified Correct &amp; Approved:
+                </span>
+                <p className="font-extrabold text-slate-900 text-sm mt-1">JUSTINE MANGILA, EdD</p>
+                <p className="text-xs font-medium text-slate-600">Secondary School Principal II</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">School Head / Authorized Official</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* 2. PRINT-ONLY VIEW: OFFICIAL DEPED SHORT BOND PAPER (8.5" × 11") */}
+      {/* ================================================================ */}
+      <div className="print-bond-paper hidden print:flex flex-col justify-between w-full">
+        <div className="w-full bg-white text-slate-900 font-sans flex flex-col justify-between min-h-[10in]">
           {/* TOP SECTION: Header, Metrics & Tabular Matrix */}
           <div className="space-y-3">
             {/* Official DepEd Philippines Letterhead Header (Single Logo on Left) */}
