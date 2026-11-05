@@ -396,73 +396,73 @@ export const ParentsDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-2xl bg-slate-50/80 p-4 border border-slate-200/80 flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+        {/* 4 KPI Cards (Compact 2x2 grid on mobile) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="rounded-xl sm:rounded-2xl bg-slate-50/80 p-3 sm:p-4 border border-slate-200/80 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                 General Average
               </span>
-              <p className="text-2xl font-black text-slate-900 mt-1 font-display">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-display truncate">
                 {liveGpa}
               </p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold mt-1">
-                <Award className="h-3.5 w-3.5" /> With Honors Standing
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-700 font-bold mt-1 truncate">
+                <Award className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" /> With Honors
               </span>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-              <Award className="h-5 w-5" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-amber-100 text-amber-700 shrink-0">
+              <Award className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 border border-slate-200/80 flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+          <div className="rounded-xl sm:rounded-2xl bg-slate-50/80 p-3 sm:p-4 border border-slate-200/80 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                 Attendance Rate
               </span>
-              <p className="text-2xl font-black text-slate-900 mt-1 font-display">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-display truncate">
                 96.0%
               </p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold mt-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> 48 / 50 School Days
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-700 font-bold mt-1 truncate">
+                <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" /> 48/50 Days
               </span>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <Calendar className="h-5 w-5" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 border border-slate-200/80 flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                Conduct & Guidance
+          <div className="rounded-xl sm:rounded-2xl bg-slate-50/80 p-3 sm:p-4 border border-slate-200/80 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                Conduct
               </span>
-              <p className="text-xl font-black text-slate-900 mt-1 font-display">
+              <p className="text-base sm:text-xl font-black text-slate-900 mt-1 font-display truncate">
                 Exemplary
               </p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold mt-1">
-                0 Behavioral Incidents
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-1 truncate">
+                0 Incidents
               </span>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-              <ShieldCheck className="h-5 w-5" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-blue-100 text-blue-700 shrink-0">
+              <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50/80 p-4 border border-slate-200/80 flex items-start justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+          <div className="rounded-xl sm:rounded-2xl bg-slate-50/80 p-3 sm:p-4 border border-slate-200/80 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
                 Gate QR Status
               </span>
-              <p className="text-xl font-black text-emerald-700 mt-1 font-display">
+              <p className="text-base sm:text-xl font-black text-emerald-700 mt-1 font-display truncate">
                 Checked In
               </p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold mt-1">
-                <Clock className="h-3 w-3 text-emerald-600" /> Today, 07:08 AM
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-1 truncate">
+                <Clock className="h-3 w-3 text-emerald-600 shrink-0" /> 07:08 AM
               </span>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
-              <QrCode className="h-5 w-5" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-purple-100 text-purple-700 shrink-0">
+              <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
         </div>

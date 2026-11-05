@@ -571,8 +571,8 @@
    ======================================================== */
 @media screen and (max-width: 560px) {
   .id-showcase-container {
-    padding: 14px 6px !important;
-    gap: 16px !important;
+    padding: 10px 4px !important;
+    gap: 14px !important;
     overflow-x: hidden !important;
     width: 100% !important;
   }
@@ -587,10 +587,10 @@
   }
 
   .student-id-card {
-    /* Auto-scale smoothly on phones: 500px card scaled to container */
-    transform: scale(calc((100vw - 44px) / 500)) !important;
+    /* Auto-scale smoothly on phones: 500px card scaled cleanly to container width */
+    transform: scale(min(calc((100vw - 52px) / 500), 0.95)) !important;
     transform-origin: top center !important;
-    margin-bottom: calc(316px * (calc((100vw - 44px) / 500) - 1)) !important;
+    margin-bottom: calc(316px * (min(calc((100vw - 52px) / 500), 0.95) - 1)) !important;
   }
 }
 

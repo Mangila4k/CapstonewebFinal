@@ -445,8 +445,8 @@ export const AdminDashboardPage: React.FC = () => {
         />
       )}
 
-      {/* Metrics Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Metrics Stat Cards (Compact 2x2 grid on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
         <StatCard
           title="Total Students"
           value={stats.totalStudents}
@@ -494,9 +494,9 @@ export const AdminDashboardPage: React.FC = () => {
             </Link>
           </div>
 
-          <div className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xs">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
             {recentEnrollments.length > 0 ? (
-              <div className="overflow-visible rounded-2xl">
+              <div className="min-w-[560px]">
                 <table className="w-full table-fixed text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                     <tr>

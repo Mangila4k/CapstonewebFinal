@@ -572,8 +572,8 @@ export const GuidanceDashboardPage: React.FC = () => {
         />
       )}
 
-      {/* 2. Executive Metrics KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* 2. Executive Metrics KPI Cards (Compact 2x2 grid on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <StatCard
           title="Recorded Incidents"
           value={stats.totalCases}

@@ -224,7 +224,7 @@ export const TeacherDashboardPage: React.FC = () => {
       </div>
 
       {/* 3 Executive Metrics Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-5">
         <StatCard
           title="Assigned Sections"
           value={assignedClasses.length}

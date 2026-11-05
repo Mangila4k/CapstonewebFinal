@@ -478,88 +478,88 @@ export const RegistrarDashboardPage: React.FC = () => {
         />
       )}
 
-      {/* Executive Metric Cards (4 KPIs) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Executive Metric Cards (4 KPIs - Compact 2x2 grid on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* KPI 1 */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">
               Pending Admissions
             </span>
-            <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
-              <Clock className="h-4.5 w-4.5" />
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+              <Clock className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900 font-display">
+          <div className="mt-1 sm:mt-2 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display">
               {stats.pendingEnrollments}
             </span>
-            <span className="text-xs text-amber-700 font-medium">awaiting review</span>
+            <span className="text-[10px] sm:text-xs text-amber-700 font-medium">review</span>
           </div>
-          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+          <p className="hidden sm:block mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
             Incoming enrollment documents for verification.
           </p>
         </div>
 
         {/* KPI 2 */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">
               Approved Learners
             </span>
-            <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-              <CheckCircle className="h-4.5 w-4.5" />
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+              <CheckCircle className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900 font-display">
+          <div className="mt-1 sm:mt-2 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display">
               {stats.approvedEnrollments}
             </span>
-            <span className="text-xs text-emerald-700 font-medium">processed this term</span>
+            <span className="text-[10px] sm:text-xs text-emerald-700 font-medium">processed</span>
           </div>
-          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+          <p className="hidden sm:block mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
             Validated credentials and section assigned.
           </p>
         </div>
 
         {/* KPI 3 */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Total Student Masterlist
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">
+              Total Masterlist
             </span>
-            <div className="h-9 w-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">
-              <GraduationCap className="h-4.5 w-4.5" />
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+              <GraduationCap className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900 font-display">
+          <div className="mt-1 sm:mt-2 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display">
               {stats.totalStudents}
             </span>
-            <span className="text-xs text-blue-700 font-medium">officially enrolled</span>
+            <span className="text-[10px] sm:text-xs text-blue-700 font-medium">enrolled</span>
           </div>
-          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+          <p className="hidden sm:block mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
             Active learners in School Form 1 (SF1).
           </p>
         </div>
 
         {/* KPI 4 */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">
               Class Sections
             </span>
-            <div className="h-9 w-9 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700">
-              <Layers className="h-4.5 w-4.5" />
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
+              <Layers className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900 font-display">
+          <div className="mt-1 sm:mt-2 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display">
               {stats.totalSections}
             </span>
-            <span className="text-xs text-slate-500 font-medium">active sections</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium">sections</span>
           </div>
-          <p className="mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+          <p className="hidden sm:block mt-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
             JHS (Grades 7–10) & SHS (Grades 11–12).
           </p>
         </div>
