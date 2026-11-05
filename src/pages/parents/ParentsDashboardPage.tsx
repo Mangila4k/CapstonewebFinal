@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { fetchGradesForStudent } from '../../lib/gradesStore';
 import { Modal } from '../../components/common/Modal';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
@@ -242,14 +243,14 @@ export const ParentsDashboardPage: React.FC = () => {
       if (!activeChild.id) return;
 
       try {
-        const [{ data: attData }, { data: grData }, { data: subData }, { data: violData }] = await Promise.all([
+        const [{ data: attData }, grData, { data: subData }, { data: violData }] = await Promise.all([
           supabase
             .from('attendance')
             .select('*')
             .or(`student_id.eq.${activeChild.id},qr_code.ilike.%${activeChild.lrn}%`)
             .order('date', { ascending: false })
             .limit(5),
-          supabase.from('grades').select('*').eq('student_id', activeChild.id),
+          fetchGradesForStudent(activeChild.id),
           supabase.from('subjects').select('id, code, name, grade_level, strand, semester'),
           supabase
             .from('student_violations')
@@ -371,6 +372,10 @@ export const ParentsDashboardPage: React.FC = () => {
     }
 
     loadChildProgress();
+    window.addEventListener('plshs_grades_updated', loadChildProgress);
+    return () => {
+      window.removeEventListener('plshs_grades_updated', loadChildProgress);
+    };
   }, [activeChild.id, activeChild.lrn, activeChild.grade_level, activeChild.strand]);
 
   // Determine Junior High (7-10) vs Senior High (11-12)

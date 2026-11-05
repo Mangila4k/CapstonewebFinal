@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { fetchGradesForStudent } from '../../lib/gradesStore';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
@@ -203,13 +204,13 @@ export const StudentGradesPage: React.FC = () => {
 
         if (!studentId) return;
 
-        // Fetch grades and subjects
-        const [gradesRes, subjectsRes] = await Promise.all([
-          supabase.from('grades').select('*').eq('student_id', studentId),
+        // Fetch grades and subjects from unified store & cloud
+        const [cloudGrades, subjectsRes] = await Promise.all([
+          fetchGradesForStudent(studentId, schoolYear),
           supabase.from('subjects').select('*'),
         ]);
 
-        const dbGrades = gradesRes.data || [];
+        const dbGrades = cloudGrades || [];
         const dbSubjects = subjectsRes.data || [];
 
         if (dbGrades.length > 0) {
@@ -266,6 +267,10 @@ export const StudentGradesPage: React.FC = () => {
     }
 
     loadLiveGrades();
+    window.addEventListener('plshs_grades_updated', loadLiveGrades);
+    return () => {
+      window.removeEventListener('plshs_grades_updated', loadLiveGrades);
+    };
   }, [user, isParent, parentChild]);
 
   // Major 8 Learning Areas that contribute to General Average (MAPEH is included; sub-components are excluded)
