@@ -642,7 +642,7 @@ export const AdminTeachersPage: React.FC = () => {
 
     try {
       // Save to Supabase users table
-      const { data: insertedUser } = await supabase
+      const { data: insertedUser, error: userError } = await supabase
         .from('users')
         .insert([
           {
@@ -656,9 +656,30 @@ export const AdminTeachersPage: React.FC = () => {
         .select()
         .single();
 
+      if (userError) throw new Error(userError.message);
+
       if (insertedUser?.id) {
         newTeacher.id = String(insertedUser.id);
         newTeacher.user_id = String(insertedUser.id);
+
+        // Also save to Supabase teachers table
+        const { data: teacherRow } = await supabase
+          .from('teachers')
+          .insert([
+            {
+              user_id: insertedUser.id,
+              employee_id: empId,
+              specialization: form.specialization || 'General Education',
+              phone: '09123456789',
+              address: 'City of Naga, Cebu',
+            },
+          ])
+          .select()
+          .maybeSingle();
+
+        if (teacherRow?.id) {
+          newTeacher.teacher_table_id = String(teacherRow.id);
+        }
       }
 
       const updatedTeachers = [newTeacher, ...teachers];
@@ -753,9 +774,12 @@ export const AdminTeachersPage: React.FC = () => {
         }
       }
 
-      // 3. Delete from Supabase users if applicable
+      // 3. Delete from Supabase teachers & users if applicable
       if (deletingTeacher.user_id) {
+        await supabase.from('teachers').delete().eq('user_id', deletingTeacher.user_id);
         await supabase.from('users').delete().eq('id', deletingTeacher.user_id);
+      } else if (deletingTeacher.teacher_table_id) {
+        await supabase.from('teachers').delete().eq('id', deletingTeacher.teacher_table_id);
       }
 
       // 4. Record deletion reason in audit log

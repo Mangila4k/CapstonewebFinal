@@ -264,11 +264,12 @@ export const GuidanceDashboardPage: React.FC = () => {
         lrn: incidentForm.lrn.trim() || `119518${Math.floor(100000 + Math.random() * 900000)}`,
         grade_level: incidentForm.gradeLevel,
         section: incidentForm.section,
-        violation_title: incidentForm.violationTitle.trim(),
-        violation_type: incidentForm.violationTitle.trim(),
+        violation_title: incidentForm.violationTitle.trim() || 'General Misconduct',
+        violation_type: incidentForm.violationTitle.trim() || 'General Misconduct',
+        violation_category: 'Minor',
         offense_level: incidentForm.offenseLevel,
         description: incidentForm.description.trim() || 'Logged via Guidance Dashboard.',
-        action_taken: incidentForm.actionTaken.trim(),
+        action_taken: incidentForm.actionTaken.trim() || 'Guidance Counseling',
         incident_date: new Date().toISOString().split('T')[0],
         reported_by: user?.full_name || 'Guidance Counselor',
         reporter_role: 'Guidance Counselor',
@@ -316,7 +317,8 @@ export const GuidanceDashboardPage: React.FC = () => {
       const counselorName = user?.full_name || 'Sarah Guidance Counselor';
       const payload = {
         student_name: counselingForm.studentName.trim(),
-        purpose: counselingForm.purpose.trim(),
+        session_type: 'Individual Counseling',
+        purpose: counselingForm.purpose.trim() || 'Guidance Consultation',
         session_date: counselingForm.sessionDate,
         notes: counselingForm.notes.trim() || 'Referral consultation booked from Guidance Dashboard.',
         counselor_name: counselorName,
@@ -353,8 +355,40 @@ export const GuidanceDashboardPage: React.FC = () => {
   };
 
   // Print Good Moral Certificate
-  const handlePrintGoodMoral = () => {
+  const handlePrintGoodMoral = async () => {
     const certNumber = `GMC-2026-${goodMoralForm.lrn.slice(-4)}-${Math.floor(100 + Math.random() * 900)}`;
+
+    try {
+      // Persist issuance directly to Supabase good_moral_requests table
+      await supabase.from('good_moral_requests').insert([
+        {
+          student_name: goodMoralForm.studentName.trim(),
+          lrn: goodMoralForm.lrn.trim() || '119518000000',
+          grade_level: goodMoralForm.gradeLevel,
+          strand: goodMoralForm.strand,
+          purpose: goodMoralForm.purpose.trim() || 'General DepEd Clearance',
+          status: 'Issued',
+          has_active_violations: false,
+          counselor_remarks: 'Issued and printed via Guidance Center.',
+          issued_date: goodMoralForm.issuedDate,
+          certificate_no: certNumber,
+        },
+      ]);
+
+      await supabase.from('activity_logs').insert([
+        {
+          role: 'guidance',
+          action: 'Good Moral Certificate Issued',
+          details: `Issued ${certNumber} to ${goodMoralForm.studentName} for ${goodMoralForm.purpose}.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+
+      fetchGuidanceData();
+    } catch (saveErr) {
+      console.warn('Good moral database save notice:', saveErr);
+    }
+
     const win = window.open('', '_blank', 'width=900,height=750');
     if (!win) {
       window.print();

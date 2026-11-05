@@ -280,12 +280,14 @@ export const GuidanceViolationsPage: React.FC = () => {
         incident_date: form.incidentDate,
         incident_time: form.incidentTime,
         incident_location: form.incidentLocation,
-        reported_by: form.reportedBy.trim(),
-        reporter_role: form.reporterRole,
+        reported_by: form.reportedBy.trim() || user?.full_name || 'Guidance Counselor',
+        reporter_role: form.reporterRole || 'Teacher / Staff',
         description: form.description.trim() || 'No narrative logged.',
         witnesses: form.witnesses.trim() || 'None',
-        action_taken: form.actionTaken.trim(),
-        sanction_details: `Prescribed intervention: ${form.actionTaken.trim()}`,
+        action_taken: form.actionTaken.trim() || 'Guidance Counseling Referral',
+        sanction_details: form.actionTaken.trim()
+          ? `Prescribed intervention: ${form.actionTaken.trim()}`
+          : 'Prescribed intervention: Guidance Counseling Referral',
         status: form.counselingRequired ? 'Counseling Scheduled' : 'In Progress',
         parent_notified: form.parentNotified,
         parent_notified_date: form.parentNotified ? new Date().toISOString() : null,

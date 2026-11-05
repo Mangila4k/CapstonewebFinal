@@ -564,18 +564,36 @@ export const TeacherAttendancePage: React.FC = () => {
         remarks: attendanceModes[s.id] || 'Manual',
       }));
 
-      const { error } = await supabase
-        .from('attendance')
-        .upsert(recordsToInsert, { onConflict: 'student_id,date' });
-
-      if (error) {
-        console.warn('Attendance save notice:', error);
+      // Cache locally to ensure zero data loss
+      try {
+        const cacheKey = `plsnhs_attendance_${selectedSection}_${todayStr}`;
+        localStorage.setItem(cacheKey, JSON.stringify(recordsToInsert));
+      } catch {
+        // ignore cache write error
       }
 
-      setNotice({
-        type: 'success',
-        message: `Daily attendance for Section "${selectedSection}" (${displayedStudents.length} learners) successfully saved for ${new Date().toLocaleDateString()}.`,
-      });
+      // Try database sync
+      const studentIds = displayedStudents.map((s) => s.id);
+      await supabase
+        .from('attendance')
+        .delete()
+        .in('student_id', studentIds)
+        .eq('date', todayStr);
+
+      const { error } = await supabase.from('attendance').insert(recordsToInsert);
+
+      if (error) {
+        console.warn('Attendance database notice:', error);
+        setNotice({
+          type: 'warning',
+          message: `Daily attendance for Section "${selectedSection}" saved locally. (Database note: ${error.message})`,
+        });
+      } else {
+        setNotice({
+          type: 'success',
+          message: `Daily attendance for Section "${selectedSection}" (${displayedStudents.length} learners) successfully saved to official database for ${new Date().toLocaleDateString()}.`,
+        });
+      }
     } catch (err: any) {
       console.error('Failed to save attendance:', err);
       setNotice({

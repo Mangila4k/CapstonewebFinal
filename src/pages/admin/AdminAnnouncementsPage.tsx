@@ -86,14 +86,22 @@ export const AdminAnnouncementsPage: React.FC = () => {
 
       if (!error && data) {
         const seen = new Set<string>();
-        const unique = data.filter((a: any) => {
-          const sig = `${(a.title || '').trim().toLowerCase()}|${(a.content || '')
-            .trim()
-            .toLowerCase()}`;
-          if (seen.has(sig)) return false;
-          seen.add(sig);
-          return true;
-        });
+        const unique = data
+          .map((a: any) => ({
+            ...a,
+            author: a.author || a.author_name || 'Office of Administration',
+            author_name: a.author_name || a.author || 'Office of Administration',
+            role: a.role || a.author_role || 'admin',
+            author_role: a.author_role || a.role || 'admin',
+          }))
+          .filter((a: any) => {
+            const sig = `${(a.title || '').trim().toLowerCase()}|${(a.content || '')
+              .trim()
+              .toLowerCase()}`;
+            if (seen.has(sig)) return false;
+            seen.add(sig);
+            return true;
+          });
         setAnnouncements(unique);
       }
     } catch (err) {
@@ -190,11 +198,17 @@ export const AdminAnnouncementsPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const generatedId =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `anc-${Date.now()}`;
+
       const payload = {
+        id: generatedId,
         title: form.title.trim(),
         content: form.content.trim(),
-        author: user?.full_name || 'Placido L. Señor NHS Administration',
-        role: user?.role || 'admin',
+        author_name: user?.full_name || 'Placido L. Señor NHS Administration',
+        author_role: user?.role || 'admin',
         target_audience: form.targetAudience,
         priority: form.priority,
         created_at: new Date().toISOString(),

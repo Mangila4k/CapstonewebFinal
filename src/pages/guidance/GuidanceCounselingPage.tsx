@@ -205,17 +205,21 @@ export const GuidanceCounselingPage: React.FC = () => {
     e.preventDefault();
     try {
       const generatedLrn = form.lrn.trim() || `119518${Math.floor(100000 + Math.random() * 900000)}`;
+      const sectionTag = form.section ? ` (Section: ${form.section})` : '';
+      const notesWithSection = form.notes.trim()
+        ? `${form.notes.trim()}${sectionTag}`
+        : `Appointment scheduled via Guidance Center.${sectionTag}`;
+
       const payload = {
         student_name: form.studentName.trim(),
         lrn: generatedLrn,
         grade_level: form.gradeLevel,
-        section: form.section,
         session_type: form.sessionType,
-        purpose: form.purpose.trim(),
+        purpose: form.purpose.trim() || 'Guidance Consultation',
         session_date: form.date,
         session_time: form.time,
-        counselor_name: form.counselorName.trim(),
-        notes: form.notes.trim() || 'Appointment scheduled via Guidance Center.',
+        counselor_name: form.counselorName.trim() || user?.full_name || 'Guidance Counselor',
+        notes: notesWithSection,
         action_plan: form.actionPlan.trim() || 'Preliminary student consultation.',
         status: 'Scheduled',
       };
