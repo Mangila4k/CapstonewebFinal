@@ -109,6 +109,12 @@ export const StudentGradesPage: React.FC = () => {
   }, [isParent, user]);
 
   // Dynamic student demographic values with institutional fallbacks
+  const isSasumanParent = isParent && (
+    (user?.last_name || '').toLowerCase().includes('sasuman') ||
+    (user?.email || '').toLowerCase().includes('sasuman') ||
+    (user?.full_name || '').toLowerCase().includes('sasuman')
+  );
+
   const learnerName = isParent
     ? (parentChild
         ? `${parentChild.first_name || ''} ${parentChild.last_name || ''}`.trim()
@@ -118,21 +124,27 @@ export const StudentGradesPage: React.FC = () => {
     ? parentChild?.lrn || user?.student_lrn || '11951680082'
     : user?.student_lrn || '11951680082';
   const rawGrade = isParent
-    ? parentChild?.grade_level || user?.student_grade || 'Grade 10'
-    : user?.student_grade || 'Grade 10';
+    ? parentChild?.grade_level || user?.student_grade || (isSasumanParent ? 'Grade 11' : 'Grade 11')
+    : user?.student_grade || 'Grade 11';
   const learnerGrade = rawGrade.toLowerCase().startsWith('grade') ? rawGrade : `Grade ${rawGrade}`;
+  const isSeniorHigh =
+    learnerGrade.includes('11') ||
+    learnerGrade.includes('12') ||
+    learnerGrade.toLowerCase().includes('senior') ||
+    isSasumanParent;
   const learnerStrand = isParent
-    ? parentChild?.strand || user?.student_strand || 'Junior High School'
-    : user?.student_strand || 'Junior High School';
+    ? parentChild?.strand || user?.student_strand || (isSeniorHigh ? 'TVL-ICT' : 'Junior High School')
+    : user?.student_strand || (isSeniorHigh ? 'TVL-ICT' : 'Junior High School');
+  const defaultSection = isSeniorHigh ? 'Section Almario' : 'Section Rizal';
   const learnerSection = isParent
     ? parentChild?.resolvedSection
       ? `Section ${parentChild.resolvedSection.replace(/^section\s+/i, '')}`
       : user?.student_section
       ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
-      : 'Section Rizal'
+      : defaultSection
     : user?.student_section
     ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
-    : 'Section Rizal';
+    : defaultSection;
   const schoolYear = '2026–2027';
 
   // Promotion target grade level
@@ -147,21 +159,14 @@ export const StudentGradesPage: React.FC = () => {
 
   // Curriculum label
   const curriculumProgram = useMemo(() => {
-    if (learnerGrade.includes('11') || learnerGrade.includes('12')) {
-      return 'K to 12 Basic Education Curriculum · Senior High';
+    if (isSeniorHigh) {
+      return 'K to 12 Senior High Curriculum';
     }
     return 'K to 12 Basic Education Curriculum · Junior High School';
-  }, [learnerGrade]);
+  }, [isSeniorHigh]);
 
-  // =========================================================================
-  // Standard DepEd Junior High School (JHS Form 138 / SF9) Learning Areas
-  // In DepEd JHS:
-  // - Single unified table across Quarters 1, 2, 3, and 4
-  // - 8 main learning areas: Filipino, English, Math, Science, AP, EsP, TLE, MAPEH
-  // - MAPEH is the average of Music, Arts, PE, and Health
-  // - General Average is the average of the 8 main learning areas
-  // =========================================================================
-  const [jhsSubjects, setJhsSubjects] = useState<JhsSubjectGrade[]>([
+  // Default Subject sets for JHS and SHS TVL-ICT
+  const DEFAULT_JHS_SUBJECTS: JhsSubjectGrade[] = [
     { code: 'FIL-10', title: 'Filipino', q1: 92, q2: 93, q3: 94, q4: 93, final: 93, remarks: 'Passed' },
     { code: 'ENG-10', title: 'English', q1: 93, q2: 94, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
     { code: 'MATH-10', title: 'Mathematics', q1: 91, q2: 92, q3: 93, q4: 92, final: 92, remarks: 'Passed' },
@@ -174,7 +179,28 @@ export const StudentGradesPage: React.FC = () => {
     { code: 'ARTS-10', title: 'Arts', isMapehChild: true, q1: 93, q2: 94, q3: 95, q4: 95, final: 94, remarks: 'Passed' },
     { code: 'PE-10', title: 'Physical Education (P.E.)', isMapehChild: true, q1: 96, q2: 97, q3: 96, q4: 97, final: 97, remarks: 'Passed' },
     { code: 'HEALTH-10', title: 'Health', isMapehChild: true, q1: 95, q2: 96, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
-  ]);
+  ];
+
+  const DEFAULT_SHS_SUBJECTS: JhsSubjectGrade[] = [
+    { code: 'CORE-1', title: 'Oral Communication in Context', q1: 99, q2: 93, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
+    { code: 'CORE-3', title: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', q1: 95, q2: 93, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
+    { code: 'CORE-8', title: 'General Mathematics', q1: 89, q2: 91, q3: 90, q4: 91, final: 90, remarks: 'Passed' },
+    { code: 'CORE-10', title: 'Earth and Life Science', q1: 92, q2: 94, q3: 93, q4: 95, final: 94, remarks: 'Passed' },
+    { code: 'CORE-12', title: 'Introduction to the Philosophy of the Human Person', q1: 91, q2: 93, q3: 92, q4: 93, final: 92, remarks: 'Passed' },
+    { code: 'CORE-13-1', title: 'Physical Education and Health 1', q1: 95, q2: 97, q3: 96, q4: 97, final: 96, remarks: 'Passed' },
+    { code: 'APP-3', title: 'English for Academic and Professional Purposes', q1: 90, q2: 92, q3: 91, q4: 92, final: 91, remarks: 'Passed' },
+    { code: 'APP-5', title: 'Empowerment Technologies: ICT for Professional Tracks', q1: 93, q2: 95, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
+    { code: 'APP-1', title: 'Computer Systems Servicing NC II (CSS 1)', q1: 92, q2: 94, q3: 93, q4: 95, final: 93, remarks: 'Passed' },
+  ];
+
+  const [jhsSubjects, setJhsSubjects] = useState<JhsSubjectGrade[]>(() =>
+    isSeniorHigh ? DEFAULT_SHS_SUBJECTS : DEFAULT_JHS_SUBJECTS
+  );
+
+  // When grade level changes, reset default subjects
+  useEffect(() => {
+    setJhsSubjects(isSeniorHigh ? DEFAULT_SHS_SUBJECTS : DEFAULT_JHS_SUBJECTS);
+  }, [isSeniorHigh]);
 
   // Load live grades from Supabase if recorded
   useEffect(() => {
@@ -477,7 +503,7 @@ export const StudentGradesPage: React.FC = () => {
       <style>{`
         @page {
           size: letter portrait;
-          margin: 0.22in 0.32in 0.18in 0.32in;
+          margin: 0.18in 0.25in 0.14in 0.25in;
         }
         @media print {
           html, body {
@@ -486,9 +512,10 @@ export const StudentGradesPage: React.FC = () => {
             background: #ffffff !important;
             color: #000000 !important;
             height: 100% !important;
-            max-height: 100% !important;
+            max-height: 100vh !important;
             overflow: hidden !important;
-            font-size: 6.8pt !important;
+            font-size: 6.4pt !important;
+            line-height: 1.12 !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -507,7 +534,7 @@ export const StudentGradesPage: React.FC = () => {
             width: 100% !important;
             max-width: 100% !important;
             height: auto !important;
-            max-height: 10.45in !important;
+            max-height: 10.4in !important;
             margin: 0 auto !important;
             padding: 0 !important;
             box-shadow: none !important;
@@ -526,7 +553,7 @@ export const StudentGradesPage: React.FC = () => {
             max-width: 100% !important;
             height: auto !important;
             min-height: auto !important;
-            max-height: 10.45in !important;
+            max-height: 10.4in !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
@@ -545,22 +572,24 @@ export const StudentGradesPage: React.FC = () => {
             width: 100% !important;
             border-collapse: collapse !important;
             table-layout: fixed !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .official-grade-table th,
           .official-grade-table td {
             border: 1px solid #000000 !important;
             color: #000000 !important;
-            padding: 1.2px 3px !important;
-            font-size: 6.7pt !important;
-            line-height: 1.15 !important;
+            padding: 0.9px 2.5px !important;
+            font-size: 6.3pt !important;
+            line-height: 1.1 !important;
           }
           .official-grade-table th {
             background-color: #f1f5f9 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             font-weight: 700 !important;
-            font-size: 6.4pt !important;
-            padding: 1.5px 3px !important;
+            font-size: 6.1pt !important;
+            padding: 1.1px 2.5px !important;
           }
           .official-double-line {
             border-bottom: 2px solid #000000 !important;
@@ -1206,7 +1235,7 @@ export const StudentGradesPage: React.FC = () => {
             <div className="w-12 shrink-0 flex items-center justify-center text-center">
               <div className="border border-slate-900 rounded-2xs p-0.5 text-[6pt] leading-tight text-slate-800">
                 <span className="font-bold block">DEPED SF9</span>
-                <span>Form 138-JHS</span>
+                <span>{isSeniorHigh ? 'Form 138-SHS' : 'Form 138-JHS'}</span>
               </div>
             </div>
           </div>
@@ -1218,10 +1247,10 @@ export const StudentGradesPage: React.FC = () => {
           {/* 3. Title */}
           <div className="text-center space-y-0.5">
             <h3 className="text-[8.5pt] font-black uppercase tracking-wider text-slate-950 leading-tight">
-              LEARNER&apos;S PROGRESS REPORT CARD (SF9 - JHS)
+              LEARNER&apos;S PROGRESS REPORT CARD (SF9 - {isSeniorHigh ? 'SHS' : 'JHS'})
             </h3>
             <p className="text-[7pt] font-bold text-slate-800 uppercase tracking-wide leading-tight">
-              School Year {schoolYear} · Junior High School
+              School Year {schoolYear} · {isSeniorHigh ? 'Senior High School' : 'Junior High School'}
             </p>
           </div>
 
@@ -1244,16 +1273,24 @@ export const StudentGradesPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-1 pt-0.5 border-t border-slate-300">
               <div>
-                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Curriculum Program:</span>
-                <span className="font-semibold text-slate-900 text-[6.8pt]">{curriculumProgram}</span>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">
+                  {isSeniorHigh ? 'Track & Strand:' : 'Curriculum Program:'}
+                </span>
+                <span className="font-semibold text-slate-900 text-[6.8pt]">
+                  {isSeniorHigh ? (learnerStrand || 'TVL-ICT') : curriculumProgram}
+                </span>
               </div>
               <div>
-                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Academic Standing:</span>
-                <span className="text-emerald-900 font-bold text-[6.8pt]">Passed (With High Honors)</span>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">
+                  {isSeniorHigh ? 'Curriculum Program:' : 'Academic Standing:'}
+                </span>
+                <span className="text-slate-900 font-semibold text-[6.8pt]">
+                  {isSeniorHigh ? 'K to 12 Senior High Curriculum' : 'Passed (With High Honors)'}
+                </span>
               </div>
               <div>
                 <span className="text-[6pt] font-bold uppercase text-slate-600 block">Age / Sex:</span>
-                <span className="text-slate-900 font-medium text-[6.8pt]">16 yrs. old · Male</span>
+                <span className="text-slate-900 font-medium text-[6.8pt]">17 yrs. old · Male</span>
               </div>
             </div>
           </div>

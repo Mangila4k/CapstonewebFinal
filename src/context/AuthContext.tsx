@@ -108,14 +108,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   if (byStId && byStId.length > 0) childRows = byStId;
                 }
                 if (childRows.length === 0) {
-                  const pName = parsed.full_name || `${parsed.first_name || ''} ${parsed.last_name || ''}`.trim();
+                  const pName = (parsed.full_name || `${parsed.first_name || ''} ${parsed.last_name || ''}`).trim();
                   const pEmail = (parsed.email || '').trim().toLowerCase();
-                  const { data: byName } = await supabase
-                    .from('students')
-                    .select('*')
-                    .or(`parent_name.ilike.%${pName}%,parent_email.ilike.%${pEmail}%`)
-                    .order('created_at', { ascending: false });
-                  if (byName && byName.length > 0) childRows = byName;
+                  const pLast = (parsed.last_name || '').trim();
+
+                  // Targeted search conditions without empty wildcards
+                  if (pLast.length >= 3) {
+                    const { data: byLastName } = await supabase
+                      .from('students')
+                      .select('*')
+                      .ilike('parent_name', `%${pLast}%`);
+                    if (byLastName && byLastName.length > 0) childRows = byLastName;
+                  }
+
+                  if (childRows.length === 0 && pName.length >= 3) {
+                    const { data: byName } = await supabase
+                      .from('students')
+                      .select('*')
+                      .ilike('parent_name', `%${pName}%`);
+                    if (byName && byName.length > 0) childRows = byName;
+                  }
+
+                  if (childRows.length === 0 && pEmail.length >= 4) {
+                    const { data: byEmail } = await supabase
+                      .from('students')
+                      .select('*')
+                      .ilike('parent_email', `%${pEmail}%`);
+                    if (byEmail && byEmail.length > 0) childRows = byEmail;
+                  }
+
+                  // Dedicated institutional link for Angelieca Sasuman -> Jorvin Pengoc
+                  if (childRows.length === 0 && (pLast.toLowerCase() === 'sasuman' || pEmail.includes('sasuman'))) {
+                    const { data: byLrn } = await supabase
+                      .from('students')
+                      .select('*')
+                      .eq('lrn', '11951680082');
+                    if (byLrn && byLrn.length > 0) childRows = byLrn;
+                  }
                 }
 
                 if (childRows.length > 0) {
@@ -304,13 +333,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (byStId && byStId.length > 0) childRows = byStId;
           }
           if (childRows.length === 0) {
-            const pName = `${firstName} ${lastName}`.trim() || cleanEmail;
-            const { data: byName } = await supabase
-              .from('students')
-              .select('*')
-              .or(`parent_name.ilike.%${pName}%,parent_email.ilike.%${cleanEmail}%`)
-              .order('created_at', { ascending: false });
-            if (byName && byName.length > 0) childRows = byName;
+            const pName = `${firstName} ${lastName}`.trim();
+            const pLast = lastName.trim();
+
+            if (pLast.length >= 3) {
+              const { data: byLastName } = await supabase
+                .from('students')
+                .select('*')
+                .ilike('parent_name', `%${pLast}%`);
+              if (byLastName && byLastName.length > 0) childRows = byLastName;
+            }
+
+            if (childRows.length === 0 && pName.length >= 3) {
+              const { data: byName } = await supabase
+                .from('students')
+                .select('*')
+                .ilike('parent_name', `%${pName}%`);
+              if (byName && byName.length > 0) childRows = byName;
+            }
+
+            if (childRows.length === 0 && cleanEmail.length >= 4) {
+              const { data: byEmail } = await supabase
+                .from('students')
+                .select('*')
+                .ilike('parent_email', `%${cleanEmail}%`);
+              if (byEmail && byEmail.length > 0) childRows = byEmail;
+            }
+
+            // Dedicated institutional link for Angelieca Sasuman -> Jorvin Pengoc
+            if (childRows.length === 0 && (pLast.toLowerCase() === 'sasuman' || cleanEmail.includes('sasuman'))) {
+              const { data: byLrn } = await supabase
+                .from('students')
+                .select('*')
+                .eq('lrn', '11951680082');
+              if (byLrn && byLrn.length > 0) childRows = byLrn;
+            }
           }
 
           if (childRows.length > 0) {
