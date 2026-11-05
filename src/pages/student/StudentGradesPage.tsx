@@ -461,11 +461,11 @@ export const StudentGradesPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-16">
-      {/* Print CSS to render short bond paper standard (8.5" x 11") */}
+      {/* Print CSS to render exact single sheet bond paper standard (8.5" x 11") */}
       <style>{`
         @page {
           size: letter portrait;
-          margin: 0.35in 0.4in 0.35in 0.4in;
+          margin: 0.25in 0.35in 0.2in 0.35in;
         }
         @media print {
           html, body {
@@ -473,7 +473,13 @@ export const StudentGradesPage: React.FC = () => {
             padding: 0 !important;
             background: #ffffff !important;
             color: #000000 !important;
-            font-size: 8.5pt !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
+            font-size: 7pt !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .no-print,
           .print\\:hidden,
@@ -488,43 +494,61 @@ export const StudentGradesPage: React.FC = () => {
             display: block !important;
             width: 100% !important;
             max-width: 100% !important;
-            margin: 0 !important;
+            height: auto !important;
+            max-height: 10.45in !important;
+            margin: 0 auto !important;
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
             background: #ffffff !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
             page-break-inside: avoid !important;
+            break-after: avoid !important;
+            break-before: avoid !important;
             break-inside: avoid !important;
+            overflow: hidden !important;
           }
           .bond-paper-document {
             width: 100% !important;
             max-width: 100% !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: 10.45in !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
             background: #ffffff !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
             page-break-inside: avoid !important;
+            break-after: avoid !important;
+            break-before: avoid !important;
             break-inside: avoid !important;
+            overflow: hidden !important;
             display: block !important;
           }
           .official-grade-table {
             width: 100% !important;
             border-collapse: collapse !important;
+            table-layout: fixed !important;
           }
           .official-grade-table th,
           .official-grade-table td {
             border: 1px solid #000000 !important;
             color: #000000 !important;
-            padding: 4px 6px !important;
-            font-size: 8pt !important;
-            line-height: 1.25 !important;
+            padding: 1.5px 3.5px !important;
+            font-size: 6.8pt !important;
+            line-height: 1.15 !important;
           }
           .official-grade-table th {
             background-color: #f1f5f9 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            font-weight: bold !important;
+            font-weight: 700 !important;
+            font-size: 6.5pt !important;
+            padding: 2px 3.5px !important;
           }
           .official-double-line {
             border-bottom: 2px solid #000000 !important;
@@ -1232,343 +1256,341 @@ export const StudentGradesPage: React.FC = () => {
       </div>
 
       {/* ================================================================ */}
-      {/* 2. PRINT-ONLY VIEW: OFFICIAL DEPED SF9 SHORT BOND PAPER (8.5"×11")*/}
+      {/* 2. PRINT-ONLY VIEW: EXACT SINGLE SHEET BOND PAPER (8.5" × 11")   */}
       {/* ================================================================ */}
       <div className="print-bond-paper hidden print:block w-full text-slate-900 font-sans">
-        <div className="bond-paper-document w-full bg-white text-slate-900 font-sans transition-all flex flex-col justify-between min-h-[10in]">
-          <div className="space-y-4">
-            {/* DepEd Letterhead */}
-            <div className="flex items-center justify-between pb-1 border-b border-black/20">
-              <div className="w-20 flex items-center justify-center shrink-0">
-                <img
-                  src="/pictures/logo sa skwelahan.png"
-                  alt="PLSNHS Seal"
-                  className="h-16 w-16 object-contain rounded-full shadow-2xs"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-
-              <div className="text-center flex-1 px-3">
-                <p className="text-[10px] uppercase tracking-widest font-semibold text-slate-800 leading-tight font-serif">
-                  Republic of the Philippines
-                </p>
-                <h2 className="text-[12px] uppercase font-bold tracking-wider text-slate-950 leading-tight font-serif">
-                  Department of Education
-                </h2>
-                <p className="text-[9.5px] font-medium text-slate-700 leading-tight">
-                  Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
-                </p>
-                <h1 className="text-[13px] sm:text-sm font-black tracking-wide text-black uppercase mt-0.5 font-serif">
-                  PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
-                </h1>
-                <p className="text-[9px] text-slate-600 leading-tight">
-                  Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
-                </p>
-              </div>
-
-              <div className="w-20 shrink-0 hidden sm:flex items-center justify-center text-center">
-                <div className="border border-slate-400 rounded-xs p-1 text-[8.5px] leading-tight text-slate-700">
-                  <span className="font-bold block">DEPED SF9</span>
-                  <span>Form 138-SHS</span>
-                </div>
-              </div>
+        <div className="bond-paper-document w-full bg-white text-slate-900 font-sans space-y-1">
+          {/* 1. DepEd Official Letterhead */}
+          <div className="flex items-center justify-between pb-0.5 border-b border-black/30">
+            <div className="w-12 flex items-center justify-center shrink-0">
+              <img
+                src="/pictures/logo sa skwelahan.png"
+                alt="PLSNHS Seal"
+                className="h-11 w-11 object-contain rounded-full shadow-2xs"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
             </div>
 
-            {/* Double Line Divider */}
-            <div className="border-b-2 border-black official-double-line"></div>
-            <div className="border-b border-black -mt-3 mb-2"></div>
-
-            {/* Title */}
-            <div className="text-center space-y-0.5">
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-950">
-                LEARNER&apos;S PROGRESS REPORT CARD (SF9 - SHS)
-              </h3>
-              <p className="text-[10.5px] font-bold text-slate-800 uppercase tracking-wide">
-                School Year {schoolYear} · Senior High School
+            <div className="text-center flex-1 px-2 leading-none">
+              <p className="text-[7pt] uppercase tracking-widest font-semibold text-slate-800 font-serif">
+                Republic of the Philippines
+              </p>
+              <h2 className="text-[9pt] uppercase font-bold tracking-wider text-slate-950 font-serif mt-0.5">
+                Department of Education
+              </h2>
+              <p className="text-[6.8pt] font-medium text-slate-700 leading-tight mt-0.5">
+                Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
+              </p>
+              <h1 className="text-[10pt] font-black tracking-wide text-black uppercase mt-0.5 font-serif">
+                PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
+              </h1>
+              <p className="text-[6.5pt] text-slate-600 leading-tight">
+                Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
               </p>
             </div>
 
-            {/* Student Demographic Matrix */}
-            <div className="border border-black bg-slate-50/40 p-2.5 rounded-xs text-xs space-y-1.5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                  <span className="text-[9px] font-bold uppercase text-slate-600 block">Name of Learner:</span>
-                  <span className="font-black text-slate-950 uppercase text-xs">{learnerName}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold uppercase text-slate-600 block">Learner Reference No. (LRN):</span>
-                  <span className="font-mono font-bold text-slate-900 text-xs">{learnerLrn}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold uppercase text-slate-600 block">Grade Level &amp; Section:</span>
-                  <span className="font-bold text-slate-900 text-xs">{learnerGrade} – {learnerSection}</span>
-                </div>
+            <div className="w-12 shrink-0 flex items-center justify-center text-center">
+              <div className="border border-slate-900 rounded-2xs p-0.5 text-[6pt] leading-tight text-slate-800">
+                <span className="font-bold block">DEPED SF9</span>
+                <span>Form 138-SHS</span>
               </div>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-slate-200">
-                <div>
-                  <span className="text-[9px] font-bold uppercase text-slate-600 block">Track &amp; Strand:</span>
-                  <span className="font-bold text-slate-900 text-[11px]">{learnerStrand}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold uppercase text-slate-600 block">Curriculum Program:</span>
-                  <span className="text-slate-800 font-medium text-[11px]">K to 12 Senior High Curriculum</span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold uppercase text-slate-600 block">Age / Sex:</span>
-                  <span className="text-slate-900 font-medium text-[11px]">17 yrs. old · Male</span>
-                </div>
+          {/* 2. Double Line Divider */}
+          <div className="border-b-2 border-black official-double-line"></div>
+          <div className="border-b border-black -mt-1 mb-0.5"></div>
+
+          {/* 3. Title */}
+          <div className="text-center space-y-0.5">
+            <h3 className="text-[8pt] font-black uppercase tracking-wider text-slate-950 leading-tight">
+              LEARNER&apos;S PROGRESS REPORT CARD (SF9 - SHS)
+            </h3>
+            <p className="text-[7pt] font-bold text-slate-800 uppercase tracking-wide leading-tight">
+              School Year {schoolYear} · Senior High School
+            </p>
+          </div>
+
+          {/* 4. Student Demographic Matrix */}
+          <div className="border border-black bg-slate-50/40 p-1 rounded-2xs text-[6.8pt] space-y-0.5 leading-tight">
+            <div className="grid grid-cols-3 gap-1">
+              <div>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Name of Learner:</span>
+                <span className="font-black text-slate-950 uppercase text-[7.5pt]">{learnerName}</span>
+              </div>
+              <div>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Learner Reference No. (LRN):</span>
+                <span className="font-mono font-bold text-slate-900 text-[7.5pt]">{learnerLrn}</span>
+              </div>
+              <div>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Grade Level &amp; Section:</span>
+                <span className="font-bold text-slate-900 text-[7.5pt]">{learnerGrade} – {learnerSection}</span>
               </div>
             </div>
 
-            {/* FIRST SEMESTER REPORT */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10.5px] font-black uppercase tracking-wider text-slate-950">
-                  REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: FIRST SEMESTER
-                </h4>
-                <span className="text-[9.5px] font-bold text-slate-700">Semestral Rating</span>
+            <div className="grid grid-cols-3 gap-1 pt-0.5 border-t border-slate-300">
+              <div>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Track &amp; Strand:</span>
+                <span className="font-bold text-slate-900 text-[6.8pt]">{learnerStrand}</span>
               </div>
+              <div>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Curriculum Program:</span>
+                <span className="text-slate-800 font-medium text-[6.8pt]">K to 12 Senior High Curriculum</span>
+              </div>
+              <div>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Age / Sex:</span>
+                <span className="text-slate-900 font-medium text-[6.8pt]">17 yrs. old · Male</span>
+              </div>
+            </div>
+          </div>
 
-              <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
+          {/* 5. FIRST SEMESTER REPORT */}
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
+                REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: FIRST SEMESTER
+              </h4>
+              <span className="text-[6.8pt] font-bold text-slate-700">Semestral Rating</span>
+            </div>
+
+            <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
+              <thead>
+                <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
+                  <th className="border border-black px-1.5 py-0.5 w-[50%]">Learning Areas (Subjects)</th>
+                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 1</th>
+                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 2</th>
+                  <th className="border border-black px-1 py-0.5 w-[14%] text-center bg-slate-200/60">Final Rating</th>
+                  <th className="border border-black px-1.5 py-0.5 w-[12%] text-center">Remarks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/30 text-[6.8pt]">
+                {sem1Subjects.map((s, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/40">
+                    <td className="border border-black px-1.5 py-0.5 truncate">
+                      <span className="font-semibold text-slate-900">{s.title}</span>
+                      <span className="ml-1 text-[6pt] text-slate-500 font-mono">[{s.category}]</span>
+                    </td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q1}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q2}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-950 bg-slate-50">{s.final}</td>
+                    <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">{s.remarks}</td>
+                  </tr>
+                ))}
+                {/* Sem 1 Average Row */}
+                <tr className="bg-slate-100/90 font-bold border-t border-black text-[7pt]">
+                  <td className="border border-black px-1.5 py-0.5 uppercase text-slate-950 text-right pr-3" colSpan={3}>
+                    General Average for the First Semester:
+                  </td>
+                  <td className="border border-black px-1 py-0.5 text-center font-mono font-black text-slate-950 bg-amber-50/80">
+                    {sem1Average}
+                  </td>
+                  <td className="border border-black px-1.5 py-0.5 text-center text-emerald-800 font-bold">
+                    Passed
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 6. SECOND SEMESTER REPORT */}
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
+                REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: SECOND SEMESTER
+              </h4>
+              <span className="text-[6.8pt] font-bold text-slate-700">Semestral Rating</span>
+            </div>
+
+            <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
+              <thead>
+                <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
+                  <th className="border border-black px-1.5 py-0.5 w-[50%]">Learning Areas (Subjects)</th>
+                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 3</th>
+                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 4</th>
+                  <th className="border border-black px-1 py-0.5 w-[14%] text-center bg-slate-200/60">Final Rating</th>
+                  <th className="border border-black px-1.5 py-0.5 w-[12%] text-center">Remarks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/30 text-[6.8pt]">
+                {sem2Subjects.map((s, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/40">
+                    <td className="border border-black px-1.5 py-0.5 truncate">
+                      <span className="font-semibold text-slate-900">{s.title}</span>
+                      <span className="ml-1 text-[6pt] text-slate-500 font-mono">[{s.category}]</span>
+                    </td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q3}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q4}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-950 bg-slate-50">{s.final}</td>
+                    <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">{s.remarks}</td>
+                  </tr>
+                ))}
+                {/* Sem 2 Average Row */}
+                <tr className="bg-slate-100/90 font-bold border-t border-black text-[7pt]">
+                  <td className="border border-black px-1.5 py-0.5 uppercase text-slate-950 text-right pr-3" colSpan={3}>
+                    General Average for the Second Semester:
+                  </td>
+                  <td className="border border-black px-1 py-0.5 text-center font-mono font-black text-slate-950 bg-amber-50/80">
+                    {sem2Average}
+                  </td>
+                  <td className="border border-black px-1.5 py-0.5 text-center text-emerald-800 font-bold">
+                    Passed
+                  </td>
+                </tr>
+                {/* Final General Average Row */}
+                <tr className="bg-slate-200 text-slate-950 font-black border-t-2 border-black text-[7.5pt]">
+                  <td className="border border-black px-1.5 py-1 uppercase text-right pr-3 font-serif" colSpan={3}>
+                    GENERAL FINAL AVERAGE FOR THE SCHOOL YEAR:
+                  </td>
+                  <td className="border border-black px-1 py-1 text-center font-mono text-[9pt] font-black text-slate-950 bg-[#F5C518]/30">
+                    {generalFinalAverage}
+                  </td>
+                  <td className="border border-black px-1.5 py-1 text-center text-emerald-900 font-black uppercase tracking-wider text-[7pt]">
+                    Passed
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 7. REPORT ON LEARNER'S OBSERVED VALUES (DEPED CORE VALUES) */}
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
+                REPORT ON LEARNER&apos;S OBSERVED VALUES (DEPED CORE VALUES)
+              </h4>
+              <span className="text-[6.5pt] text-slate-600 font-bold">AO: Always · SO: Sometimes · RO: Rarely · NO: Not Observed</span>
+            </div>
+
+            <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
+              <thead>
+                <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
+                  <th className="border border-black px-1.5 py-0.5 w-[22%]">Core Values</th>
+                  <th className="border border-black px-1.5 py-0.5 w-[54%]">Behavior Statements</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q1</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q2</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q3</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q4</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/30 text-[6.5pt]">
+                {coreValues.map((cv, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/40">
+                    <td className="border border-black px-1.5 py-0.5 font-bold text-slate-950 truncate">{cv.category}</td>
+                    <td className="border border-black px-1.5 py-0.5 text-slate-800 leading-tight">{cv.statement}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{cv.q1}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{cv.q2}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{cv.q3}</td>
+                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{cv.q4}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 8. REPORT ON ATTENDANCE (DEPED SF2 RECORD) */}
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
+                REPORT ON ATTENDANCE (DEPED SF2 RECORD)
+              </h4>
+              <span className="text-[6.5pt] text-slate-600 font-bold">10 School Calendar Months</span>
+            </div>
+
+            <div className="overflow-hidden">
+              <table className="official-grade-table w-full text-center text-xs border-collapse border border-black table-fixed">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[9px] border-b-2 border-black">
-                    <th className="border border-black px-2 py-1.5 w-[50%]">Learning Areas (Subjects)</th>
-                    <th className="border border-black px-1.5 py-1.5 w-[12%] text-center">Quarter 1</th>
-                    <th className="border border-black px-1.5 py-1.5 w-[12%] text-center">Quarter 2</th>
-                    <th className="border border-black px-1.5 py-1.5 w-[14%] text-center bg-slate-200/60">Final Rating</th>
-                    <th className="border border-black px-2 py-1.5 w-[12%] text-center">Remarks</th>
+                  <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
+                    <th className="border border-black px-1 py-0.5 w-[16%] text-left">Record</th>
+                    {attendanceRecord.map((m) => (
+                      <th key={m.month} className="border border-black px-0.5 py-0.5 text-[6pt]">{m.month}</th>
+                    ))}
+                    <th className="border border-black px-0.5 py-0.5 w-[10%] bg-slate-200">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/30 text-[10px]">
-                  {sem1Subjects.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/40">
-                      <td className="border border-black px-2 py-1 truncate">
-                        <span className="font-semibold text-slate-900">{s.title}</span>
-                        <span className="ml-1 text-[8px] text-slate-500 font-mono">[{s.category}]</span>
-                      </td>
-                      <td className="border border-black px-1.5 py-1 text-center font-mono text-slate-900">{s.q1}</td>
-                      <td className="border border-black px-1.5 py-1 text-center font-mono text-slate-900">{s.q2}</td>
-                      <td className="border border-black px-1.5 py-1 text-center font-mono font-bold text-slate-950 bg-slate-50">{s.final}</td>
-                      <td className="border border-black px-2 py-1 text-center font-medium text-emerald-800">{s.remarks}</td>
-                    </tr>
-                  ))}
-                  {/* Sem 1 Average Row */}
-                  <tr className="bg-slate-100/90 font-bold border-t-2 border-black text-[10.5px]">
-                    <td className="border border-black px-2 py-1.5 uppercase text-slate-950 text-right pr-4" colSpan={3}>
-                      General Average for the First Semester:
-                    </td>
-                    <td className="border border-black px-1.5 py-1.5 text-center font-mono font-black text-slate-950 bg-amber-50/80">
-                      {sem1Average}
-                    </td>
-                    <td className="border border-black px-2 py-1.5 text-center text-emerald-800 font-bold">
-                      Passed
-                    </td>
+                <tbody className="divide-y divide-black/30 text-[6.5pt]">
+                  <tr>
+                    <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of School Days</td>
+                    {attendanceRecord.map((m) => (
+                      <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.schoolDays}</td>
+                    ))}
+                    <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalSchoolDays}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of Days Present</td>
+                    {attendanceRecord.map((m) => (
+                      <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.daysPresent}</td>
+                    ))}
+                    <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysPresent}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of Days Absent</td>
+                    {attendanceRecord.map((m) => (
+                      <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.daysAbsent}</td>
+                    ))}
+                    <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysAbsent}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* SECOND SEMESTER REPORT */}
-            <div className="space-y-1 pt-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10.5px] font-black uppercase tracking-wider text-slate-950">
-                  REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: SECOND SEMESTER
-                </h4>
-                <span className="text-[9.5px] font-bold text-slate-700">Semestral Rating</span>
-              </div>
+          {/* 9. GRADING SCALE & DESCRIPTORS */}
+          <div className="border border-slate-900 bg-slate-50/50 p-1 rounded-2xs text-[6.5pt] grid grid-cols-5 gap-1 text-center leading-tight">
+            <div>
+              <span className="font-bold block text-slate-950">90 – 100</span>
+              <span className="text-slate-600">Outstanding (Passed)</span>
+            </div>
+            <div>
+              <span className="font-bold block text-slate-950">85 – 89</span>
+              <span className="text-slate-600">Very Satisfactory</span>
+            </div>
+            <div>
+              <span className="font-bold block text-slate-950">80 – 84</span>
+              <span className="text-slate-600">Satisfactory (Passed)</span>
+            </div>
+            <div>
+              <span className="font-bold block text-slate-950">75 – 79</span>
+              <span className="text-slate-600">Fairly Satisfactory</span>
+            </div>
+            <div>
+              <span className="font-bold block text-rose-700">Below 75</span>
+              <span className="text-rose-600">Did Not Meet</span>
+            </div>
+          </div>
 
-              <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[9px] border-b-2 border-black">
-                    <th className="border border-black px-2 py-1.5 w-[50%]">Learning Areas (Subjects)</th>
-                    <th className="border border-black px-1.5 py-1.5 w-[12%] text-center">Quarter 3</th>
-                    <th className="border border-black px-1.5 py-1.5 w-[12%] text-center">Quarter 4</th>
-                    <th className="border border-black px-1.5 py-1.5 w-[14%] text-center bg-slate-200/60">Final Rating</th>
-                    <th className="border border-black px-2 py-1.5 w-[12%] text-center">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/30 text-[10px]">
-                  {sem2Subjects.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/40">
-                      <td className="border border-black px-2 py-1 truncate">
-                        <span className="font-semibold text-slate-900">{s.title}</span>
-                        <span className="ml-1 text-[8px] text-slate-500 font-mono">[{s.category}]</span>
-                      </td>
-                      <td className="border border-black px-1.5 py-1 text-center font-mono text-slate-900">{s.q3}</td>
-                      <td className="border border-black px-1.5 py-1 text-center font-mono text-slate-900">{s.q4}</td>
-                      <td className="border border-black px-1.5 py-1 text-center font-mono font-bold text-slate-950 bg-slate-50">{s.final}</td>
-                      <td className="border border-black px-2 py-1 text-center font-medium text-emerald-800">{s.remarks}</td>
-                    </tr>
-                  ))}
-                  {/* Sem 2 Average Row */}
-                  <tr className="bg-slate-100/90 font-bold border-t-2 border-black text-[10.5px]">
-                    <td className="border border-black px-2 py-1.5 uppercase text-slate-950 text-right pr-4" colSpan={3}>
-                      General Average for the Second Semester:
-                    </td>
-                    <td className="border border-black px-1.5 py-1.5 text-center font-mono font-black text-slate-950 bg-amber-50/80">
-                      {sem2Average}
-                    </td>
-                    <td className="border border-black px-2 py-1.5 text-center text-emerald-800 font-bold">
-                      Passed
-                    </td>
-                  </tr>
-                  {/* Final General Average Row */}
-                  <tr className="bg-slate-200 text-slate-950 font-black border-t-2 border-black text-[11px]">
-                    <td className="border border-black px-2 py-2 uppercase text-right pr-4 font-serif" colSpan={3}>
-                      GENERAL FINAL AVERAGE FOR THE SCHOOL YEAR:
-                    </td>
-                    <td className="border border-black px-1.5 py-2 text-center font-mono text-base font-black text-slate-950 bg-[#F5C518]/30">
-                      {generalFinalAverage}
-                    </td>
-                    <td className="border border-black px-2 py-2 text-center text-emerald-900 font-black uppercase tracking-wider text-[10px]">
-                      Passed
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          {/* 10. CERTIFICATE OF TRANSFER & SIGNATURES BLOCK */}
+          <div className="pt-1 border-t-2 border-black space-y-1">
+            <div className="text-[6.8pt] text-slate-900 leading-tight">
+              <p>
+                <strong>CERTIFICATE OF TRANSFER &amp; PROMOTION:</strong> This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>Grade 12</strong>.
+              </p>
             </div>
 
-            {/* REPORT ON LEARNER'S OBSERVED VALUES (DEPED CORE VALUES) */}
-            <div className="space-y-1 pt-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10.5px] font-black uppercase tracking-wider text-slate-950">
-                  REPORT ON LEARNER&apos;S OBSERVED VALUES (DEPED CORE VALUES)
-                </h4>
-                <span className="text-[9px] text-slate-600 font-bold">AO: Always · SO: Sometimes · RO: Rarely · NO: Not Observed</span>
-              </div>
-
-              <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[9px] border-b-2 border-black">
-                    <th className="border border-black px-2 py-1 w-[22%]">Core Values</th>
-                    <th className="border border-black px-2 py-1 w-[54%]">Behavior Statements</th>
-                    <th className="border border-black px-1 py-1 w-[6%] text-center">Q1</th>
-                    <th className="border border-black px-1 py-1 w-[6%] text-center">Q2</th>
-                    <th className="border border-black px-1 py-1 w-[6%] text-center">Q3</th>
-                    <th className="border border-black px-1 py-1 w-[6%] text-center">Q4</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/30 text-[9.5px]">
-                  {coreValues.map((cv, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/40">
-                      <td className="border border-black px-2 py-1 font-bold text-slate-950 truncate">{cv.category}</td>
-                      <td className="border border-black px-2 py-1 text-slate-800 leading-tight">{cv.statement}</td>
-                      <td className="border border-black px-1 py-1 text-center font-mono font-bold text-slate-900">{cv.q1}</td>
-                      <td className="border border-black px-1 py-1 text-center font-mono font-bold text-slate-900">{cv.q2}</td>
-                      <td className="border border-black px-1 py-1 text-center font-mono font-bold text-slate-900">{cv.q3}</td>
-                      <td className="border border-black px-1 py-1 text-center font-mono font-bold text-slate-900">{cv.q4}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* REPORT ON ATTENDANCE (DEPED SF2 RECORD) */}
-            <div className="space-y-1 pt-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10.5px] font-black uppercase tracking-wider text-slate-950">
-                  REPORT ON ATTENDANCE (DEPED SF2 RECORD)
-                </h4>
-                <span className="text-[9px] text-slate-600 font-bold">10 School Calendar Months</span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="official-grade-table w-full text-center text-xs border-collapse border border-black table-fixed">
-                  <thead>
-                    <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[9px] border-b-2 border-black">
-                      <th className="border border-black px-1.5 py-1 w-[16%] text-left">Record</th>
-                      {attendanceRecord.map((m) => (
-                        <th key={m.month} className="border border-black px-1 py-1 text-[8.5px]">{m.month}</th>
-                      ))}
-                      <th className="border border-black px-1 py-1 w-[10%] bg-slate-200">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/30 text-[9.5px]">
-                    <tr>
-                      <td className="border border-black px-1.5 py-1 text-left font-bold text-slate-900">No. of School Days</td>
-                      {attendanceRecord.map((m) => (
-                        <td key={m.month} className="border border-black px-1 py-1 font-mono">{m.schoolDays}</td>
-                      ))}
-                      <td className="border border-black px-1 py-1 font-mono font-bold text-slate-950 bg-slate-50">{totalSchoolDays}</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-black px-1.5 py-1 text-left font-bold text-slate-900">No. of Days Present</td>
-                      {attendanceRecord.map((m) => (
-                        <td key={m.month} className="border border-black px-1 py-1 font-mono">{m.daysPresent}</td>
-                      ))}
-                      <td className="border border-black px-1 py-1 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysPresent}</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-black px-1.5 py-1 text-left font-bold text-slate-900">No. of Days Absent</td>
-                      {attendanceRecord.map((m) => (
-                        <td key={m.month} className="border border-black px-1 py-1 font-mono">{m.daysAbsent}</td>
-                      ))}
-                      <td className="border border-black px-1 py-1 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysAbsent}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* GRADING SCALE & DESCRIPTORS (DepEd Order No. 8, s. 2015) */}
-            <div className="border border-slate-900 bg-slate-50/50 p-2 rounded-xs text-[9px] grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-center">
+            <div className="grid grid-cols-3 gap-3 pt-1 text-center text-xs">
               <div>
-                <span className="font-bold block text-slate-950">90 – 100</span>
-                <span className="text-slate-600">Outstanding (Passed)</span>
-              </div>
-              <div>
-                <span className="font-bold block text-slate-950">85 – 89</span>
-                <span className="text-slate-600">Very Satisfactory (Passed)</span>
-              </div>
-              <div>
-                <span className="font-bold block text-slate-950">80 – 84</span>
-                <span className="text-slate-600">Satisfactory (Passed)</span>
-              </div>
-              <div>
-                <span className="font-bold block text-slate-950">75 – 79</span>
-                <span className="text-slate-600">Fairly Satisfactory (Passed)</span>
-              </div>
-              <div>
-                <span className="font-bold block text-rose-700">Below 75</span>
-                <span className="text-rose-600">Did Not Meet Expectations</span>
-              </div>
-            </div>
-
-            {/* CERTIFICATE OF TRANSFER & SIGNATURES BLOCK */}
-            <div className="pt-2 border-t-2 border-black space-y-3">
-              <div className="text-[10px] text-slate-900 leading-snug">
-                <p>
-                  <strong>CERTIFICATE OF TRANSFER &amp; PROMOTION:</strong> This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>Grade 12</strong>.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-2 text-center text-xs">
-                <div>
-                  <div className="border-b border-black pb-1 mb-1 font-bold text-slate-950 uppercase text-[11px]">
-                    MR. J. ALMARIO
-                  </div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-600 block">Class Adviser</span>
-                  <span className="text-[8.5px] text-slate-500">Teacher II · Senior High</span>
+                <div className="border-b border-black pb-0.5 mb-0.5 font-bold text-slate-950 uppercase text-[7.5pt]">
+                  MR. J. ALMARIO
                 </div>
+                <span className="text-[6.5pt] uppercase font-bold text-slate-600 block">Class Adviser</span>
+                <span className="text-[5.5pt] text-slate-500">Teacher II · Senior High</span>
+              </div>
 
-                <div>
-                  <div className="border-b border-black pb-1 mb-1 font-bold text-slate-950 uppercase text-[11px]">
-                    JUSTINE MANGILA, Dev.Ed.D.
-                  </div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-600 block">School Principal I</span>
-                  <span className="text-[8.5px] text-slate-500">School Head / Authorized Officer</span>
+              <div>
+                <div className="border-b border-black pb-0.5 mb-0.5 font-bold text-slate-950 uppercase text-[7.5pt]">
+                  JUSTINE MANGILA, Dev.Ed.D.
                 </div>
+                <span className="text-[6.5pt] uppercase font-bold text-slate-600 block">School Principal I</span>
+                <span className="text-[5.5pt] text-slate-500">School Head / Authorized Officer</span>
+              </div>
 
-                <div className="col-span-2 sm:col-span-1 border-t sm:border-t-0 pt-2 sm:pt-0">
-                  <div className="border-b border-black pb-1 mb-1 font-mono font-bold text-slate-950 text-[11px]">
-                    March 27, 2027
-                  </div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-600 block">Date Issued</span>
-                  <span className="text-[8.5px] text-slate-500">School ID: 303035</span>
+              <div>
+                <div className="border-b border-black pb-0.5 mb-0.5 font-mono font-bold text-slate-950 text-[7.5pt]">
+                  March 27, 2027
                 </div>
+                <span className="text-[6.5pt] uppercase font-bold text-slate-600 block">Date Issued</span>
+                <span className="text-[5.5pt] text-slate-500">School ID: 303035</span>
               </div>
             </div>
           </div>

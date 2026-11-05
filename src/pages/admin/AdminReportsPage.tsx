@@ -262,16 +262,19 @@ export const AdminReportsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-24">
-      {/* Inline Print Styles: Formats onto standard short bond paper (8.5" x 11") ONLY when printing */}
+      {/* Inline Print Styles: Formats onto exact single sheet bond paper (8.5" x 11") ONLY when printing */}
       <style>{`
         @page {
           size: letter portrait;
-          margin: 0.35in 0.4in 0.35in 0.4in;
+          margin: 0.25in 0.35in 0.2in 0.35in;
         }
         @media print {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
             background: #ffffff !important;
             color: #000000 !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
@@ -293,38 +296,46 @@ export const AdminReportsPage: React.FC = () => {
             justify-content: space-between !important;
             width: 100% !important;
             max-width: 100% !important;
-            min-height: 10in !important;
-            margin: 0 !important;
+            height: auto !important;
+            max-height: 10.45in !important;
+            margin: 0 auto !important;
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
             background: #ffffff !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
             page-break-inside: avoid !important;
+            break-after: avoid !important;
+            break-before: avoid !important;
             break-inside: avoid !important;
+            overflow: hidden !important;
           }
           .official-table {
             width: 100% !important;
             border-collapse: collapse !important;
+            table-layout: fixed !important;
           }
           .official-table th,
           .official-table td {
             border: 1px solid #000000 !important;
             color: #000000 !important;
-            padding: 5px 8px !important;
-            font-size: 8.5pt !important;
-            line-height: 1.3 !important;
+            padding: 2.5px 5px !important;
+            font-size: 7.5pt !important;
+            line-height: 1.2 !important;
           }
           .official-table th {
             background-color: #f1f5f9 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            font-size: 8pt !important;
+            font-size: 7.2pt !important;
+            padding: 3px 5px !important;
           }
           .official-divider {
             border-color: #000000 !important;
           }
           .official-sign-line {
-            border-bottom: 2px solid #000000 !important;
+            border-bottom: 1.5px solid #000000 !important;
           }
         }
       `}</style>
@@ -596,9 +607,9 @@ export const AdminReportsPage: React.FC = () => {
       {/* 2. PRINT-ONLY VIEW: OFFICIAL DEPED SHORT BOND PAPER (8.5" × 11") */}
       {/* ================================================================ */}
       <div className="print-bond-paper hidden print:flex flex-col justify-between w-full">
-        <div className="w-full bg-white text-slate-900 font-sans flex flex-col justify-between min-h-[10in]">
+        <div className="w-full bg-white text-slate-900 font-sans flex flex-col justify-between">
           {/* TOP SECTION: Header, Metrics & Tabular Matrix */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Official DepEd Philippines Letterhead Header (Single Logo on Left) */}
             <div className="flex items-center justify-between pb-2">
               {/* Left: School Official Seal / Logo */}
