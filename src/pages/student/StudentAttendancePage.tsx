@@ -219,14 +219,76 @@ export const StudentAttendancePage: React.FC = () => {
   const [monthFilter, setMonthFilter] = useState<string>('All Months');
 
   const isParent = user?.role === 'parent';
-  const parentLastName = (user?.last_name || user?.full_name?.split(' ').slice(-1)[0] || 'Sasuman').trim();
+  const [parentChild, setParentChild] = useState<any>(null);
+
+  useEffect(() => {
+    async function resolveParentChild() {
+      if (!isParent || !user) return;
+      try {
+        let child: any = null;
+        if (user.id) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('parent_id', user.id)
+            .maybeSingle();
+          if (data) child = data;
+        }
+        if (!child && user.student_id) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('id', user.student_id)
+            .maybeSingle();
+          if (data) child = data;
+        }
+        if (!child) {
+          const pName = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          if (pName) {
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .ilike('parent_name', `%${pName}%`)
+              .limit(1);
+            if (data && data.length > 0) child = data[0];
+          }
+        }
+        if (child) {
+          let secName = child.section || '';
+          if (child.section_id && !secName) {
+            const { data: sec } = await supabase
+              .from('sections')
+              .select('name')
+              .eq('id', child.section_id)
+              .maybeSingle();
+            if (sec?.name) secName = sec.name;
+          }
+          setParentChild({ ...child, resolvedSection: secName });
+        }
+      } catch (err) {
+        console.warn('Resolve child error in attendance:', err);
+      }
+    }
+    resolveParentChild();
+  }, [isParent, user]);
+
   const learnerName = isParent
-    ? `Christian ${parentLastName}`
+    ? (parentChild
+        ? `${parentChild.first_name || ''} ${parentChild.last_name || ''}`.trim()
+        : user?.student_name || 'Jorvin Pengoc')
     : user?.full_name || 'Jorvin Pengoc';
-  const learnerLrn = isParent ? '119518160054' : user?.student_lrn || '11951680082';
-  const learnerGrade = isParent ? 'Grade 11' : user?.student_grade || 'Grade 11';
-  const learnerSection = isParent ? 'Diamond' : user?.student_section || 'Almario';
-  const learnerStrand = isParent ? 'STEM' : user?.student_strand || 'TVL - ICT';
+  const learnerLrn = isParent
+    ? parentChild?.lrn || user?.student_lrn || '11951680082'
+    : user?.student_lrn || '11951680082';
+  const learnerGrade = isParent
+    ? parentChild?.grade_level || user?.student_grade || 'Grade 11'
+    : user?.student_grade || 'Grade 11';
+  const learnerSection = isParent
+    ? parentChild?.resolvedSection || user?.student_section || 'Almario'
+    : user?.student_section || 'Almario';
+  const learnerStrand = isParent
+    ? parentChild?.strand || user?.student_strand || 'TVL - ICT'
+    : user?.student_strand || 'TVL - ICT';
   const schoolYear = '2026–2027';
 
   // Quick counts for filter pills
@@ -239,9 +301,13 @@ export const StudentAttendancePage: React.FC = () => {
   useEffect(() => {
     async function fetchLiveAttendance() {
       try {
-        let resolvedStudentId = user?.student_id || user?.id;
+        let resolvedStudentId = isParent
+          ? parentChild?.id || user?.student_id
+          : user?.student_id || user?.id;
         const cleanEmail = (user?.email || '').trim().toLowerCase();
-        const cleanLrn = (user?.student_lrn || '').trim();
+        const cleanLrn = isParent
+          ? parentChild?.lrn || user?.student_lrn || ''
+          : (user?.student_lrn || '').trim();
 
         if (cleanEmail || cleanLrn) {
           try {

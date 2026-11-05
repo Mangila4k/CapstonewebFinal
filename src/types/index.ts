@@ -16,6 +16,7 @@ export interface User {
   full_name?: string;
   phone?: string;
   student_id?: string | number;
+  student_name?: string;
   student_lrn?: string;
   student_grade?: string;
   student_strand?: string;

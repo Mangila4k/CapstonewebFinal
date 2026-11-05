@@ -44,12 +44,84 @@ export const StudentGradesPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'official_sheet' | 'sem1' | 'sem2' | 'all_quarters'>('official_sheet');
 
+  const isParent = user?.role === 'parent';
+  const [parentChild, setParentChild] = useState<any>(null);
+
+  useEffect(() => {
+    async function resolveParentChild() {
+      if (!isParent || !user) return;
+      try {
+        let child: any = null;
+        if (user.id) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('parent_id', user.id)
+            .maybeSingle();
+          if (data) child = data;
+        }
+        if (!child && user.student_id) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('id', user.student_id)
+            .maybeSingle();
+          if (data) child = data;
+        }
+        if (!child) {
+          const pName = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          if (pName) {
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .ilike('parent_name', `%${pName}%`)
+              .limit(1);
+            if (data && data.length > 0) child = data[0];
+          }
+        }
+        if (child) {
+          let secName = child.section || '';
+          if (child.section_id && !secName) {
+            const { data: sec } = await supabase
+              .from('sections')
+              .select('name')
+              .eq('id', child.section_id)
+              .maybeSingle();
+            if (sec?.name) secName = sec.name;
+          }
+          setParentChild({ ...child, resolvedSection: secName });
+        }
+      } catch (err) {
+        console.warn('Resolve child error in grades:', err);
+      }
+    }
+    resolveParentChild();
+  }, [isParent, user]);
+
   // Dynamic student demographic values with institutional fallbacks
-  const learnerName = user?.full_name || 'Jorvin Pengoc';
-  const learnerLrn = user?.student_lrn || '11951680082';
-  const learnerGrade = user?.student_grade || 'Grade 11';
-  const learnerStrand = user?.student_strand || 'TVL - ICT';
-  const learnerSection = user?.student_section || 'Section Almario';
+  const learnerName = isParent
+    ? (parentChild
+        ? `${parentChild.first_name || ''} ${parentChild.last_name || ''}`.trim()
+        : user?.student_name || 'Jorvin Pengoc')
+    : user?.full_name || 'Jorvin Pengoc';
+  const learnerLrn = isParent
+    ? parentChild?.lrn || user?.student_lrn || '11951680082'
+    : user?.student_lrn || '11951680082';
+  const learnerGrade = isParent
+    ? parentChild?.grade_level || user?.student_grade || 'Grade 11'
+    : user?.student_grade || 'Grade 11';
+  const learnerStrand = isParent
+    ? parentChild?.strand || user?.student_strand || 'TVL - ICT'
+    : user?.student_strand || 'TVL - ICT';
+  const learnerSection = isParent
+    ? parentChild?.resolvedSection
+      ? `Section ${parentChild.resolvedSection.replace(/^section\s+/i, '')}`
+      : user?.student_section
+      ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
+      : 'Section Almario'
+    : user?.student_section
+    ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
+    : 'Section Almario';
   const schoolYear = '2026–2027';
 
   // Semester 1 Subjects (DepEd Senior High School - TVL ICT Track)
@@ -81,9 +153,13 @@ export const StudentGradesPage: React.FC = () => {
   useEffect(() => {
     async function loadLiveGrades() {
       try {
-        let studentId = user?.student_id || user?.id;
+        let studentId = isParent
+          ? parentChild?.id || user?.student_id
+          : user?.student_id || user?.id;
         const cleanEmail = (user?.email || '').trim().toLowerCase();
-        const cleanLrn = (user?.student_lrn || '').trim();
+        const cleanLrn = isParent
+          ? parentChild?.lrn || user?.student_lrn || ''
+          : (user?.student_lrn || '').trim();
 
         if (cleanEmail || cleanLrn) {
           try {

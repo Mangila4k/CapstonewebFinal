@@ -90,6 +90,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(refreshed);
                 localStorage.setItem('currentUser', JSON.stringify(refreshed));
               }
+            } else if ((parsed.role || '').toLowerCase() === 'parent') {
+              try {
+                let childRows: any[] = [];
+                if (parsed.id) {
+                  const { data: byParentId } = await supabase
+                    .from('students')
+                    .select('*')
+                    .eq('parent_id', parsed.id);
+                  if (byParentId && byParentId.length > 0) childRows = byParentId;
+                }
+                if (childRows.length === 0 && parsed.student_id) {
+                  const { data: byStId } = await supabase
+                    .from('students')
+                    .select('*')
+                    .eq('id', parsed.student_id);
+                  if (byStId && byStId.length > 0) childRows = byStId;
+                }
+                if (childRows.length === 0) {
+                  const pName = parsed.full_name || `${parsed.first_name || ''} ${parsed.last_name || ''}`.trim();
+                  const pEmail = (parsed.email || '').trim().toLowerCase();
+                  const { data: byName } = await supabase
+                    .from('students')
+                    .select('*')
+                    .or(`parent_name.ilike.%${pName}%,parent_email.ilike.%${pEmail}%`)
+                    .order('created_at', { ascending: false });
+                  if (byName && byName.length > 0) childRows = byName;
+                }
+
+                if (childRows.length > 0) {
+                  const child = childRows[0];
+                  let childSection = child.section || '';
+                  if (child.section_id && !childSection) {
+                    const { data: sec } = await supabase
+                      .from('sections')
+                      .select('name')
+                      .eq('id', child.section_id)
+                      .maybeSingle();
+                    if (sec?.name) childSection = sec.name;
+                  }
+
+                  const childName = `${child.first_name || ''} ${child.last_name || ''}`.trim();
+                  const refreshed = {
+                    ...parsed,
+                    student_id: child.id,
+                    student_name: childName,
+                    student_lrn: child.lrn || '',
+                    student_grade: child.grade_level || '',
+                    student_strand: child.strand || '',
+                    student_section: childSection,
+                    student_status: child.status || child.academic_status || 'Enrolled',
+                  };
+                  setUser(refreshed);
+                  localStorage.setItem('currentUser', JSON.stringify(refreshed));
+                }
+              } catch (err) {
+                console.warn('Failed to hydrate parent linked student:', err);
+              }
             }
           }
         }
@@ -185,6 +242,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let studentStatus = 'Enrolled';
       let schoolYear = '2026-2027';
 
+      let studentID = matchedUser.student_id || matchedUser.id;
+      let studentName = '';
+
       if (userRole === 'student') {
         try {
           const { data: sRows } = await supabase
@@ -226,6 +286,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {
           // ignore
         }
+      } else if (userRole === 'parent') {
+        try {
+          let childRows: any[] = [];
+          if (matchedUser.id) {
+            const { data: byParentId } = await supabase
+              .from('students')
+              .select('*')
+              .eq('parent_id', matchedUser.id);
+            if (byParentId && byParentId.length > 0) childRows = byParentId;
+          }
+          if (childRows.length === 0 && matchedUser.student_id) {
+            const { data: byStId } = await supabase
+              .from('students')
+              .select('*')
+              .eq('id', matchedUser.student_id);
+            if (byStId && byStId.length > 0) childRows = byStId;
+          }
+          if (childRows.length === 0) {
+            const pName = `${firstName} ${lastName}`.trim() || cleanEmail;
+            const { data: byName } = await supabase
+              .from('students')
+              .select('*')
+              .or(`parent_name.ilike.%${pName}%,parent_email.ilike.%${cleanEmail}%`)
+              .order('created_at', { ascending: false });
+            if (byName && byName.length > 0) childRows = byName;
+          }
+
+          if (childRows.length > 0) {
+            const child = childRows[0];
+            studentID = child.id;
+            studentName = `${child.first_name || ''} ${child.last_name || ''}`.trim();
+            studentLRN = child.lrn || '';
+            studentGrade = child.grade_level || '';
+            studentStrand = child.strand || '';
+            studentStatus = child.status || child.academic_status || 'Enrolled';
+
+            if (child.section_id) {
+              const { data: sec } = await supabase
+                .from('sections')
+                .select('name')
+                .eq('id', child.section_id)
+                .maybeSingle();
+              if (sec?.name) studentSection = sec.name;
+            } else if (child.section) {
+              studentSection = child.section;
+            }
+          }
+        } catch (err) {
+          console.warn('Parent student linking note:', err);
+        }
       }
 
       const fullName = `${firstName} ${lastName}`.trim() || cleanEmail.split('@')[0];
@@ -238,7 +348,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         last_name: lastName,
         full_name: fullName,
         phone: matchedUser.phone || '',
-        student_id: matchedUser.student_id || matchedUser.id,
+        student_id: studentID,
+        student_name: studentName,
         student_lrn: studentLRN,
         student_grade: studentGrade,
         student_strand: studentStrand,
