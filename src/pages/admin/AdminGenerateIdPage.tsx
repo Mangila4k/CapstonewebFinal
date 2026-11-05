@@ -286,6 +286,26 @@ export const AdminGenerateIdPage: React.FC = () => {
   // Update selected student when dropdown changes
   const handleSelectStudent = (id: string) => {
     setSelectedStudentId(id);
+    if (id === 'blank') {
+      const isShs = gradeFilter.includes('11') || gradeFilter.includes('12');
+      setFormData({
+        id: 'blank',
+        student_id: '',
+        fullname: '',
+        first_name: '',
+        last_name: '',
+        lrn: '',
+        grade_level: gradeFilter !== 'all' ? gradeFilter : 'Junior High',
+        level_category: isShs ? 'Senior High' : 'Junior High',
+        strand: isShs ? 'TVL-ICT' : '',
+        photo_url: '',
+        parent_name: '',
+        parent_contact: '',
+        principal_name: 'Dr. Ryan R. Quiroga',
+        school_year: formData.school_year || '2026-2027',
+      });
+      return;
+    }
     const found = students.find((s) => String(s.id) === String(id));
     if (found) {
       setFormData({ ...found });
@@ -455,6 +475,11 @@ export const AdminGenerateIdPage: React.FC = () => {
 
     try {
       const sid = formData.id || formData.student_id;
+      const isBlankMode = !sid || sid === 'blank';
+      const actualId = isBlankMode
+        ? (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}`)
+        : sid;
+
       let fullName = (formData.fullname || '').trim();
       let firstName = formData.first_name || '';
       let lastName = formData.last_name || '';
@@ -471,9 +496,9 @@ export const AdminGenerateIdPage: React.FC = () => {
 
       const updatedRecord: CreatedStudentIdRecord = {
         ...formData,
-        id: sid,
-        student_id: sid,
-        fullname: fullName || 'Student',
+        id: actualId,
+        student_id: actualId,
+        fullname: fullName || (isBlankMode ? 'Custom Student ID' : 'Student'),
         first_name: firstName,
         last_name: lastName,
         lrn: formData.lrn || '',
@@ -491,7 +516,7 @@ export const AdminGenerateIdPage: React.FC = () => {
         photo_url: formData.photo_url || '',
       };
 
-      if (sid) {
+      if (!isBlankMode) {
         try {
           const { error: sbErr } = await supabase
             .from('students')
@@ -515,7 +540,12 @@ export const AdminGenerateIdPage: React.FC = () => {
         }
       }
 
-      setStudents((prev) => prev.map((s) => (s.id === sid ? updatedRecord : s)));
+      if (isBlankMode) {
+        setStudents((prev) => [updatedRecord, ...prev]);
+        setSelectedStudentId(String(actualId));
+      } else {
+        setStudents((prev) => prev.map((s) => (s.id === sid ? updatedRecord : s)));
+      }
       setFormData(updatedRecord);
 
       setAlert({
@@ -726,14 +756,25 @@ export const AdminGenerateIdPage: React.FC = () => {
 
             {/* Select Student */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                <Search className="h-3 w-3 text-[#1B2A4A]" /> Select Student
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Search className="h-3 w-3 text-[#1B2A4A]" /> Select Student
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleSelectStudent('blank')}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Sparkles className="h-3 w-3 text-emerald-600" />
+                  <span>{selectedStudentId === 'blank' ? 'Blank Mode Active' : 'Generate Blank Template'}</span>
+                </button>
+              </div>
               <select
                 value={selectedStudentId}
                 onChange={(e) => handleSelectStudent(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
               >
+                <option value="blank">➕ Blank ID Template / Manual Fill (No Student Selected)</option>
                 {filteredForDropdown.map((st) => (
                   <option key={st.id} value={st.id}>
                     {st.fullname} ({st.lrn}) - {st.grade_level} {st.strand ? `(${st.strand})` : ''}

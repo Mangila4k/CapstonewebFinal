@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { GraduationCap, Phone, Shield } from 'lucide-react';
+import { GraduationCap, Phone, Shield, Camera } from 'lucide-react';
 
 export interface StudentIdCardData {
   id?: string | number;
@@ -49,12 +49,33 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
   const defaultSchoolYear = '2026-2027';
   const defaultPrincipal = 'Dr. Ryan R. Quiroga';
 
-  const fullName = data.fullname || `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Select a Student';
-  const lrn = data.lrn || '—';
+  const isBlankTemplate =
+    data.id === 'blank' ||
+    (data.fullname === '' && !data.first_name && !data.last_name) ||
+    data.fullname === 'Select a Student';
+
+  const fullName =
+    data.fullname !== undefined && data.fullname !== 'Select a Student'
+      ? data.fullname
+      : isBlankTemplate
+      ? ''
+      : `${data.first_name || ''} ${data.last_name || ''}`.trim();
+
+  const lrn = data.lrn !== undefined && data.lrn !== '' ? data.lrn : isBlankTemplate ? '____________________' : '—';
   const schoolYear = data.school_year || defaultSchoolYear;
   const principalName = data.principal_name || defaultPrincipal;
-  const parentName = data.parent_name || '—';
-  const parentContact = data.parent_contact || '—';
+  const parentName =
+    data.parent_name !== undefined && data.parent_name !== ''
+      ? data.parent_name
+      : isBlankTemplate
+      ? '____________________'
+      : '—';
+  const parentContact =
+    data.parent_contact !== undefined && data.parent_contact !== ''
+      ? data.parent_contact
+      : isBlankTemplate
+      ? '____________________'
+      : '—';
 
   // Compute Grade/Department details
   const rawGrade = String(data.level_category || data.grade_level || 'Junior High');
@@ -221,18 +242,32 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
             {data.photo_url ? (
               <img
                 src={data.photo_url}
-                alt={fullName}
+                alt={fullName || 'Student Photo'}
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
+            ) : isBlankTemplate && !fullName ? (
+              <div className="flex flex-col items-center justify-center w-full h-full text-slate-300 p-2 text-center select-none">
+                <Camera className="h-8 w-8 text-[#f5b72e]/80 mb-1" />
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f5b72e]">2x2 PHOTO</span>
+                <span className="text-[8px] text-slate-300 font-medium">AFFIX HERE</span>
+              </div>
             ) : (
-              <div className="id-photo-initial">{getInitial(fullName)}</div>
+              <div className="id-photo-initial">{getInitial(fullName || '—')}</div>
             )}
           </div>
 
           <div className="id-student-info">
-            <div className="id-student-fullname">{fullName}</div>
+            <div className="id-student-fullname">
+              {fullName ? (
+                fullName
+              ) : (
+                <div className="border-b-2 border-dashed border-[#f5b72e]/60 min-w-[200px] h-7 flex items-end">
+                  <span className="text-xs text-slate-300 italic font-normal">Student Full Name</span>
+                </div>
+              )}
+            </div>
 
             <div className="id-meta-list">
               <div className="id-meta-item">
@@ -331,7 +366,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
             <div className="id-back-sig-box">
               <div className="id-back-sig-line"></div>
               <div className="id-back-sig-name">
-                {fullName !== 'Select a Student' ? fullName.toUpperCase() : '—'}
+                {fullName ? fullName.toUpperCase() : 'STUDENT SIGNATURE OVER PRINTED NAME'}
               </div>
               <div className="id-back-sig-role">STUDENT SIGNATURE</div>
             </div>
