@@ -9,21 +9,25 @@ import {
   CheckCircle2,
   GraduationCap,
   User,
+  BookOpen,
+  Sparkles,
+  TrendingUp,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
-interface SubjectGrade {
+export interface JhsSubjectGrade {
   code: string;
   title: string;
-  category: 'Core' | 'Applied' | 'Specialized';
-  units: number;
-  q1?: number;
-  q2?: number;
-  q3?: number;
-  q4?: number;
+  isMapehParent?: boolean;
+  isMapehChild?: boolean;
+  q1: number;
+  q2: number;
+  q3: number;
+  q4: number;
   final: number;
   remarks: 'Passed' | 'Failed';
 }
@@ -46,11 +50,12 @@ interface AttendanceMonth {
 
 export const StudentGradesPage: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'official_sheet' | 'sem1' | 'sem2' | 'all_quarters'>('official_sheet');
+  const [activeTab, setActiveTab] = useState<'jhs_sf9' | 'quarterly_breakdown' | 'values_attendance'>('jhs_sf9');
 
   const isParent = user?.role === 'parent';
   const [parentChild, setParentChild] = useState<any>(null);
 
+  // Dynamic parent-child linkage resolver
   useEffect(() => {
     async function resolveParentChild() {
       if (!isParent || !user) return;
@@ -111,49 +116,66 @@ export const StudentGradesPage: React.FC = () => {
   const learnerLrn = isParent
     ? parentChild?.lrn || user?.student_lrn || '11951680082'
     : user?.student_lrn || '11951680082';
-  const learnerGrade = isParent
-    ? parentChild?.grade_level || user?.student_grade || 'Grade 11'
-    : user?.student_grade || 'Grade 11';
+  const rawGrade = isParent
+    ? parentChild?.grade_level || user?.student_grade || 'Grade 10'
+    : user?.student_grade || 'Grade 10';
+  const learnerGrade = rawGrade.toLowerCase().startsWith('grade') ? rawGrade : `Grade ${rawGrade}`;
   const learnerStrand = isParent
-    ? parentChild?.strand || user?.student_strand || 'TVL - ICT'
-    : user?.student_strand || 'TVL - ICT';
+    ? parentChild?.strand || user?.student_strand || 'Junior High School'
+    : user?.student_strand || 'Junior High School';
   const learnerSection = isParent
     ? parentChild?.resolvedSection
       ? `Section ${parentChild.resolvedSection.replace(/^section\s+/i, '')}`
       : user?.student_section
       ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
-      : 'Section Almario'
+      : 'Section Rizal'
     : user?.student_section
     ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
-    : 'Section Almario';
+    : 'Section Rizal';
   const schoolYear = '2026–2027';
 
-  // Semester 1 Subjects (DepEd Senior High School - TVL ICT Track)
-  const [sem1Subjects, setSem1Subjects] = useState<SubjectGrade[]>([
-    { code: 'CORE-OC11', title: 'Oral Communication in Context', category: 'Core', units: 4.0, q1: 91, q2: 93, final: 92, remarks: 'Passed' },
-    { code: 'CORE-FIL11', title: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', category: 'Core', units: 4.0, q1: 90, q2: 92, final: 91, remarks: 'Passed' },
-    { code: 'CORE-GM11', title: 'General Mathematics', category: 'Core', units: 4.0, q1: 89, q2: 91, final: 90, remarks: 'Passed' },
-    { code: 'CORE-ELS11', title: 'Earth and Life Science', category: 'Core', units: 4.0, q1: 92, q2: 94, final: 93, remarks: 'Passed' },
-    { code: 'CORE-PHIL11', title: 'Introduction to the Philosophy of the Human Person', category: 'Core', units: 4.0, q1: 91, q2: 93, final: 92, remarks: 'Passed' },
-    { code: 'CORE-PE11', title: 'Physical Education and Health 1', category: 'Core', units: 2.0, q1: 95, q2: 97, final: 96, remarks: 'Passed' },
-    { code: 'APP-EAPP11', title: 'English for Academic and Professional Purposes', category: 'Applied', units: 4.0, q1: 90, q2: 92, final: 91, remarks: 'Passed' },
-    { code: 'APP-EMP11', title: 'Empowerment Technologies: ICT for Professional Tracks', category: 'Applied', units: 4.0, q1: 93, q2: 95, final: 94, remarks: 'Passed' },
-    { code: 'SP-CSS11', title: 'Computer Systems Servicing NC II (CSS 1)', category: 'Specialized', units: 4.0, q1: 92, q2: 94, final: 93, remarks: 'Passed' },
+  // Promotion target grade level
+  const nextGradeLevel = useMemo(() => {
+    if (learnerGrade.includes('7')) return 'Grade 8';
+    if (learnerGrade.includes('8')) return 'Grade 9';
+    if (learnerGrade.includes('9')) return 'Grade 10';
+    if (learnerGrade.includes('10')) return 'Grade 11 (Senior High School)';
+    if (learnerGrade.includes('11')) return 'Grade 12';
+    return 'the Next Grade Level';
+  }, [learnerGrade]);
+
+  // Curriculum label
+  const curriculumProgram = useMemo(() => {
+    if (learnerGrade.includes('11') || learnerGrade.includes('12')) {
+      return 'K to 12 Basic Education Curriculum · Senior High';
+    }
+    return 'K to 12 Basic Education Curriculum · Junior High School';
+  }, [learnerGrade]);
+
+  // =========================================================================
+  // Standard DepEd Junior High School (JHS Form 138 / SF9) Learning Areas
+  // In DepEd JHS:
+  // - Single unified table across Quarters 1, 2, 3, and 4
+  // - 8 main learning areas: Filipino, English, Math, Science, AP, EsP, TLE, MAPEH
+  // - MAPEH is the average of Music, Arts, PE, and Health
+  // - General Average is the average of the 8 main learning areas
+  // =========================================================================
+  const [jhsSubjects, setJhsSubjects] = useState<JhsSubjectGrade[]>([
+    { code: 'FIL-10', title: 'Filipino', q1: 92, q2: 93, q3: 94, q4: 93, final: 93, remarks: 'Passed' },
+    { code: 'ENG-10', title: 'English', q1: 93, q2: 94, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
+    { code: 'MATH-10', title: 'Mathematics', q1: 91, q2: 92, q3: 93, q4: 92, final: 92, remarks: 'Passed' },
+    { code: 'SCI-10', title: 'Science', q1: 94, q2: 95, q3: 94, q4: 95, final: 95, remarks: 'Passed' },
+    { code: 'AP-10', title: 'Araling Panlipunan (AP)', q1: 95, q2: 95, q3: 96, q4: 96, final: 96, remarks: 'Passed' },
+    { code: 'ESP-10', title: 'Edukasyon sa Pagpapakatao (EsP)', q1: 96, q2: 97, q3: 96, q4: 97, final: 97, remarks: 'Passed' },
+    { code: 'TLE-10', title: 'Technology and Livelihood Education (TLE)', q1: 94, q2: 95, q3: 94, q4: 95, final: 95, remarks: 'Passed' },
+    { code: 'MAPEH-10', title: 'Music, Arts, Physical Education & Health (MAPEH)', isMapehParent: true, q1: 95, q2: 96, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
+    { code: 'MUSIC-10', title: 'Music', isMapehChild: true, q1: 94, q2: 95, q3: 95, q4: 96, final: 95, remarks: 'Passed' },
+    { code: 'ARTS-10', title: 'Arts', isMapehChild: true, q1: 93, q2: 94, q3: 95, q4: 95, final: 94, remarks: 'Passed' },
+    { code: 'PE-10', title: 'Physical Education (P.E.)', isMapehChild: true, q1: 96, q2: 97, q3: 96, q4: 97, final: 97, remarks: 'Passed' },
+    { code: 'HEALTH-10', title: 'Health', isMapehChild: true, q1: 95, q2: 96, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
   ]);
 
-  // Semester 2 Subjects (DepEd Senior High School - TVL ICT Track)
-  const [sem2Subjects, setSem2Subjects] = useState<SubjectGrade[]>([
-    { code: 'CORE-RWS11', title: 'Reading and Writing Skills', category: 'Core', units: 4.0, q3: 91, q4: 93, final: 92, remarks: 'Passed' },
-    { code: 'CORE-PAG11', title: 'Pagbasa at Pagsusuri ng Iba\'t Ibang Teksto', category: 'Core', units: 4.0, q3: 90, q4: 92, final: 91, remarks: 'Passed' },
-    { code: 'CORE-STAT11', title: 'Statistics and Probability', category: 'Core', units: 4.0, q3: 89, q4: 91, final: 90, remarks: 'Passed' },
-    { code: 'CORE-PS11', title: 'Physical Science', category: 'Core', units: 4.0, q3: 91, q4: 93, final: 92, remarks: 'Passed' },
-    { code: 'CORE-PE12', title: 'Physical Education and Health 2', category: 'Core', units: 2.0, q3: 95, q4: 97, final: 96, remarks: 'Passed' },
-    { code: 'APP-RS11', title: 'Practical Research 1 (Qualitative Research)', category: 'Applied', units: 4.0, q3: 92, q4: 94, final: 93, remarks: 'Passed' },
-    { code: 'APP-INQ11', title: 'Inquiries, Investigations and Immersion', category: 'Applied', units: 4.0, q3: 91, q4: 93, final: 92, remarks: 'Passed' },
-    { code: 'SP-CSS12', title: 'Computer Systems Servicing NC II (CSS 2)', category: 'Specialized', units: 4.0, q3: 93, q4: 95, final: 94, remarks: 'Passed' },
-  ]);
-
-  // Load live grades and subjects from Supabase
+  // Load live grades from Supabase if recorded
   useEffect(() => {
     async function loadLiveGrades() {
       try {
@@ -191,7 +213,6 @@ export const StudentGradesPage: React.FC = () => {
         const dbSubjects = subjectsRes.data || [];
 
         if (dbGrades.length > 0) {
-          // Map DB grades by subject_id -> quarter -> grade
           const gradesBySubject: Record<string, Record<number, number>> = {};
           dbGrades.forEach((g: any) => {
             if (!gradesBySubject[g.subject_id]) gradesBySubject[g.subject_id] = {};
@@ -200,22 +221,27 @@ export const StudentGradesPage: React.FC = () => {
             }
           });
 
-          // Match with subjects
-          setSem1Subjects((prev) =>
+          // Match live recorded grades against JHS subjects
+          setJhsSubjects((prev) =>
             prev.map((sub) => {
-              // Find matching DB subject
-              const matchedDbSub = dbSubjects.find(
-                (s: any) =>
+              const matchedDbSub = dbSubjects.find((s: any) => {
+                const sName = (s.name || '').toLowerCase();
+                const subTitle = sub.title.toLowerCase();
+                return (
                   s.code === sub.code ||
-                  s.name.toLowerCase() === sub.title.toLowerCase() ||
-                  sub.title.toLowerCase().includes(s.name.toLowerCase())
-              );
+                  sName === subTitle ||
+                  subTitle.includes(sName) ||
+                  sName.includes(subTitle.split(' ')[0])
+                );
+              });
 
               if (matchedDbSub && gradesBySubject[matchedDbSub.id]) {
-                const subGrades = gradesBySubject[matchedDbSub.id];
-                const q1 = subGrades[1] !== undefined ? subGrades[1] : sub.q1;
-                const q2 = subGrades[2] !== undefined ? subGrades[2] : sub.q2;
-                const validMarks = [q1, q2].filter((v): v is number => v !== undefined);
+                const marks = gradesBySubject[matchedDbSub.id];
+                const q1 = marks[1] !== undefined ? marks[1] : sub.q1;
+                const q2 = marks[2] !== undefined ? marks[2] : sub.q2;
+                const q3 = marks[3] !== undefined ? marks[3] : sub.q3;
+                const q4 = marks[4] !== undefined ? marks[4] : sub.q4;
+                const validMarks = [q1, q2, q3, q4].filter((v): v is number => typeof v === 'number' && v > 0);
                 const final =
                   validMarks.length > 0
                     ? Math.round(validMarks.reduce((a, b) => a + b, 0) / validMarks.length)
@@ -224,34 +250,6 @@ export const StudentGradesPage: React.FC = () => {
                   ...sub,
                   q1,
                   q2,
-                  final,
-                  remarks: final >= 75 ? 'Passed' : 'Failed',
-                };
-              }
-              return sub;
-            })
-          );
-
-          setSem2Subjects((prev) =>
-            prev.map((sub) => {
-              const matchedDbSub = dbSubjects.find(
-                (s: any) =>
-                  s.code === sub.code ||
-                  s.name.toLowerCase() === sub.title.toLowerCase() ||
-                  sub.title.toLowerCase().includes(s.name.toLowerCase())
-              );
-
-              if (matchedDbSub && gradesBySubject[matchedDbSub.id]) {
-                const subGrades = gradesBySubject[matchedDbSub.id];
-                const q3 = subGrades[3] !== undefined ? subGrades[3] : sub.q3;
-                const q4 = subGrades[4] !== undefined ? subGrades[4] : sub.q4;
-                const validMarks = [q3, q4].filter((v): v is number => v !== undefined);
-                const final =
-                  validMarks.length > 0
-                    ? Math.round(validMarks.reduce((a, b) => a + b, 0) / validMarks.length)
-                    : sub.final;
-                return {
-                  ...sub,
                   q3,
                   q4,
                   final,
@@ -268,37 +266,51 @@ export const StudentGradesPage: React.FC = () => {
     }
 
     loadLiveGrades();
-  }, [user]);
+  }, [user, isParent, parentChild]);
 
-  // Averages calculations
-  const sem1Total = useMemo(() => sem1Subjects.reduce((sum, s) => sum + s.final, 0), [sem1Subjects]);
-  const sem1Average = useMemo(
-    () => (sem1Subjects.length > 0 ? (sem1Total / sem1Subjects.length).toFixed(2) : '0.00'),
-    [sem1Total, sem1Subjects]
+  // Major 8 Learning Areas that contribute to General Average (MAPEH is included; sub-components are excluded)
+  const mainLearningAreas = useMemo(
+    () => jhsSubjects.filter((s) => !s.isMapehChild),
+    [jhsSubjects]
   );
 
-  const sem2Total = useMemo(() => sem2Subjects.reduce((sum, s) => sum + s.final, 0), [sem2Subjects]);
-  const sem2Average = useMemo(
-    () => (sem2Subjects.length > 0 ? (sem2Total / sem2Subjects.length).toFixed(2) : '0.00'),
-    [sem2Total, sem2Subjects]
-  );
+  // Quarterly General Averages
+  const q1GeneralAverage = useMemo(() => {
+    if (mainLearningAreas.length === 0) return '0.00';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q1, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
+  }, [mainLearningAreas]);
 
-  const allSubjects = useMemo(() => [...sem1Subjects, ...sem2Subjects], [sem1Subjects, sem2Subjects]);
-  const grandTotal = useMemo(() => allSubjects.reduce((sum, s) => sum + s.final, 0), [allSubjects]);
-  const generalFinalAverage = useMemo(
-    () => (allSubjects.length > 0 ? (grandTotal / allSubjects.length).toFixed(2) : '0.00'),
-    [grandTotal, allSubjects]
-  );
-  const totalUnits = useMemo(
-    () => allSubjects.reduce((sum, s) => sum + s.units, 0).toFixed(1),
-    [allSubjects]
-  );
+  const q2GeneralAverage = useMemo(() => {
+    if (mainLearningAreas.length === 0) return '0.00';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q2, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
+  }, [mainLearningAreas]);
 
-  // DepEd Learner's Observed Values (Character / Core Values)
+  const q3GeneralAverage = useMemo(() => {
+    if (mainLearningAreas.length === 0) return '0.00';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q3, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
+  }, [mainLearningAreas]);
+
+  const q4GeneralAverage = useMemo(() => {
+    if (mainLearningAreas.length === 0) return '0.00';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q4, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
+  }, [mainLearningAreas]);
+
+  // General Final Average (Sum of final ratings of 8 major learning areas / 8)
+  const generalFinalAverage = useMemo(() => {
+    if (mainLearningAreas.length === 0) return '0.00';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.final, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
+  }, [mainLearningAreas]);
+
+  // DepEd Learner's Observed Values (DepEd Core Values)
   const coreValues: CoreValueItem[] = [
     {
       category: '1. Maka-Diyos',
-      statement: 'Expresses one\'s spiritual beliefs while respecting the spiritual beliefs of others',
+      statement: "Expresses one's spiritual beliefs while respecting the spiritual beliefs of others",
       q1: 'AO',
       q2: 'AO',
       q3: 'AO',
@@ -306,7 +318,7 @@ export const StudentGradesPage: React.FC = () => {
     },
     {
       category: '1. Maka-Diyos',
-      statement: 'Shows adherence to ethical principles by upholding truth and honesty',
+      statement: 'Shows adherence to ethical principles by upholding truth and honesty in all endeavors',
       q1: 'AO',
       q2: 'AO',
       q3: 'AO',
@@ -314,7 +326,7 @@ export const StudentGradesPage: React.FC = () => {
     },
     {
       category: '2. Makatao',
-      statement: 'Is sensitive to individual, social, and cultural differences',
+      statement: 'Is sensitive to individual, social, and cultural differences; promotes harmony',
       q1: 'AO',
       q2: 'AO',
       q3: 'AO',
@@ -322,7 +334,7 @@ export const StudentGradesPage: React.FC = () => {
     },
     {
       category: '2. Makatao',
-      statement: 'Demonstrates solidarity and teamwork in group and school undertakings',
+      statement: 'Demonstrates solidarity and active teamwork in school, group, and community undertakings',
       q1: 'AO',
       q2: 'AO',
       q3: 'AO',
@@ -330,7 +342,7 @@ export const StudentGradesPage: React.FC = () => {
     },
     {
       category: '3. Makakalikasan',
-      statement: 'Cares for the environment and utilizes resources wisely, judiciously, and economically',
+      statement: 'Cares for the environment and utilizes school resources wisely, judiciously, and economically',
       q1: 'AO',
       q2: 'AO',
       q3: 'AO',
@@ -338,7 +350,7 @@ export const StudentGradesPage: React.FC = () => {
     },
     {
       category: '4. Makabansa',
-      statement: 'Demonstrates pride in being a Filipino; exercises civic rights and responsibilities',
+      statement: 'Demonstrates pride in being a Filipino; exercises civic rights and community responsibilities',
       q1: 'AO',
       q2: 'AO',
       q3: 'AO',
@@ -376,14 +388,14 @@ export const StudentGradesPage: React.FC = () => {
   // Print Handler
   const handlePrint = () => {
     const prevTitle = document.title;
-    document.title = `PLSNHS_Form138_SF9_${learnerName.replace(/\s+/g, '_')}_SY${schoolYear}`;
+    document.title = `PLSNHS_Form138_SF9_JHS_${learnerName.replace(/\s+/g, '_')}_SY${schoolYear}`;
     window.print();
     setTimeout(() => {
       document.title = prevTitle;
     }, 1000);
   };
 
-  // Export CSV Handler
+  // Export CSV Handler in DepEd JHS SF9 Matrix Format
   const handleExportCsv = () => {
     const csvLines: string[] = [];
 
@@ -393,50 +405,43 @@ export const StudentGradesPage: React.FC = () => {
     csvLines.push('"PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL"');
     csvLines.push('"Langtad, City of Naga, Cebu · School ID: 303035"');
     csvLines.push('""');
-    csvLines.push('"DEPED SF9 - SHS (SCHOOL FORM 9): LEARNER PROGRESS REPORT CARD (FORM 138)"');
+    csvLines.push('"DEPED SF9 - JHS (SCHOOL FORM 9): LEARNER PROGRESS REPORT CARD (FORM 138)"');
     csvLines.push(`"Learner Name:","${learnerName}"`);
     csvLines.push(`"Learner Reference Number (LRN):","${learnerLrn}"`);
     csvLines.push(`"Grade Level & Section:","${learnerGrade} - ${learnerSection}"`);
-    csvLines.push(`"Track & Strand:","${learnerStrand}"`);
+    csvLines.push(`"Curriculum Program:","${curriculumProgram}"`);
     csvLines.push(`"School Year:","${schoolYear}"`);
     csvLines.push(`"General Final Average:","${generalFinalAverage}"`);
-    csvLines.push('"DepEd Academic Descriptor:","Outstanding (With Honors)"');
+    csvLines.push('"DepEd Academic Descriptor:","Outstanding (With High Honors)"');
     csvLines.push('""');
 
-    // First Semester
-    csvLines.push('"FIRST SEMESTER ACADEMIC PERFORMANCE"');
-    csvLines.push('"Subject Code","Subject Title","Classification","Units","Quarter 1","Quarter 2","Semestral Final","Remarks"');
-    sem1Subjects.forEach((s) => {
+    // Learning Areas Matrix
+    csvLines.push('"REPORT ON LEARNING PROGRESS AND ACHIEVEMENT"');
+    csvLines.push('"Subject Code","Learning Areas (Subjects)","Quarter 1","Quarter 2","Quarter 3","Quarter 4","Final Rating","Remarks"');
+    jhsSubjects.forEach((s) => {
+      const indent = s.isMapehChild ? '   ' : '';
       csvLines.push([
         `"${s.code}"`,
-        `"${s.title}"`,
-        `"${s.category}"`,
-        String(s.units),
+        `"${indent}${s.title}"`,
         String(s.q1),
         String(s.q2),
-        String(s.final),
-        `"${s.remarks}"`,
-      ].join(','));
-    });
-    csvLines.push(`"","First Semester General Average","","","","","${sem1Average}","Passed"`);
-    csvLines.push('""');
-
-    // Second Semester
-    csvLines.push('"SECOND SEMESTER ACADEMIC PERFORMANCE"');
-    csvLines.push('"Subject Code","Subject Title","Classification","Units","Quarter 3","Quarter 4","Semestral Final","Remarks"');
-    sem2Subjects.forEach((s) => {
-      csvLines.push([
-        `"${s.code}"`,
-        `"${s.title}"`,
-        `"${s.category}"`,
-        String(s.units),
         String(s.q3),
         String(s.q4),
         String(s.final),
         `"${s.remarks}"`,
       ].join(','));
     });
-    csvLines.push(`"","Second Semester General Average","","","","","${sem2Average}","Passed"`);
+    csvLines.push(
+      `"","General Average","${q1GeneralAverage}","${q2GeneralAverage}","${q3GeneralAverage}","${q4GeneralAverage}","${generalFinalAverage}","Passed"`
+    );
+    csvLines.push('""');
+
+    // Core Values
+    csvLines.push('"REPORT ON LEARNER\'S OBSERVED VALUES (DEPED CORE VALUES)"');
+    csvLines.push('"Core Values","Behavior Statements","Q1","Q2","Q3","Q4"');
+    coreValues.forEach((cv) => {
+      csvLines.push(`"${cv.category}","${cv.statement}","${cv.q1}","${cv.q2}","${cv.q3}","${cv.q4}"`);
+    });
     csvLines.push('""');
 
     // Attendance
@@ -453,7 +458,7 @@ export const StudentGradesPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `DepEd_SF9_Form138_${learnerName.replace(/\s+/g, '_')}_SY2026-2027.csv`);
+    link.setAttribute('download', `DepEd_SF9_JHS_Form138_${learnerName.replace(/\s+/g, '_')}_SY2026-2027.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -461,11 +466,13 @@ export const StudentGradesPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-16">
-      {/* Print CSS to render exact single sheet bond paper standard (8.5" x 11") */}
+      {/* ================================================================= */}
+      {/* PRINT CSS: Strictly engineered to fit on a SINGLE 8.5" x 11" PAGE  */}
+      {/* ================================================================= */}
       <style>{`
         @page {
           size: letter portrait;
-          margin: 0.25in 0.35in 0.2in 0.35in;
+          margin: 0.22in 0.32in 0.18in 0.32in;
         }
         @media print {
           html, body {
@@ -476,7 +483,7 @@ export const StudentGradesPage: React.FC = () => {
             height: 100% !important;
             max-height: 100% !important;
             overflow: hidden !important;
-            font-size: 7pt !important;
+            font-size: 6.8pt !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -538,8 +545,8 @@ export const StudentGradesPage: React.FC = () => {
           .official-grade-table td {
             border: 1px solid #000000 !important;
             color: #000000 !important;
-            padding: 1.5px 3.5px !important;
-            font-size: 6.8pt !important;
+            padding: 1.2px 3px !important;
+            font-size: 6.7pt !important;
             line-height: 1.15 !important;
           }
           .official-grade-table th {
@@ -547,14 +554,11 @@ export const StudentGradesPage: React.FC = () => {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             font-weight: 700 !important;
-            font-size: 6.5pt !important;
-            padding: 2px 3.5px !important;
+            font-size: 6.4pt !important;
+            padding: 1.5px 3px !important;
           }
           .official-double-line {
             border-bottom: 2px solid #000000 !important;
-          }
-          .official-sign-line {
-            border-bottom: 1px solid #000000 !important;
           }
         }
       `}</style>
@@ -564,15 +568,15 @@ export const StudentGradesPage: React.FC = () => {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-              Official Report Card (Form 138)
+              Learner Progress Report Card (SF9)
             </h1>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 whitespace-nowrap shrink-0">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              DepEd SF9 Bond Paper Ready
+              DepEd JHS Form 138 Format
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Senior High School Learner Progress &amp; Quarterly Ratings (SF9) · S.Y. {schoolYear}
+            Junior High School (JHS) Unified 4-Quarter Progress &amp; Academic Ratings · S.Y. {schoolYear}
           </p>
         </div>
 
@@ -581,7 +585,7 @@ export const StudentGradesPage: React.FC = () => {
             type="button"
             onClick={handleExportCsv}
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-            title="Download official Form 138 dataset as CSV"
+            title="Download official DepEd JHS Form 138 dataset as CSV"
           >
             <Download className="h-4 w-4 text-slate-500" />
             <span>Export CSV</span>
@@ -627,7 +631,7 @@ export const StudentGradesPage: React.FC = () => {
                   <span>•</span>
                   <span>{learnerGrade} – {learnerSection}</span>
                   <span>•</span>
-                  <span className="text-slate-700 font-semibold">{learnerStrand}</span>
+                  <span className="text-slate-700 font-semibold">{curriculumProgram}</span>
                 </div>
               </div>
             </div>
@@ -640,115 +644,118 @@ export const StudentGradesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* KPI Metrics Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-5 border-t border-slate-100">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 sm:p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">General Final Average</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">{generalFinalAverage}</span>
-                <span className="text-[11px] font-bold text-emerald-700">Passed</span>
+          {/* KPI Metrics Grid: Unified Quarterly Averages */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mt-6 pt-5 border-t border-slate-100">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 sm:p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">General Average</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl sm:text-3xl font-black text-emerald-950 font-mono">{generalFinalAverage}</span>
               </div>
-              <span className="text-[11px] text-slate-400 mt-0.5 block">S.Y. {schoolYear}</span>
+              <span className="text-[11px] font-bold text-emerald-700 mt-0.5 block">Passed (Final)</span>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 sm:p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">1st Semester Average</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl sm:text-3xl font-black text-blue-900 font-mono">{sem1Average}</span>
-                <span className="text-[11px] font-bold text-emerald-700">Passed</span>
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Quarter 1</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl font-black text-slate-900 font-mono">{q1GeneralAverage}</span>
               </div>
-              <span className="text-[11px] text-slate-400 mt-0.5 block">Quarters 1 &amp; 2</span>
+              <span className="text-[11px] text-slate-400 mt-0.5 block">1st Grading</span>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 sm:p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">2nd Semester Average</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl sm:text-3xl font-black text-indigo-900 font-mono">{sem2Average}</span>
-                <span className="text-[11px] font-bold text-emerald-700">Passed</span>
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Quarter 2</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl font-black text-slate-900 font-mono">{q2GeneralAverage}</span>
               </div>
-              <span className="text-[11px] text-slate-400 mt-0.5 block">Quarters 3 &amp; 4</span>
+              <span className="text-[11px] text-slate-400 mt-0.5 block">2nd Grading</span>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 sm:p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Attendance Rate</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl sm:text-3xl font-black text-emerald-800 font-mono">{attendanceRate}%</span>
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Quarter 3</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl font-black text-slate-900 font-mono">{q3GeneralAverage}</span>
               </div>
-              <span className="text-[11px] text-slate-500 mt-0.5 block">{totalDaysPresent} of {totalSchoolDays} school days</span>
+              <span className="text-[11px] text-slate-400 mt-0.5 block">3rd Grading</span>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Quarter 4</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl font-black text-slate-900 font-mono">{q4GeneralAverage}</span>
+              </div>
+              <span className="text-[11px] text-slate-400 mt-0.5 block">4th Grading</span>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Attendance</span>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl font-black text-blue-900 font-mono">{attendanceRate}%</span>
+              </div>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">{totalDaysPresent}/{totalSchoolDays} Days</span>
             </div>
           </div>
         </div>
 
-        {/* Interactive View Switcher Tabs */}
+        {/* View Switcher Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl w-fit border border-slate-200/80 overflow-x-auto max-w-full">
           <button
             type="button"
-            onClick={() => setActiveTab('official_sheet')}
+            onClick={() => setActiveTab('jhs_sf9')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'official_sheet'
+              activeTab === 'jhs_sf9'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
             <FileText className="h-3.5 w-3.5 text-emerald-700" />
-            <span>Full Grade Sheet (SF9 Summary)</span>
+            <span>JHS Form 138 (Unified SF9 Sheet)</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('sem1')}
+            onClick={() => setActiveTab('quarterly_breakdown')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'sem1'
+              activeTab === 'quarterly_breakdown'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
-            <Calendar className="h-3.5 w-3.5 text-blue-600" />
-            <span>1st Semester</span>
+            <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
+            <span>Quarterly Progression</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('sem2')}
+            onClick={() => setActiveTab('values_attendance')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'sem2'
+              activeTab === 'values_attendance'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
             <Calendar className="h-3.5 w-3.5 text-indigo-600" />
-            <span>2nd Semester</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('all_quarters')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'all_quarters'
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5 text-amber-600" />
-            <span>All Quarters Matrix</span>
+            <span>Core Values &amp; Attendance</span>
           </button>
         </div>
 
-        {/* TAB 1 CONTENT: FULL GRADE SHEET ON SCREEN (MODERN WEB UI) */}
-        {activeTab === 'official_sheet' && (
+        {/* TAB 1: JHS FORM 138 UNIFIED REPORT CARD */}
+        {activeTab === 'jhs_sf9' && (
           <div className="space-y-6">
-            {/* FIRST SEMESTER LEARNING AREAS CARD */}
+            {/* UNIFIED 4-QUARTER LEARNING AREAS CARD */}
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 font-display">
-                    First Semester Learning Areas (SF9)
+                    Report on Learning Progress and Achievement (JHS SF9)
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Core, Applied, and Specialized Subjects for Quarters 1 &amp; 2</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    DepEd standard unified 4-quarter matrix covering all 8 Junior High School learning areas
+                  </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">1st Sem Average</span>
-                  <span className="text-xl font-black text-blue-900 font-mono">{sem1Average}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+                    DepEd Order No. 8, s. 2015
+                  </span>
                 </div>
               </div>
 
@@ -756,119 +763,86 @@ export const StudentGradesPage: React.FC = () => {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-5 py-3.5">Learning Area (Subject)</th>
-                      <th className="px-4 py-3.5 text-center">Quarter 1</th>
-                      <th className="px-4 py-3.5 text-center">Quarter 2</th>
-                      <th className="px-5 py-3.5 text-center font-bold text-slate-900">Final Rating</th>
-                      <th className="px-5 py-3.5 text-right">Remarks</th>
+                      <th className="px-5 py-3.5 w-[38%]">Learning Areas (Subjects)</th>
+                      <th className="px-3.5 py-3.5 text-center w-[10%]">1 (Q1)</th>
+                      <th className="px-3.5 py-3.5 text-center w-[10%]">2 (Q2)</th>
+                      <th className="px-3.5 py-3.5 text-center w-[10%]">3 (Q3)</th>
+                      <th className="px-3.5 py-3.5 text-center w-[10%]">4 (Q4)</th>
+                      <th className="px-4 py-3.5 text-center font-bold text-slate-900 w-[11%] bg-slate-100/70">
+                        Final Rating
+                      </th>
+                      <th className="px-5 py-3.5 text-right w-[11%]">Remarks</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {sem1Subjects.map((s, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900">{s.title}</span>
-                            <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
-                              s.category === 'Core'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : s.category === 'Applied'
-                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            }`}>
-                              {s.category}
-                            </span>
-                          </div>
-                          <span className="font-mono text-[10px] text-slate-400">{s.code}</span>
-                        </td>
-                        <td className="px-4 py-3.5 text-center font-mono font-medium text-slate-700">{s.q1}</td>
-                        <td className="px-4 py-3.5 text-center font-mono font-medium text-slate-700">{s.q2}</td>
-                        <td className="px-5 py-3.5 text-center font-mono font-black text-slate-900 text-sm bg-slate-50/50">{s.final}</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <Badge variant="success" size="sm">{s.remarks}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="bg-slate-50 font-bold border-t border-slate-200">
-                      <td colSpan={3} className="px-5 py-3.5 uppercase tracking-wider text-xs text-slate-900">
-                        General Average for the First Semester
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-black text-base text-blue-950 bg-blue-50/60">
-                        {sem1Average}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-emerald-700 text-xs">Passed</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    {jhsSubjects.map((s, idx) => {
+                      if (s.isMapehChild) {
+                        return (
+                          <tr key={idx} className="bg-slate-50/30 hover:bg-slate-50/70 transition-colors">
+                            <td className="px-5 py-2.5 pl-10 text-slate-600">
+                              <span className="text-[11px] font-medium">• {s.title}</span>
+                            </td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q1}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q2}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q3}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q4}</td>
+                            <td className="px-4 py-2.5 text-center font-mono font-semibold text-slate-600 text-[11px] bg-slate-50/50">
+                              {s.final}
+                            </td>
+                            <td className="px-5 py-2.5 text-right text-[11px] font-medium text-emerald-700">
+                              {s.remarks}
+                            </td>
+                          </tr>
+                        );
+                      }
 
-            {/* SECOND SEMESTER LEARNING AREAS CARD */}
-            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 font-display">
-                    Second Semester Learning Areas (SF9)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Core, Applied, and Specialized Subjects for Quarters 3 &amp; 4</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">2nd Sem Average</span>
-                  <span className="text-xl font-black text-indigo-900 font-mono">{sem2Average}</span>
-                </div>
-              </div>
+                      return (
+                        <tr
+                          key={idx}
+                          className={`hover:bg-slate-50/70 transition-colors ${
+                            s.isMapehParent ? 'bg-amber-50/20 font-bold' : ''
+                          }`}
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900">{s.title}</span>
+                              <span className="text-[9.5px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                {s.code}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q1}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q2}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q3}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q4}</td>
+                          <td className="px-4 py-3.5 text-center font-mono font-black text-slate-900 text-sm bg-slate-50/60">
+                            {s.final}
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            <Badge variant="success" size="sm">{s.remarks}</Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="px-5 py-3.5">Learning Area (Subject)</th>
-                      <th className="px-4 py-3.5 text-center">Quarter 3</th>
-                      <th className="px-4 py-3.5 text-center">Quarter 4</th>
-                      <th className="px-5 py-3.5 text-center font-bold text-slate-900">Final Rating</th>
-                      <th className="px-5 py-3.5 text-right">Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {sem2Subjects.map((s, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900">{s.title}</span>
-                            <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
-                              s.category === 'Core'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : s.category === 'Applied'
-                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            }`}>
-                              {s.category}
-                            </span>
-                          </div>
-                          <span className="font-mono text-[10px] text-slate-400">{s.code}</span>
-                        </td>
-                        <td className="px-4 py-3.5 text-center font-mono font-medium text-slate-700">{s.q3}</td>
-                        <td className="px-4 py-3.5 text-center font-mono font-medium text-slate-700">{s.q4}</td>
-                        <td className="px-5 py-3.5 text-center font-mono font-black text-slate-900 text-sm bg-slate-50/50">{s.final}</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <Badge variant="success" size="sm">{s.remarks}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="bg-slate-50 font-bold border-t border-slate-200">
-                      <td colSpan={3} className="px-5 py-3.5 uppercase tracking-wider text-xs text-slate-900">
-                        General Average for the Second Semester
+                    {/* General Average Row (DepEd Standard Summary) */}
+                    <tr className="bg-emerald-50/70 font-black border-t-2 border-emerald-300">
+                      <td className="px-5 py-4 uppercase tracking-wider text-xs text-emerald-950 font-display">
+                        General Average
                       </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-black text-base text-indigo-950 bg-indigo-50/60">
-                        {sem2Average}
+                      <td className="px-3.5 py-4 text-center font-mono font-black text-slate-900 text-sm">
+                        {q1GeneralAverage}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-emerald-700 text-xs">Passed</td>
-                    </tr>
-                    <tr className="bg-emerald-50/60 font-black border-t-2 border-emerald-300">
-                      <td colSpan={3} className="px-5 py-4 uppercase tracking-wider text-xs text-emerald-950 font-display">
-                        GENERAL FINAL AVERAGE FOR THE SCHOOL YEAR (S.Y. {schoolYear})
+                      <td className="px-3.5 py-4 text-center font-mono font-black text-slate-900 text-sm">
+                        {q2GeneralAverage}
                       </td>
-                      <td className="px-5 py-4 text-center font-mono font-black text-lg text-emerald-950 bg-emerald-100/70">
+                      <td className="px-3.5 py-4 text-center font-mono font-black text-slate-900 text-sm">
+                        {q3GeneralAverage}
+                      </td>
+                      <td className="px-3.5 py-4 text-center font-mono font-black text-slate-900 text-sm">
+                        {q4GeneralAverage}
+                      </td>
+                      <td className="px-4 py-4 text-center font-mono font-black text-base text-emerald-950 bg-emerald-100/80">
                         {generalFinalAverage}
                       </td>
                       <td className="px-5 py-4 text-right font-black uppercase tracking-wider text-emerald-800 text-xs">
@@ -888,12 +862,14 @@ export const StudentGradesPage: React.FC = () => {
                   <h3 className="font-extrabold text-slate-900 text-sm font-display">
                     Learner&apos;s Observed Values (DepEd Core Values)
                   </h3>
-                  <span className="text-[10px] text-slate-400 font-bold">AO: Always Observed</span>
+                  <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">
+                    AO: Always Observed
+                  </span>
                 </div>
 
                 <div className="mt-3 divide-y divide-slate-100">
                   {coreValues.map((cv, idx) => (
-                    <div key={idx} className="py-3 flex items-start justify-between gap-4">
+                    <div key={idx} className="py-2.5 flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <span className="text-xs font-bold text-slate-900 block">{cv.category}</span>
                         <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{cv.statement}</p>
@@ -955,6 +931,35 @@ export const StudentGradesPage: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Grading Scale Guide */}
+                <div className="mt-5 pt-4 border-t border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                    DepEd Grading Scale &amp; Performance Descriptors
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-[10px]">
+                    <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <strong className="block text-slate-900">90 – 100</strong>
+                      <span className="text-slate-500">Outstanding</span>
+                    </div>
+                    <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <strong className="block text-slate-900">85 – 89</strong>
+                      <span className="text-slate-500">Very Satisfactory</span>
+                    </div>
+                    <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <strong className="block text-slate-900">80 – 84</strong>
+                      <span className="text-slate-500">Satisfactory</span>
+                    </div>
+                    <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <strong className="block text-slate-900">75 – 79</strong>
+                      <span className="text-slate-500">Fairly Satisfactory</span>
+                    </div>
+                    <div className="p-1.5 bg-rose-50 rounded-lg border border-rose-100">
+                      <strong className="block text-rose-700">Below 75</strong>
+                      <span className="text-rose-600">Did Not Meet</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -965,10 +970,10 @@ export const StudentGradesPage: React.FC = () => {
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <h4 className="text-xs sm:text-sm font-bold text-emerald-950 uppercase tracking-wide">
-                      Certificate of Promotion &amp; Transfer
+                      Certificate of Eligibility for Promotion &amp; Transfer
                     </h4>
                     <p className="text-xs text-slate-700 leading-relaxed">
-                      This certifies that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has fulfilled all academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for promotion and admission to <strong>Grade 12</strong>.
+                      This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>{nextGradeLevel}</strong>.
                     </p>
                   </div>
                 </div>
@@ -982,8 +987,8 @@ export const StudentGradesPage: React.FC = () => {
                   <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Class Adviser</span>
                     <p className="font-extrabold text-slate-900 text-sm mt-1">MR. J. ALMARIO</p>
-                    <p className="text-xs font-medium text-slate-600">Teacher II · Senior High School</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Faculty Advisory Department</p>
+                    <p className="text-xs font-medium text-slate-600">Teacher II · Faculty Advisory</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Junior High School Department</p>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50">
@@ -997,7 +1002,7 @@ export const StudentGradesPage: React.FC = () => {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Certification Date</span>
                     <p className="font-extrabold text-slate-900 text-sm mt-1">March 27, 2027</p>
                     <p className="text-xs font-medium text-slate-600">DepEd School ID: 303035</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Officially Certified Record</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Officially Certified DepEd Record</p>
                   </div>
                 </div>
               </div>
@@ -1005,258 +1010,160 @@ export const StudentGradesPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 4 CONTENT: ALL QUARTERS MATRIX ON SCREEN (MODERN WEB UI) */}
-        {activeTab === 'all_quarters' && (
+        {/* TAB 2: QUARTERLY BREAKDOWN */}
+        {activeTab === 'quarterly_breakdown' && (
           <div className="space-y-6">
-            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900 font-display">
-                    All Quarters Academic Performance Matrix
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Quarter 1, Quarter 2, Quarter 3, and Quarter 4 side-by-side progression</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { qNum: 'Quarter 1', avg: q1GeneralAverage, label: '1st Grading Period', icon: Award, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                { qNum: 'Quarter 2', avg: q2GeneralAverage, label: '2nd Grading Period', icon: TrendingUp, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+                { qNum: 'Quarter 3', avg: q3GeneralAverage, label: '3rd Grading Period', icon: Sparkles, color: 'text-purple-700 bg-purple-50 border-purple-200' },
+                { qNum: 'Quarter 4', avg: q4GeneralAverage, label: '4th Grading Period', icon: GraduationCap, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+              ].map((q, idx) => (
+                <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className={`inline-flex p-2 rounded-xl border ${q.color}`}>
+                      <q.icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-700">Passed</span>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-xs font-bold text-slate-500 block">{q.qNum}</span>
+                    <span className="text-2xl font-black text-slate-900 font-mono mt-0.5 block">{q.avg}</span>
+                    <p className="text-[11px] text-slate-400 mt-1">{q.label}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">General Final Average</span>
-                  <span className="text-2xl font-black text-emerald-800 font-mono">{generalFinalAverage}</span>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="px-5 py-3.5">Subject Title</th>
-                      <th className="px-3 py-3.5 text-center">Semester</th>
-                      <th className="px-3 py-3.5 text-center">Q1</th>
-                      <th className="px-3 py-3.5 text-center">Q2</th>
-                      <th className="px-3 py-3.5 text-center">Q3</th>
-                      <th className="px-3 py-3.5 text-center">Q4</th>
-                      <th className="px-4 py-3.5 text-center font-bold text-slate-900">Final</th>
-                      <th className="px-5 py-3.5 text-right">Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {sem1Subjects.map((s, idx) => (
-                      <tr key={`s1-${idx}`} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <p className="font-bold text-slate-900">{s.title}</p>
-                          <span className="font-mono text-[10px] text-slate-400">{s.code} · {s.category}</span>
-                        </td>
-                        <td className="px-3 py-3.5 text-center font-medium text-slate-500 text-[11px]">1st Sem</td>
-                        <td className="px-3 py-3.5 text-center font-mono font-medium text-slate-700">{s.q1}</td>
-                        <td className="px-3 py-3.5 text-center font-mono font-medium text-slate-700">{s.q2}</td>
-                        <td className="px-3 py-3.5 text-center font-mono text-slate-300">—</td>
-                        <td className="px-3 py-3.5 text-center font-mono text-slate-300">—</td>
-                        <td className="px-4 py-3.5 text-center font-mono font-black text-slate-900 text-sm bg-slate-50/50">{s.final}</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <Badge variant="success" size="sm">{s.remarks}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                    {sem2Subjects.map((s, idx) => (
-                      <tr key={`s2-${idx}`} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <p className="font-bold text-slate-900">{s.title}</p>
-                          <span className="font-mono text-[10px] text-slate-400">{s.code} · {s.category}</span>
-                        </td>
-                        <td className="px-3 py-3.5 text-center font-medium text-slate-500 text-[11px]">2nd Sem</td>
-                        <td className="px-3 py-3.5 text-center font-mono text-slate-300">—</td>
-                        <td className="px-3 py-3.5 text-center font-mono text-slate-300">—</td>
-                        <td className="px-3 py-3.5 text-center font-mono font-medium text-slate-700">{s.q3}</td>
-                        <td className="px-3 py-3.5 text-center font-mono font-medium text-slate-700">{s.q4}</td>
-                        <td className="px-4 py-3.5 text-center font-mono font-black text-slate-900 text-sm bg-slate-50/50">{s.final}</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <Badge variant="success" size="sm">{s.remarks}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="bg-emerald-50/60 font-black border-t-2 border-emerald-300">
-                      <td colSpan={6} className="px-5 py-4 uppercase tracking-wider text-xs text-emerald-950 font-display">
-                        GENERAL FINAL AVERAGE FOR THE SCHOOL YEAR (S.Y. {schoolYear})
-                      </td>
-                      <td className="px-4 py-4 text-center font-mono font-black text-lg text-emerald-950 bg-emerald-100/70">
-                        {generalFinalAverage}
-                      </td>
-                      <td className="px-5 py-4 text-right font-black uppercase tracking-wider text-emerald-800 text-xs">
-                        PASSED
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            {/* Individual Subjects Progression Cards */}
+            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="font-extrabold text-slate-900 text-base font-display">
+                Subject Quarterly Comparison Progression
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {mainLearningAreas.map((sub, idx) => (
+                  <div key={idx} className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 text-xs truncate">{sub.title}</h4>
+                        <span className="text-[10px] font-mono text-slate-400">{sub.code}</span>
+                      </div>
+                      <span className="text-sm font-black font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        {sub.final}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                      <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+                        <span className="text-[10px] text-slate-400 block">Q1</span>
+                        <strong className="font-mono text-slate-800">{sub.q1}</strong>
+                      </div>
+                      <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+                        <span className="text-[10px] text-slate-400 block">Q2</span>
+                        <strong className="font-mono text-slate-800">{sub.q2}</strong>
+                      </div>
+                      <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+                        <span className="text-[10px] text-slate-400 block">Q3</span>
+                        <strong className="font-mono text-slate-800">{sub.q3}</strong>
+                      </div>
+                      <div className="p-2 bg-white rounded-lg border border-slate-200/80">
+                        <span className="text-[10px] text-slate-400 block">Q4</span>
+                        <strong className="font-mono text-slate-800">{sub.q4}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-      {/* VIEW 2: SEMESTER 1 CARD VIEW (Interactive) */}
-      {activeTab === 'sem1' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">First Semester Learning Areas</h3>
-              <p className="text-xs text-slate-500">Core, Applied, and Specialized Subjects for 1st & 2nd Quarters</p>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Semester Average</span>
-              <span className="text-xl font-black text-emerald-800 font-mono">{sem1Average}</span>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="px-5 py-3">Subject Title &amp; Classification</th>
-                    <th className="px-5 py-3 text-center">Units</th>
-                    <th className="px-5 py-3 text-center">Quarter 1</th>
-                    <th className="px-5 py-3 text-center">Quarter 2</th>
-                    <th className="px-5 py-3 text-center font-bold text-emerald-800">Final Rating</th>
-                    <th className="px-5 py-3 text-right">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sem1Subjects.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-900">{s.title}</p>
-                          <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
-                            s.category === 'Core'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : s.category === 'Applied'
-                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          }`}>
-                            {s.category}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-slate-400">{s.code}</span>
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono text-slate-600 font-medium">
-                        {s.units.toFixed(1)}
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-medium text-slate-700">
-                        {s.q1}
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-medium text-slate-700">
-                        {s.q2}
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-extrabold text-emerald-800 text-sm">
-                        {s.final}
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <Badge variant="success" size="sm">
-                          {s.remarks}
-                        </Badge>
-                      </td>
-                    </tr>
+        {/* TAB 3: CORE VALUES & ATTENDANCE */}
+        {activeTab === 'values_attendance' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Detailed Core Values */}
+              <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="font-extrabold text-slate-900 text-base font-display">
+                    Learner&apos;s Observed Values (Character Appraisal)
+                  </h3>
+                  <Badge variant="success" size="sm">Exemplary Conduct</Badge>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {coreValues.map((cv, idx) => (
+                    <div key={idx} className="py-3 flex items-start justify-between gap-4">
+                      <div>
+                        <span className="text-xs font-bold text-slate-900">{cv.category}</span>
+                        <p className="text-xs text-slate-500 mt-0.5">{cv.statement}</p>
+                      </div>
+                      <div className="flex items-center gap-1 font-mono text-xs font-bold text-emerald-800 shrink-0">
+                        <span className="bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{cv.q1}</span>
+                        <span className="bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{cv.q2}</span>
+                        <span className="bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{cv.q3}</span>
+                        <span className="bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{cv.q4}</span>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+                </div>
+              </div>
 
-      {/* VIEW 3: SEMESTER 2 CARD VIEW (Interactive) */}
-      {activeTab === 'sem2' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">Second Semester Learning Areas</h3>
-              <p className="text-xs text-slate-500">Core, Applied, and Specialized Subjects for 3rd & 4th Quarters</p>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Semester Average</span>
-              <span className="text-xl font-black text-indigo-800 font-mono">{sem2Average}</span>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="px-5 py-3">Subject Title &amp; Classification</th>
-                    <th className="px-5 py-3 text-center">Units</th>
-                    <th className="px-5 py-3 text-center">Quarter 3</th>
-                    <th className="px-5 py-3 text-center">Quarter 4</th>
-                    <th className="px-5 py-3 text-center font-bold text-indigo-800">Final Rating</th>
-                    <th className="px-5 py-3 text-right">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sem2Subjects.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-900">{s.title}</p>
-                          <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
-                            s.category === 'Core'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : s.category === 'Applied'
-                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          }`}>
-                            {s.category}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-slate-400">{s.code}</span>
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono text-slate-600 font-medium">
-                        {s.units.toFixed(1)}
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-medium text-slate-700">
-                        {s.q3}
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-medium text-slate-700">
-                        {s.q4}
-                      </td>
-                      <td className="px-5 py-3.5 text-center font-mono font-extrabold text-indigo-800 text-sm">
-                        {s.final}
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <Badge variant="success" size="sm">
-                          {s.remarks}
-                        </Badge>
-                      </td>
-                    </tr>
+              {/* Detailed Attendance */}
+              <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="font-extrabold text-slate-900 text-base font-display">
+                    Annual Attendance Breakdown (SF2)
+                  </h3>
+                  <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 text-xs">
+                    {attendanceRate}% Overall
+                  </span>
+                </div>
+                <div className="divide-y divide-slate-100 text-xs">
+                  {attendanceRecord.map((m, idx) => (
+                    <div key={idx} className="py-2.5 flex items-center justify-between">
+                      <span className="font-bold text-slate-700 w-16">{m.month}</span>
+                      <span className="text-slate-500">{m.schoolDays} Days</span>
+                      <span className="font-semibold text-emerald-700">{m.daysPresent} Present</span>
+                      <span className="text-slate-400">{m.daysAbsent} Absent</span>
+                      <span className="font-mono font-bold text-slate-900">
+                        {((m.daysPresent / m.schoolDays) * 100).toFixed(0)}%
+                      </span>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Official Action Controls (Bottom Aligned) */}
+        <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+            title="Download official DepEd JHS Form 138 dataset as CSV"
+          >
+            <Download className="h-4 w-4 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+            title="Print official Form 138 Grade Card on standard short bond paper (8.5&quot; × 11&quot;)"
+          >
+            <Printer className="h-4 w-4 text-[#F5C518]" />
+            <span>Print Report Card</span>
+          </button>
         </div>
-      )}
-
-      {/* Official Action Controls (Bottom Aligned) */}
-      <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
-        <button
-          type="button"
-          onClick={handleExportCsv}
-          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-          title="Download official Form 138 dataset as CSV"
-        >
-          <Download className="h-4 w-4 text-slate-500" />
-          <span>Export CSV</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handlePrint}
-          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
-          title="Print official Form 138 Grade Card on standard short bond paper (8.5&quot; × 11&quot;)"
-        >
-          <Printer className="h-4 w-4 text-[#F5C518]" />
-          <span>Print Report Card</span>
-        </button>
-      </div>
       </div>
 
       {/* ================================================================ */}
       {/* 2. PRINT-ONLY VIEW: EXACT SINGLE SHEET BOND PAPER (8.5" × 11")   */}
+      {/*    DepEd Junior High School (JHS Form 138 / SF9) Standard Layout  */}
       {/* ================================================================ */}
       <div className="print-bond-paper hidden print:block w-full text-slate-900 font-sans">
         <div className="bond-paper-document w-full bg-white text-slate-900 font-sans space-y-1">
@@ -1294,7 +1201,7 @@ export const StudentGradesPage: React.FC = () => {
             <div className="w-12 shrink-0 flex items-center justify-center text-center">
               <div className="border border-slate-900 rounded-2xs p-0.5 text-[6pt] leading-tight text-slate-800">
                 <span className="font-bold block">DEPED SF9</span>
-                <span>Form 138-SHS</span>
+                <span>Form 138-JHS</span>
               </div>
             </div>
           </div>
@@ -1305,11 +1212,11 @@ export const StudentGradesPage: React.FC = () => {
 
           {/* 3. Title */}
           <div className="text-center space-y-0.5">
-            <h3 className="text-[8pt] font-black uppercase tracking-wider text-slate-950 leading-tight">
-              LEARNER&apos;S PROGRESS REPORT CARD (SF9 - SHS)
+            <h3 className="text-[8.5pt] font-black uppercase tracking-wider text-slate-950 leading-tight">
+              LEARNER&apos;S PROGRESS REPORT CARD (SF9 - JHS)
             </h3>
             <p className="text-[7pt] font-bold text-slate-800 uppercase tracking-wide leading-tight">
-              School Year {schoolYear} · Senior High School
+              School Year {schoolYear} · Junior High School
             </p>
           </div>
 
@@ -1332,121 +1239,95 @@ export const StudentGradesPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-1 pt-0.5 border-t border-slate-300">
               <div>
-                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Track &amp; Strand:</span>
-                <span className="font-bold text-slate-900 text-[6.8pt]">{learnerStrand}</span>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Curriculum Program:</span>
+                <span className="font-semibold text-slate-900 text-[6.8pt]">{curriculumProgram}</span>
               </div>
               <div>
-                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Curriculum Program:</span>
-                <span className="text-slate-800 font-medium text-[6.8pt]">K to 12 Senior High Curriculum</span>
+                <span className="text-[6pt] font-bold uppercase text-slate-600 block">Academic Standing:</span>
+                <span className="text-emerald-900 font-bold text-[6.8pt]">Passed (With High Honors)</span>
               </div>
               <div>
                 <span className="text-[6pt] font-bold uppercase text-slate-600 block">Age / Sex:</span>
-                <span className="text-slate-900 font-medium text-[6.8pt]">17 yrs. old · Male</span>
+                <span className="text-slate-900 font-medium text-[6.8pt]">16 yrs. old · Male</span>
               </div>
             </div>
           </div>
 
-          {/* 5. FIRST SEMESTER REPORT */}
+          {/* 5. REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: UNIFIED JHS TABLE */}
           <div className="space-y-0.5">
             <div className="flex items-center justify-between">
               <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
-                REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: FIRST SEMESTER
+                REPORT ON LEARNING PROGRESS AND ACHIEVEMENT
               </h4>
-              <span className="text-[6.8pt] font-bold text-slate-700">Semestral Rating</span>
+              <span className="text-[6.5pt] font-bold text-slate-700">DepEd Order No. 8, s. 2015</span>
             </div>
 
             <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
               <thead>
                 <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
-                  <th className="border border-black px-1.5 py-0.5 w-[50%]">Learning Areas (Subjects)</th>
-                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 1</th>
-                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 2</th>
-                  <th className="border border-black px-1 py-0.5 w-[14%] text-center bg-slate-200/60">Final Rating</th>
-                  <th className="border border-black px-1.5 py-0.5 w-[12%] text-center">Remarks</th>
+                  <th className="border border-black px-1.5 py-0.5 w-[44%]">Learning Areas (Subjects)</th>
+                  <th className="border border-black px-1 py-0.5 w-[9%] text-center">1</th>
+                  <th className="border border-black px-1 py-0.5 w-[9%] text-center">2</th>
+                  <th className="border border-black px-1 py-0.5 w-[9%] text-center">3</th>
+                  <th className="border border-black px-1 py-0.5 w-[9%] text-center">4</th>
+                  <th className="border border-black px-1 py-0.5 w-[14%] text-center bg-slate-200/60 font-bold">Final Rating</th>
+                  <th className="border border-black px-1.5 py-0.5 w-[15%] text-center">Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/30 text-[6.8pt]">
-                {sem1Subjects.map((s, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/40">
-                    <td className="border border-black px-1.5 py-0.5 truncate">
-                      <span className="font-semibold text-slate-900">{s.title}</span>
-                      <span className="ml-1 text-[6pt] text-slate-500 font-mono">[{s.category}]</span>
-                    </td>
-                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q1}</td>
-                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q2}</td>
-                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-950 bg-slate-50">{s.final}</td>
-                    <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">{s.remarks}</td>
-                  </tr>
-                ))}
-                {/* Sem 1 Average Row */}
-                <tr className="bg-slate-100/90 font-bold border-t border-black text-[7pt]">
-                  <td className="border border-black px-1.5 py-0.5 uppercase text-slate-950 text-right pr-3" colSpan={3}>
-                    General Average for the First Semester:
-                  </td>
-                  <td className="border border-black px-1 py-0.5 text-center font-mono font-black text-slate-950 bg-amber-50/80">
-                    {sem1Average}
-                  </td>
-                  <td className="border border-black px-1.5 py-0.5 text-center text-emerald-800 font-bold">
-                    Passed
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                {jhsSubjects.map((s, idx) => {
+                  if (s.isMapehChild) {
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50/40 text-[6.2pt]">
+                        <td className="border border-black px-1.5 py-0.5 pl-4 truncate text-slate-700">
+                          <span>{s.title}</span>
+                        </td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q1}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q2}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q3}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q4}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono font-medium text-slate-800 bg-slate-50/50">
+                          {s.final}
+                        </td>
+                        <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">
+                          {s.remarks}
+                        </td>
+                      </tr>
+                    );
+                  }
 
-          {/* 6. SECOND SEMESTER REPORT */}
-          <div className="space-y-0.5">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
-                REPORT ON LEARNING PROGRESS AND ACHIEVEMENT: SECOND SEMESTER
-              </h4>
-              <span className="text-[6.8pt] font-bold text-slate-700">Semestral Rating</span>
-            </div>
+                  return (
+                    <tr key={idx} className={`hover:bg-slate-50/40 ${s.isMapehParent ? 'font-bold' : ''}`}>
+                      <td className="border border-black px-1.5 py-0.5 truncate">
+                        <span className="font-semibold text-slate-900">{s.title}</span>
+                      </td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q1}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q2}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q3}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q4}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-950 bg-slate-50">
+                        {s.final}
+                      </td>
+                      <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">
+                        {s.remarks}
+                      </td>
+                    </tr>
+                  );
+                })}
 
-            <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
-              <thead>
-                <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
-                  <th className="border border-black px-1.5 py-0.5 w-[50%]">Learning Areas (Subjects)</th>
-                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 3</th>
-                  <th className="border border-black px-1 py-0.5 w-[12%] text-center">Quarter 4</th>
-                  <th className="border border-black px-1 py-0.5 w-[14%] text-center bg-slate-200/60">Final Rating</th>
-                  <th className="border border-black px-1.5 py-0.5 w-[12%] text-center">Remarks</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/30 text-[6.8pt]">
-                {sem2Subjects.map((s, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/40">
-                    <td className="border border-black px-1.5 py-0.5 truncate">
-                      <span className="font-semibold text-slate-900">{s.title}</span>
-                      <span className="ml-1 text-[6pt] text-slate-500 font-mono">[{s.category}]</span>
-                    </td>
-                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q3}</td>
-                    <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q4}</td>
-                    <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-950 bg-slate-50">{s.final}</td>
-                    <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">{s.remarks}</td>
-                  </tr>
-                ))}
-                {/* Sem 2 Average Row */}
-                <tr className="bg-slate-100/90 font-bold border-t border-black text-[7pt]">
-                  <td className="border border-black px-1.5 py-0.5 uppercase text-slate-950 text-right pr-3" colSpan={3}>
-                    General Average for the Second Semester:
-                  </td>
-                  <td className="border border-black px-1 py-0.5 text-center font-mono font-black text-slate-950 bg-amber-50/80">
-                    {sem2Average}
-                  </td>
-                  <td className="border border-black px-1.5 py-0.5 text-center text-emerald-800 font-bold">
-                    Passed
-                  </td>
-                </tr>
-                {/* Final General Average Row */}
+                {/* Unified General Average Row */}
                 <tr className="bg-slate-200 text-slate-950 font-black border-t-2 border-black text-[7.5pt]">
-                  <td className="border border-black px-1.5 py-1 uppercase text-right pr-3 font-serif" colSpan={3}>
-                    GENERAL FINAL AVERAGE FOR THE SCHOOL YEAR:
+                  <td className="border border-black px-1.5 py-0.5 uppercase text-right pr-2 font-serif font-bold">
+                    General Average
                   </td>
-                  <td className="border border-black px-1 py-1 text-center font-mono text-[9pt] font-black text-slate-950 bg-[#F5C518]/30">
+                  <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{q1GeneralAverage}</td>
+                  <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{q2GeneralAverage}</td>
+                  <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{q3GeneralAverage}</td>
+                  <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-900">{q4GeneralAverage}</td>
+                  <td className="border border-black px-1 py-0.5 text-center font-mono text-[8.5pt] font-black text-slate-950 bg-[#F5C518]/30">
                     {generalFinalAverage}
                   </td>
-                  <td className="border border-black px-1.5 py-1 text-center text-emerald-900 font-black uppercase tracking-wider text-[7pt]">
+                  <td className="border border-black px-1.5 py-0.5 text-center text-emerald-900 font-black uppercase tracking-wider text-[7pt]">
                     Passed
                   </td>
                 </tr>
@@ -1454,13 +1335,13 @@ export const StudentGradesPage: React.FC = () => {
             </table>
           </div>
 
-          {/* 7. REPORT ON LEARNER'S OBSERVED VALUES (DEPED CORE VALUES) */}
+          {/* 6. REPORT ON LEARNER'S OBSERVED VALUES (DEPED CORE VALUES) */}
           <div className="space-y-0.5">
             <div className="flex items-center justify-between">
               <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
                 REPORT ON LEARNER&apos;S OBSERVED VALUES (DEPED CORE VALUES)
               </h4>
-              <span className="text-[6.5pt] text-slate-600 font-bold">AO: Always · SO: Sometimes · RO: Rarely · NO: Not Observed</span>
+              <span className="text-[6.2pt] text-slate-600 font-bold">AO: Always · SO: Sometimes · RO: Rarely · NO: Not Observed</span>
             </div>
 
             <table className="official-grade-table w-full text-left text-xs border-collapse border border-black table-fixed">
@@ -1468,13 +1349,13 @@ export const StudentGradesPage: React.FC = () => {
                 <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
                   <th className="border border-black px-1.5 py-0.5 w-[22%]">Core Values</th>
                   <th className="border border-black px-1.5 py-0.5 w-[54%]">Behavior Statements</th>
-                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q1</th>
-                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q2</th>
-                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q3</th>
-                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">Q4</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">1</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">2</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">3</th>
+                  <th className="border border-black px-1 py-0.5 w-[6%] text-center">4</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black/30 text-[6.5pt]">
+              <tbody className="divide-y divide-black/30 text-[6.4pt]">
                 {coreValues.map((cv, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/40">
                     <td className="border border-black px-1.5 py-0.5 font-bold text-slate-950 truncate">{cv.category}</td>
@@ -1489,55 +1370,53 @@ export const StudentGradesPage: React.FC = () => {
             </table>
           </div>
 
-          {/* 8. REPORT ON ATTENDANCE (DEPED SF2 RECORD) */}
+          {/* 7. REPORT ON ATTENDANCE (DEPED SF2 RECORD) */}
           <div className="space-y-0.5">
             <div className="flex items-center justify-between">
               <h4 className="text-[7.5pt] font-black uppercase tracking-wider text-slate-950">
                 REPORT ON ATTENDANCE (DEPED SF2 RECORD)
               </h4>
-              <span className="text-[6.5pt] text-slate-600 font-bold">10 School Calendar Months</span>
+              <span className="text-[6.2pt] text-slate-600 font-bold">10 School Calendar Months</span>
             </div>
 
-            <div className="overflow-hidden">
-              <table className="official-grade-table w-full text-center text-xs border-collapse border border-black table-fixed">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
-                    <th className="border border-black px-1 py-0.5 w-[16%] text-left">Record</th>
-                    {attendanceRecord.map((m) => (
-                      <th key={m.month} className="border border-black px-0.5 py-0.5 text-[6pt]">{m.month}</th>
-                    ))}
-                    <th className="border border-black px-0.5 py-0.5 w-[10%] bg-slate-200">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/30 text-[6.5pt]">
-                  <tr>
-                    <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of School Days</td>
-                    {attendanceRecord.map((m) => (
-                      <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.schoolDays}</td>
-                    ))}
-                    <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalSchoolDays}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of Days Present</td>
-                    {attendanceRecord.map((m) => (
-                      <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.daysPresent}</td>
-                    ))}
-                    <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysPresent}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of Days Absent</td>
-                    {attendanceRecord.map((m) => (
-                      <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.daysAbsent}</td>
-                    ))}
-                    <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysAbsent}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <table className="official-grade-table w-full text-center text-xs border-collapse border border-black table-fixed">
+              <thead>
+                <tr className="bg-slate-100 text-slate-950 font-bold uppercase text-[6.5pt] border-b border-black">
+                  <th className="border border-black px-1 py-0.5 w-[16%] text-left">Record</th>
+                  {attendanceRecord.map((m) => (
+                    <th key={m.month} className="border border-black px-0.5 py-0.5 text-[6pt]">{m.month}</th>
+                  ))}
+                  <th className="border border-black px-0.5 py-0.5 w-[10%] bg-slate-200">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/30 text-[6.4pt]">
+                <tr>
+                  <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of School Days</td>
+                  {attendanceRecord.map((m) => (
+                    <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.schoolDays}</td>
+                  ))}
+                  <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalSchoolDays}</td>
+                </tr>
+                <tr>
+                  <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of Days Present</td>
+                  {attendanceRecord.map((m) => (
+                    <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.daysPresent}</td>
+                  ))}
+                  <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysPresent}</td>
+                </tr>
+                <tr>
+                  <td className="border border-black px-1 py-0.5 text-left font-bold text-slate-900">No. of Days Absent</td>
+                  {attendanceRecord.map((m) => (
+                    <td key={m.month} className="border border-black px-0.5 py-0.5 font-mono">{m.daysAbsent}</td>
+                  ))}
+                  <td className="border border-black px-0.5 py-0.5 font-mono font-bold text-slate-950 bg-slate-50">{totalDaysAbsent}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          {/* 9. GRADING SCALE & DESCRIPTORS */}
-          <div className="border border-slate-900 bg-slate-50/50 p-1 rounded-2xs text-[6.5pt] grid grid-cols-5 gap-1 text-center leading-tight">
+          {/* 8. GRADING SCALE & DESCRIPTORS */}
+          <div className="border border-slate-900 bg-slate-50/50 p-1 rounded-2xs text-[6.2pt] grid grid-cols-5 gap-1 text-center leading-tight">
             <div>
               <span className="font-bold block text-slate-950">90 – 100</span>
               <span className="text-slate-600">Outstanding (Passed)</span>
@@ -1560,37 +1439,37 @@ export const StudentGradesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 10. CERTIFICATE OF TRANSFER & SIGNATURES BLOCK */}
-          <div className="pt-1 border-t-2 border-black space-y-1">
-            <div className="text-[6.8pt] text-slate-900 leading-tight">
+          {/* 9. CERTIFICATE OF TRANSFER & SIGNATURES BLOCK */}
+          <div className="pt-0.5 border-t-2 border-black space-y-1">
+            <div className="text-[6.6pt] text-slate-900 leading-tight">
               <p>
-                <strong>CERTIFICATE OF TRANSFER &amp; PROMOTION:</strong> This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>Grade 12</strong>.
+                <strong>CERTIFICATE OF TRANSFER &amp; PROMOTION:</strong> This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>{nextGradeLevel}</strong>.
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-3 pt-1 text-center text-xs">
               <div>
-                <div className="border-b border-black pb-0.5 mb-0.5 font-bold text-slate-950 uppercase text-[7.5pt]">
+                <div className="border-b border-black pb-0.5 mb-0.5 font-bold text-slate-950 uppercase text-[7.2pt]">
                   MR. J. ALMARIO
                 </div>
-                <span className="text-[6.5pt] uppercase font-bold text-slate-600 block">Class Adviser</span>
-                <span className="text-[5.5pt] text-slate-500">Teacher II · Senior High</span>
+                <span className="text-[6.2pt] uppercase font-bold text-slate-600 block">Class Adviser</span>
+                <span className="text-[5.5pt] text-slate-500">Teacher II · Faculty Advisory</span>
               </div>
 
               <div>
-                <div className="border-b border-black pb-0.5 mb-0.5 font-bold text-slate-950 uppercase text-[7.5pt]">
+                <div className="border-b border-black pb-0.5 mb-0.5 font-bold text-slate-950 uppercase text-[7.2pt]">
                   JUSTINE MANGILA, Dev.Ed.D.
                 </div>
-                <span className="text-[6.5pt] uppercase font-bold text-slate-600 block">School Principal I</span>
+                <span className="text-[6.2pt] uppercase font-bold text-slate-600 block">School Principal I</span>
                 <span className="text-[5.5pt] text-slate-500">School Head / Authorized Officer</span>
               </div>
 
               <div>
-                <div className="border-b border-black pb-0.5 mb-0.5 font-mono font-bold text-slate-950 text-[7.5pt]">
+                <div className="border-b border-black pb-0.5 mb-0.5 font-mono font-bold text-slate-950 text-[7.2pt]">
                   March 27, 2027
                 </div>
-                <span className="text-[6.5pt] uppercase font-bold text-slate-600 block">Date Issued</span>
-                <span className="text-[5.5pt] text-slate-500">School ID: 303035</span>
+                <span className="text-[6.2pt] uppercase font-bold text-slate-600 block">Date Issued</span>
+                <span className="text-[5.5pt] text-slate-500">DepEd School ID: 303035</span>
               </div>
             </div>
           </div>
