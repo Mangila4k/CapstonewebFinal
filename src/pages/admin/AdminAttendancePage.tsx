@@ -64,7 +64,7 @@ export const AdminAttendancePage: React.FC = () => {
   const [teacherAttendance, setTeacherAttendance] = useState<TeacherAttendanceRecord[]>([]);
   const [teacherSearch, setTeacherSearch] = useState('');
   const [teacherDeptFilter, setTeacherDeptFilter] = useState('All');
-  const [teacherStatusFilter, setTeacherStatusFilter] = useState<'All' | 'Present' | 'Late'>('All');
+  const [teacherStatusFilter, setTeacherStatusFilter] = useState<'All' | 'On Duty' | 'Timed Out'>('All');
 
   // Admin Modal: Record Face Attendance State
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
@@ -74,7 +74,7 @@ export const AdminAttendancePage: React.FC = () => {
   const [modalDate, setModalDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [modalTimeIn, setModalTimeIn] = useState('07:15 AM');
   const [modalTimeOut, setModalTimeOut] = useState('');
-  const [modalStatus, setModalStatus] = useState<'Present' | 'Late'>('Present');
+  const [modalStatus, setModalStatus] = useState<string>('Recorded');
   const [modalMode, setModalMode] = useState<'Face Biometrics (AI Camera)' | 'Facial Recognition Kiosk' | 'Manual Override'>('Face Biometrics (AI Camera)');
   const [isSubmittingRecord, setIsSubmittingRecord] = useState(false);
   const [recordSuccessToast, setRecordSuccessToast] = useState<string | null>(null);
@@ -189,7 +189,6 @@ export const AdminAttendancePage: React.FC = () => {
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const hour12 = hours % 12 || 12;
     const formattedTime = `${String(hour12).padStart(2, '0')}:${mins} ${ampm}`;
-    const isLate = hours > 7 || (hours === 7 && now.getMinutes() > 30);
 
     setModalFacultyName('Maria Santos');
     setModalCustomName('');
@@ -197,7 +196,7 @@ export const AdminAttendancePage: React.FC = () => {
     setModalDate(new Date().toISOString().split('T')[0]);
     setModalTimeIn(formattedTime);
     setModalTimeOut('');
-    setModalStatus(isLate ? 'Late' : 'Present');
+    setModalStatus('Recorded');
     setModalMode('Face Biometrics (AI Camera)');
     setIsRecordModalOpen(true);
   };
@@ -302,7 +301,7 @@ export const AdminAttendancePage: React.FC = () => {
     return Array.from(depts).sort();
   }, [teacherAttendance]);
 
-  // Filter Teacher Attendance
+  // Filter Teacher Attendance (pure attendance record without late validation)
   const filteredTeachers = useMemo(() => {
     return teacherAttendance.filter((a) => {
       const q = teacherSearch.toLowerCase();
@@ -310,7 +309,11 @@ export const AdminAttendancePage: React.FC = () => {
       const dept = (a.department || '').toLowerCase();
       const matchesSearch = name.includes(q) || dept.includes(q);
       const matchesDept = teacherDeptFilter === 'All' || a.department === teacherDeptFilter;
-      const matchesStatus = teacherStatusFilter === 'All' || a.status === teacherStatusFilter;
+      const isOnDuty = !a.time_out || a.time_out === '—';
+      const matchesStatus =
+        teacherStatusFilter === 'All' ||
+        (teacherStatusFilter === 'On Duty' && isOnDuty) ||
+        (teacherStatusFilter === 'Timed Out' && !isOnDuty);
       return matchesSearch && matchesDept && matchesStatus;
     });
   }, [teacherAttendance, teacherSearch, teacherDeptFilter, teacherStatusFilter]);
@@ -341,10 +344,10 @@ export const AdminAttendancePage: React.FC = () => {
   const presentRate = studentTotalCount > 0 ? Math.round((studentPresentCount / studentTotalCount) * 100) : 0;
   const qrRate = studentTotalCount > 0 ? Math.round((studentQrCount / studentTotalCount) * 100) : 0;
 
-  // Teacher metrics
+  // Teacher metrics (logs arrival and departure without late or official dismissal limits)
   const teacherTotalCount = teacherAttendance.length;
-  const teacherPresentCount = teacherAttendance.filter((t) => t.status === 'Present').length;
-  const teacherLateCount = teacherAttendance.filter((t) => t.status === 'Late').length;
+  const teacherOnDutyCount = teacherAttendance.filter((t) => !t.time_out || t.time_out === '—').length;
+  const teacherTimedOutCount = teacherAttendance.filter((t) => t.time_out && t.time_out !== '—').length;
 
   const hasStudentFilterActive =
     studentSearch !== '' ||
@@ -502,32 +505,32 @@ export const AdminAttendancePage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
-            title="Total Faculty Logged"
+            title="Total Faculty Logs"
             value={teacherTotalCount}
-            subtitle="Teaching personnel on duty"
+            subtitle="Recorded attendance entries"
             icon={Users}
             color="emerald"
           />
           <StatCard
-            title="On-Time Faculty"
-            value={teacherPresentCount}
-            subtitle="Punctual biometric logs"
-            icon={CheckCircle2}
+            title="Currently On Duty"
+            value={teacherOnDutyCount}
+            subtitle="Faculty with Time In recorded"
+            icon={Clock}
             color="blue"
           />
           <StatCard
-            title="Late Arrivals"
-            value={teacherLateCount}
-            subtitle="Recorded tardy logs"
-            icon={Clock}
-            color="amber"
+            title="Timed Out"
+            value={teacherTimedOutCount}
+            subtitle="Completed duty sessions"
+            icon={CheckCircle2}
+            color="purple"
           />
           <StatCard
             title="Academic Departments"
             value={availableDepts.length || 4}
             subtitle="Active faculty units"
             icon={Building2}
-            color="purple"
+            color="amber"
           />
         </div>
       )}
@@ -871,13 +874,13 @@ export const AdminAttendancePage: React.FC = () => {
 
               {/* Status Chips & Action Buttons */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span>On Duty: {filteredTeachers.filter((t) => !t.time_out || t.time_out === '—').length}</span>
+                </div>
                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>Present: {filteredTeachers.filter((t) => t.status === 'Present').length}</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  <span>Late: {filteredTeachers.filter((t) => t.status === 'Late').length}</span>
+                  <span>Timed Out: {filteredTeachers.filter((t) => t.time_out && t.time_out !== '—').length}</span>
                 </div>
 
                 <button
@@ -922,15 +925,15 @@ export const AdminAttendancePage: React.FC = () => {
                 ))}
               </select>
 
-              {/* Status Filter */}
+              {/* Duty State Filter */}
               <select
                 value={teacherStatusFilter}
                 onChange={(e) => setTeacherStatusFilter(e.target.value as any)}
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700 focus:border-emerald-600 focus:bg-white focus:outline-hidden cursor-pointer"
               >
-                <option value="All">All Status</option>
-                <option value="Present">Present</option>
-                <option value="Late">Late</option>
+                <option value="All">All Attendance Logs</option>
+                <option value="On Duty">Currently On Duty</option>
+                <option value="Timed Out">Timed Out (Completed)</option>
               </select>
 
               {hasTeacherFilterActive && (
@@ -1024,17 +1027,17 @@ export const AdminAttendancePage: React.FC = () => {
                           </span>
                         </td>
 
-                        {/* Status */}
+                        {/* Attendance State */}
                         <td className="px-4 py-3.5">
-                          {item.status === 'Present' ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
-                              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                              Present
+                          {!item.time_out || item.time_out === '—' ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
+                              <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                              On Duty
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
-                              <span className="h-2 w-2 rounded-full bg-amber-500" />
-                              Late
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                              Timed Out
                             </span>
                           )}
                         </td>
@@ -1223,15 +1226,16 @@ export const AdminAttendancePage: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Attendance Status
+                Log Status
               </label>
               <select
                 value={modalStatus}
                 onChange={(e) => setModalStatus(e.target.value as any)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 focus:border-emerald-600 focus:outline-hidden"
               >
-                <option value="Present">Present (Punctual)</option>
-                <option value="Late">Late (Tardy Arrival)</option>
+                <option value="Recorded">Recorded (Standard Log)</option>
+                <option value="On Duty">On Duty</option>
+                <option value="Timed Out">Timed Out</option>
               </select>
             </div>
           </div>

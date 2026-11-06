@@ -8,8 +8,8 @@ export interface TeacherAttendanceRecord {
   time_in: string;
   time_out?: string;
   date: string;
-  status: 'Present' | 'Late';
-  mode: 'Face Biometrics (AI Camera)' | 'Facial Recognition Kiosk' | 'Manual Override';
+  status: 'Recorded' | 'Present' | string;
+  mode: 'Face Biometrics (AI Camera)' | 'Facial Recognition Kiosk' | 'Manual Override' | string;
   confidence_score?: number;
   photo_snapshot?: string;
   verified_by?: string;
@@ -25,7 +25,7 @@ export const DEFAULT_TEACHER_ATTENDANCE: TeacherAttendanceRecord[] = [
     department: 'Mathematics',
     time_in: '07:12 AM',
     time_out: '04:30 PM',
-    status: 'Present',
+    status: 'Recorded',
     date: new Date().toISOString().split('T')[0],
     mode: 'Face Biometrics (AI Camera)',
     confidence_score: 99.4,
@@ -37,7 +37,7 @@ export const DEFAULT_TEACHER_ATTENDANCE: TeacherAttendanceRecord[] = [
     department: 'Science',
     time_in: '07:20 AM',
     time_out: '04:32 PM',
-    status: 'Present',
+    status: 'Recorded',
     date: new Date().toISOString().split('T')[0],
     mode: 'Face Biometrics (AI Camera)',
     confidence_score: 98.7,
@@ -49,7 +49,7 @@ export const DEFAULT_TEACHER_ATTENDANCE: TeacherAttendanceRecord[] = [
     department: 'Filipino',
     time_in: '07:38 AM',
     time_out: '—',
-    status: 'Late',
+    status: 'Recorded',
     date: new Date().toISOString().split('T')[0],
     mode: 'Face Biometrics (AI Camera)',
     confidence_score: 99.1,
@@ -61,7 +61,7 @@ export const DEFAULT_TEACHER_ATTENDANCE: TeacherAttendanceRecord[] = [
     department: 'TVL ICT',
     time_in: '07:15 AM',
     time_out: '04:30 PM',
-    status: 'Present',
+    status: 'Recorded',
     date: new Date().toISOString().split('T')[0],
     mode: 'Face Biometrics (AI Camera)',
     confidence_score: 99.8,
@@ -73,7 +73,7 @@ export const DEFAULT_TEACHER_ATTENDANCE: TeacherAttendanceRecord[] = [
     department: 'Junior High School',
     time_in: '07:10 AM',
     time_out: '04:35 PM',
-    status: 'Present',
+    status: 'Recorded',
     date: new Date().toISOString().split('T')[0],
     mode: 'Face Biometrics (AI Camera)',
     confidence_score: 99.6,
@@ -125,7 +125,7 @@ export async function fetchAllTeacherAttendance(): Promise<TeacherAttendanceReco
         time_in: d.time_in || '07:15 AM',
         time_out: d.time_out || '—',
         date: d.date ? d.date.split('T')[0] : new Date().toISOString().split('T')[0],
-        status: (d.status === 'Late' || d.status === 'late') ? 'Late' : 'Present',
+        status: d.status || 'Recorded',
         mode: d.mode || 'Face Biometrics (AI Camera)',
         confidence_score: d.confidence_score || 99.4,
         photo_snapshot: d.photo_snapshot,

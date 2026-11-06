@@ -43,7 +43,7 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   const [lastScannedResult, setLastScannedResult] = useState<{
     type: 'in' | 'out';
     time: string;
-    status: 'Present' | 'Late';
+    status: string;
     confidence: number;
   } | null>(null);
 
@@ -302,21 +302,23 @@ export const TeacherFaceAttendancePage: React.FC = () => {
       });
       const dateStr = now.toISOString().split('T')[0];
 
-      // Late threshold: after 07:30 AM
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const isLate = type === 'in' && (hours > 7 || (hours === 7 && minutes > 30));
-      const status: 'Present' | 'Late' = isLate ? 'Late' : 'Present';
+      const existing = attendanceLogs.find(
+        (r) =>
+          r.date === dateStr &&
+          (r.teacher_name.toLowerCase().includes(teacherName.toLowerCase()) ||
+            teacherName.toLowerCase().includes(r.teacher_name.toLowerCase()))
+      );
+
       const confidence = Number((98.5 + Math.random() * 1.3).toFixed(1));
 
-      // Save record
+      // Save record purely as time in and time out logs (no late validation or thresholds)
       await recordTeacherAttendance({
         teacher_name: teacherName,
         department,
-        time_in: type === 'in' ? timeStr : '07:15 AM',
-        time_out: type === 'out' ? timeStr : '—',
+        time_in: type === 'in' ? timeStr : (existing?.time_in || timeStr),
+        time_out: type === 'out' ? timeStr : (existing?.time_out || '—'),
         date: dateStr,
-        status,
+        status: 'Recorded',
         mode: 'Face Biometrics (AI Camera)',
         confidence_score: confidence,
       });
@@ -324,7 +326,7 @@ export const TeacherFaceAttendancePage: React.FC = () => {
       setLastScannedResult({
         type,
         time: timeStr,
-        status,
+        status: type === 'in' ? 'Time In Recorded' : 'Time Out Recorded',
         confidence,
       });
 
@@ -665,43 +667,47 @@ export const TeacherFaceAttendancePage: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900">
-                  Today&apos;s Attendance Status
+                  Today&apos;s Attendance Log
                 </h3>
                 <p className="text-[11px] text-slate-400">{currentDateStr}</p>
               </div>
               <span
                 className={`px-3 py-1 rounded-full text-xs font-extrabold ${
                   todayRecord
-                    ? todayRecord.status === 'Present'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    ? todayRecord.time_out && todayRecord.time_out !== '—'
+                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                     : 'bg-slate-100 text-slate-600'
                 }`}
               >
-                {todayRecord ? todayRecord.status : 'Not Clocked In'}
+                {todayRecord
+                  ? todayRecord.time_out && todayRecord.time_out !== '—'
+                    ? 'Timed Out'
+                    : 'Timed In (On Duty)'
+                  : 'No Attendance Recorded'}
               </span>
             </div>
 
-            {/* Time In / Time Out Grid */}
+            {/* Time In / Time Out Grid (Pure recording with no official dismiss schedule or late tags) */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Morning Time In
+                  Time In
                 </span>
                 <p className="text-lg font-black font-mono text-emerald-800 mt-1">
                   {todayRecord?.time_in || '—'}
                 </p>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Official Gate: 07:15</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Recorded Arrival</span>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Afternoon Time Out
+                  Time Out
                 </span>
                 <p className="text-lg font-black font-mono text-slate-700 mt-1">
-                  {todayRecord?.time_out || '—'}
+                  {todayRecord?.time_out && todayRecord.time_out !== '—' ? todayRecord.time_out : '—'}
                 </p>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Official Dismiss: 04:30</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Recorded Departure</span>
               </div>
             </div>
 
@@ -754,14 +760,8 @@ export const TeacherFaceAttendancePage: React.FC = () => {
                       )}
                     </p>
                   </div>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                      log.status === 'Present'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-800 border border-amber-200'
-                    }`}
-                  >
-                    {log.status}
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">
+                    {log.time_out && log.time_out !== '—' ? 'Completed' : 'On Duty'}
                   </span>
                 </div>
               ))}
