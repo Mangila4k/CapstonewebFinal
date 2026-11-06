@@ -110,7 +110,22 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#1a225a]/5">
+    <div
+      className="flex min-h-[calc(100vh-80px)] items-center justify-center p-4 sm:p-6 lg:p-8 relative"
+      style={{
+        backgroundColor: '#1a225a',
+        backgroundImage: `
+          radial-gradient(ellipse at 85% 15%, rgba(245, 158, 11, 0.16) 0%, transparent 45%),
+          radial-gradient(ellipse at 15% 70%, rgba(251, 191, 36, 0.10) 0%, transparent 50%),
+          linear-gradient(180deg, rgba(26, 34, 90, 0.65) 0%, rgba(20, 27, 72, 0.78) 50%, rgba(13, 17, 50, 0.88) 100%),
+          url('/pictures/deped_matatag_banner.png')
+        `,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <div className="flex w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200">
         {/* Left Panel: Form */}
         <div className="w-full lg:w-7/12 p-8 sm:p-12 flex flex-col justify-between">
@@ -268,8 +283,21 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Panel: Info & Strands */}
-        <div className="hidden lg:flex w-5/12 flex-col justify-between bg-gradient-to-br from-[#1a225a] via-[#1B2A4A] to-[#121E36] p-10 text-white border-l border-white/10">
+        {/* Right Panel: Info & Strands with DepEd MATATAG Banner */}
+        <div
+          className="hidden lg:flex w-5/12 flex-col justify-between p-10 text-white border-l border-white/10 relative overflow-hidden"
+          style={{
+            backgroundColor: '#1a225a',
+            backgroundImage: `
+              radial-gradient(ellipse at 85% 15%, rgba(245, 158, 11, 0.18) 0%, transparent 50%),
+              linear-gradient(180deg, rgba(26, 34, 90, 0.82) 0%, rgba(20, 27, 72, 0.88) 50%, rgba(13, 17, 50, 0.94) 100%),
+              url('/pictures/deped_matatag_banner.png')
+            `,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-300">
               <GraduationCap className="h-4 w-4" />
