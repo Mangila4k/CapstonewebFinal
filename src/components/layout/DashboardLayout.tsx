@@ -221,7 +221,6 @@ export const DashboardLayout: React.FC = () => {
               { name: 'Dashboard', path: '/guidance/dashboard', icon: Gauge },
               { name: 'Guidance & Violations', path: '/guidance/violations', icon: Scale },
               { name: 'Counseling', path: '/guidance/counseling', icon: Users },
-              { name: 'Students', path: '/guidance/students', icon: GraduationCap },
             ],
           },
           {
