@@ -266,18 +266,16 @@ export const AdminReportsPage: React.FC = () => {
       <style>{`
         @page {
           size: letter portrait;
-          margin: 0.3in 0.4in 0.3in 0.4in;
+          margin: 0.5in 0.55in 0.5in 0.55in;
         }
         @media print {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             height: 100% !important;
-            max-height: 100% !important;
-            overflow: hidden !important;
             background: #ffffff !important;
-            color: #000000 !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+            color: #0f172a !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -296,13 +294,12 @@ export const AdminReportsPage: React.FC = () => {
             justify-content: space-between !important;
             width: 100% !important;
             max-width: 100% !important;
-            height: 10.35in !important;
-            min-height: 10.35in !important;
-            max-height: 10.4in !important;
+            height: 9.85in !important;
+            min-height: 9.8in !important;
+            max-height: 10.0in !important;
             margin: 0 auto !important;
             padding: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
+            box-sizing: border-box !important;
             background: #ffffff !important;
             page-break-after: avoid !important;
             page-break-before: avoid !important;
@@ -310,7 +307,6 @@ export const AdminReportsPage: React.FC = () => {
             break-after: avoid !important;
             break-before: avoid !important;
             break-inside: avoid !important;
-            overflow: hidden !important;
           }
           .official-table {
             width: 100% !important;
@@ -319,25 +315,27 @@ export const AdminReportsPage: React.FC = () => {
           }
           .official-table th,
           .official-table td {
-            border: 1px solid #000000 !important;
-            color: #000000 !important;
-            padding: 7px 8px !important;
-            font-size: 8.5pt !important;
+            border: 1px solid #1e293b !important;
+            color: #0f172a !important;
+            padding: 7px 10px !important;
+            font-size: 9pt !important;
             line-height: 1.35 !important;
           }
           .official-table th {
             background-color: #f1f5f9 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            font-size: 8pt !important;
-            padding: 8px 8px !important;
+            font-size: 8.5pt !important;
+            padding: 8px 10px !important;
             font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.03em !important;
           }
           .official-divider {
-            border-color: #000000 !important;
+            border-color: #0f172a !important;
           }
           .official-sign-line {
-            border-bottom: 2px solid #000000 !important;
+            border-bottom: 1.5px solid #0f172a !important;
           }
         }
       `}</style>
@@ -608,155 +606,153 @@ export const AdminReportsPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 2. PRINT-ONLY VIEW: OFFICIAL DEPED SHORT BOND PAPER (8.5" × 11") */}
       {/* ================================================================ */}
-      <div className="print-bond-paper hidden print:flex flex-col justify-between w-full h-[10.35in] min-h-[10.35in] max-h-[10.4in]">
-        <div className="w-full h-full bg-white text-slate-900 font-sans flex flex-col justify-between">
-          {/* SECTION 1: Official DepEd Letterhead & Document Title Block */}
-          <div>
-            {/* Official DepEd Philippines Letterhead Header (Single Logo on Left) */}
-            <div className="flex items-center justify-between pb-1.5">
-              {/* Left: School Official Seal / Logo */}
-              <div className="w-20 flex items-center justify-center shrink-0">
-                <img
-                  src="/pictures/logo sa skwelahan.png"
-                  alt="PLSNHS Seal"
-                  className="h-20 w-20 object-contain rounded-full shadow-2xs"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-
-              {/* Center: Official Government Institution Hierarchy */}
-              <div className="text-center flex-1 px-4">
-                <p className="text-[11px] uppercase tracking-widest font-semibold text-slate-800 leading-tight font-serif">
-                  Republic of the Philippines
-                </p>
-                <h2 className="text-[14px] uppercase font-bold tracking-wider text-slate-950 leading-tight mt-0.5 font-serif">
-                  Department of Education
-                </h2>
-                <p className="text-[11px] font-medium text-slate-800 leading-tight">
-                  Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
-                </p>
-                <h1 className="text-lg font-black tracking-wide text-black uppercase mt-0.5 font-serif">
-                  PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
-                </h1>
-                <p className="text-[10.5px] text-slate-700 leading-tight mt-0.5">
-                  Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
-                </p>
-              </div>
-
-              {/* Right: Structural Balance Spacer (Single logo stays on left) */}
-              <div className="w-20 shrink-0 hidden sm:block pointer-events-none" aria-hidden="true" />
+      <div className="print-bond-paper hidden print:flex flex-col justify-between w-full h-[9.85in] min-h-[9.8in] max-h-[10.0in] bg-white text-slate-900 font-sans">
+        {/* TOP SECTION: Header, Title, Indicators, Curricular Matrix & Grand Total */}
+        <div className="space-y-3">
+          {/* Official DepEd Philippines Letterhead Header */}
+          <div className="flex items-center justify-between pb-1">
+            {/* Left: School Official Seal / Logo */}
+            <div className="w-20 flex items-center justify-center shrink-0">
+              <img
+                src="/pictures/logo sa skwelahan.png"
+                alt="PLSNHS Seal"
+                className="h-20 w-20 object-contain rounded-full shadow-2xs"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
             </div>
 
-            {/* Official DepEd Double Line Accent (Thick + Thin Rule) */}
-            <div className="border-b-[2.5px] border-black mb-[2px]"></div>
-            <div className="border-b border-black mb-2"></div>
-
-            {/* Document Title & Reference Metadata */}
-            <div className="text-center py-0.5 space-y-0.5">
-              <h3 className="text-base font-black uppercase tracking-wider text-slate-950 font-display">
-                OFFICIAL ENROLLMENT BREAKDOWN &amp; CURRICULAR MATRIX
-              </h3>
-              <p className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                School Year 2026–2027 · First Semester
+            {/* Center: Official Government Institution Hierarchy */}
+            <div className="text-center flex-1 px-4">
+              <p className="text-[11px] uppercase tracking-widest font-semibold text-slate-700 leading-tight font-serif">
+                Republic of the Philippines
               </p>
-              <p className="text-[10px] text-slate-600">
-                Official DepEd Statistical Master Summary · Reconciled with Learner Information System (LIS)
+              <h2 className="text-[14.5px] uppercase font-bold tracking-wider text-slate-950 leading-tight mt-0.5 font-serif">
+                Department of Education
+              </h2>
+              <p className="text-[10.5px] font-medium text-slate-700 leading-tight">
+                Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
+              </p>
+              <h1 className="text-[17px] font-black tracking-wide text-slate-950 uppercase mt-0.5 font-serif">
+                PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
+              </h1>
+              <p className="text-[10px] text-slate-600 leading-tight mt-0.5">
+                Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
               </p>
             </div>
+
+            {/* Right: Structural Balance Spacer */}
+            <div className="w-20 shrink-0 hidden sm:block pointer-events-none" aria-hidden="true" />
           </div>
 
-          {/* SECTION 2: Institutional Statistical Summary Bar (Text Format) */}
-          <div className="border-2 border-black bg-slate-50/80 p-3 rounded-xs grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-            <div className="border-r border-black/30 last:border-0 px-2">
-              <span className="text-[10px] uppercase font-bold text-slate-600 block">Total Enrolled Population</span>
-              <span className="text-base font-black text-slate-950 font-display">{totalStudents} Learners</span>
-            </div>
-            <div className="border-r border-black/30 last:border-0 px-2">
-              <span className="text-[10px] uppercase font-bold text-slate-600 block">Senior High School (SHS)</span>
-              <span className="text-base font-black text-slate-950 font-display">{shsTotals.total} Learners</span>
-            </div>
-            <div className="border-r border-black/30 last:border-0 px-2">
-              <span className="text-[10px] uppercase font-bold text-slate-600 block">Instructional Sections</span>
-              <span className="text-base font-black text-slate-950 font-display">{totalSectionsCount} Sections</span>
+          {/* Official DepEd Double Line Accent (Thick + Thin Rule) */}
+          <div className="border-b-2 border-slate-900 mt-1"></div>
+          <div className="border-b border-slate-900 mt-[2px] mb-2.5"></div>
+
+          {/* Document Title & Reference Metadata */}
+          <div className="text-center py-0.5 space-y-0.5">
+            <h3 className="text-[15px] font-black uppercase tracking-wider text-slate-950 font-display">
+              OFFICIAL ENROLLMENT BREAKDOWN &amp; CURRICULAR MATRIX
+            </h3>
+            <p className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+              School Year 2026–2027 · First Semester
+            </p>
+            <p className="text-[10px] text-slate-500 italic">
+              Official DepEd Institutional Statistical Form · Reconciled with Learner Information System (LIS)
+            </p>
+          </div>
+
+          {/* Institutional Statistical Indicators Summary Bar */}
+          <div className="rounded-md border border-slate-300 bg-slate-50/70 py-2.5 px-3 grid grid-cols-4 divide-x divide-slate-200 text-center">
+            <div className="px-2">
+              <span className="text-[9.5px] uppercase font-bold text-slate-600 block">Total Enrolled Population</span>
+              <span className="text-[15px] font-black text-slate-950 font-display block mt-0.5">{totalStudents} Learners</span>
             </div>
             <div className="px-2">
-              <span className="text-[10px] uppercase font-bold text-slate-600 block">Date of Certification</span>
-              <span className="text-xs font-bold text-slate-900 mt-0.5 block">
+              <span className="text-[9.5px] uppercase font-bold text-slate-600 block">Senior High School (SHS)</span>
+              <span className="text-[15px] font-black text-slate-950 font-display block mt-0.5">{shsTotals.total} Learners</span>
+            </div>
+            <div className="px-2">
+              <span className="text-[9.5px] uppercase font-bold text-slate-600 block">Instructional Sections</span>
+              <span className="text-[15px] font-black text-slate-950 font-display block mt-0.5">{totalSectionsCount} Sections</span>
+            </div>
+            <div className="px-2">
+              <span className="text-[9.5px] uppercase font-bold text-slate-600 block">Date of Certification</span>
+              <span className="text-xs font-bold text-slate-900 mt-1 block">
                 {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
             </div>
           </div>
 
-          {/* SECTION 3: Senior High School Track & Strand Breakdown Table */}
+          {/* SECTION 1: Senior High School Track & Strand Breakdown Table */}
           <div>
             <div className="flex items-end justify-between mb-1.5 px-0.5">
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-950">
                 Table 1. Senior High School (SHS) Track &amp; Strand Distribution Matrix
               </h4>
-              <span className="text-[10.5px] text-slate-700 font-bold tracking-wide">
+              <span className="text-[10.5px] text-slate-700 font-bold">
                 Grades 11 &amp; 12
               </span>
             </div>
 
             <div className="w-full">
-              <table className="official-table w-full text-left text-xs border-collapse border border-black table-fixed">
+              <table className="official-table w-full text-left text-xs border-collapse border border-slate-900 table-fixed">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-950 font-bold uppercase tracking-wider text-[10.5px] border-b-2 border-black">
-                    <th className="border border-black px-2 py-2.5 w-[4%] text-center">#</th>
-                    <th className="border border-black px-3 py-2.5 w-[22%]">Track / Program</th>
-                    <th className="border border-black px-3 py-2.5 w-[32%]">Strand / Learning Specialization</th>
-                    <th className="border border-black px-2 py-2.5 w-[7%] text-center">Male</th>
-                    <th className="border border-black px-2 py-2.5 w-[7%] text-center">Female</th>
-                    <th className="border border-black px-2 py-2.5 w-[8%] text-center">Total</th>
-                    <th className="border border-black px-2 py-2.5 w-[8%] text-center whitespace-nowrap">% Share</th>
-                    <th className="border border-black px-3 py-2.5 w-[12%]">Official Sections</th>
+                  <tr className="bg-slate-100 text-slate-950 font-extrabold uppercase tracking-wider text-[10px] border-b-2 border-slate-900">
+                    <th className="border border-slate-900 px-2 py-2 w-[4%] text-center">#</th>
+                    <th className="border border-slate-900 px-3 py-2 w-[22%]">Track / Program</th>
+                    <th className="border border-slate-900 px-3 py-2 w-[32%]">Strand / Learning Specialization</th>
+                    <th className="border border-slate-900 px-2 py-2 w-[7%] text-center">Male</th>
+                    <th className="border border-slate-900 px-2 py-2 w-[7%] text-center">Female</th>
+                    <th className="border border-slate-900 px-2 py-2 w-[8%] text-center">Total</th>
+                    <th className="border border-slate-900 px-2 py-2 w-[8%] text-center whitespace-nowrap">% Share</th>
+                    <th className="border border-slate-900 px-3 py-2 w-[12%]">Official Sections</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/40">
+                <tbody className="divide-y divide-slate-300">
                   {shsData.map((item, idx) => (
                     <tr key={item.strand} className="hover:bg-slate-50/50">
-                      <td className="border border-black px-2 py-2 text-center font-mono font-medium text-slate-800 text-[11px]">
+                      <td className="border border-slate-800 px-2 py-2 text-center font-mono font-medium text-slate-700 text-[10.5px]">
                         {idx + 1}
                       </td>
-                      <td className="border border-black px-3 py-2 font-bold text-slate-950 text-[11px] leading-tight" title={item.track}>
+                      <td className="border border-slate-800 px-3 py-2 font-bold text-slate-950 text-[11px] leading-snug" title={item.track}>
                         {item.track}
                       </td>
-                      <td className="border border-black px-3 py-2 text-slate-900 font-medium text-[11px] leading-tight">
+                      <td className="border border-slate-800 px-3 py-2 text-slate-900 font-medium text-[11px] leading-snug">
                         {item.strand}
                       </td>
-                      <td className="border border-black px-2 py-2 text-center font-mono font-medium text-slate-900 text-[11px]">
+                      <td className="border border-slate-800 px-2 py-2 text-center font-mono font-medium text-slate-900 text-[10.5px]">
                         {item.male}
                       </td>
-                      <td className="border border-black px-2 py-2 text-center font-mono font-medium text-slate-900 text-[11px]">
+                      <td className="border border-slate-800 px-2 py-2 text-center font-mono font-medium text-slate-900 text-[10.5px]">
                         {item.female}
                       </td>
-                      <td className="border border-black px-2 py-2 text-center font-mono font-black text-slate-950 text-[11.5px]">
+                      <td className="border border-slate-800 px-2 py-2 text-center font-mono font-black text-slate-950 text-[11px]">
                         {item.total}
                       </td>
-                      <td className="border border-black px-2 py-2 text-center font-mono font-medium text-slate-800 text-[11px]">
+                      <td className="border border-slate-800 px-2 py-2 text-center font-mono font-medium text-slate-800 text-[10.5px]">
                         {item.percentage}
                       </td>
-                      <td className="border border-black px-3 py-2 text-[10.5px] text-slate-800 leading-tight">
+                      <td className="border border-slate-800 px-3 py-2 text-[10.5px] text-slate-700 leading-snug">
                         {item.sections}
                       </td>
                     </tr>
                   ))}
                   {/* SHS Subtotal Row */}
-                  <tr className="bg-slate-100 font-bold border-t-2 border-black">
-                    <td colSpan={3} className="border border-black px-3 py-2 uppercase tracking-wide text-[11px]">
+                  <tr className="bg-slate-100 font-black border-t-2 border-slate-900">
+                    <td colSpan={3} className="border border-slate-900 px-3 py-2 uppercase tracking-wide text-[10.5px]">
                       Senior High School Total Enrollment Subtotal
                     </td>
-                    <td className="border border-black px-2 py-2 text-center font-mono text-[11px] text-slate-900">{shsTotals.male}</td>
-                    <td className="border border-black px-2 py-2 text-center font-mono text-[11px] text-slate-900">{shsTotals.female}</td>
-                    <td className="border border-black px-2 py-2 text-center font-mono font-black text-xs text-slate-950">
+                    <td className="border border-slate-900 px-2 py-2 text-center font-mono text-[10.5px] text-slate-900">{shsTotals.male}</td>
+                    <td className="border border-slate-900 px-2 py-2 text-center font-mono text-[10.5px] text-slate-900">{shsTotals.female}</td>
+                    <td className="border border-slate-900 px-2 py-2 text-center font-mono font-black text-xs text-slate-950">
                       {shsTotals.total}
                     </td>
-                    <td className="border border-black px-2 py-2 text-center font-mono text-[11px] text-slate-900">
+                    <td className="border border-slate-900 px-2 py-2 text-center font-mono text-[10.5px] text-slate-900">
                       {((shsTotals.total / totalStudents) * 100).toFixed(1)}%
                     </td>
-                    <td className="border border-black px-3 py-2 text-[10.5px] text-slate-800 font-semibold">
+                    <td className="border border-slate-900 px-3 py-2 text-[10.5px] text-slate-800 font-bold">
                       8 SHS Sections
                     </td>
                   </tr>
@@ -765,77 +761,80 @@ export const AdminReportsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 4: Institutional Grand Total Certification Box (Text Format) */}
-          <div className="border-2 border-black bg-slate-50/80 py-3.5 px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          {/* Institutional Grand Total Certification Banner */}
+          <div className="rounded-md border border-slate-300 bg-slate-50/80 py-2.5 px-4 flex items-center justify-between">
             <div>
               <p className="font-black uppercase tracking-wider text-slate-950 text-xs">
                 GRAND TOTAL ENROLLED SCHOOL POPULATION (S.Y. 2026–2027)
               </p>
-              <p className="text-[10.5px] text-slate-700 mt-0.5">
+              <p className="text-[10px] text-slate-600 mt-0.5">
                 Officially validated, audited, and registered learner count across Junior &amp; Senior High School
               </p>
             </div>
-            <div className="sm:text-right shrink-0">
-              <span className="text-lg sm:text-xl font-black text-slate-950 font-display">
+            <div className="text-right shrink-0">
+              <span className="text-lg font-black text-slate-950 font-display">
                 {totalStudents} Learners
               </span>
-              <p className="text-[10.5px] text-slate-700 font-mono mt-0.5 font-medium">
+              <p className="text-[10px] text-slate-600 font-mono mt-0.5">
                 Male: 213 (45.0%) · Female: 253 (53.5%)
               </p>
             </div>
           </div>
+        </div>
 
-          {/* SECTION 5: Official DepEd Certification Clause (Framed Certificate Box) */}
-          <div className="border border-black/80 bg-slate-50/40 p-3 rounded-xs text-[10.5px] text-slate-900 leading-relaxed text-justify">
+        {/* BOTTOM SECTION: Attestation, Tri-Signatory Block & Security Footer */}
+        <div className="space-y-3 pt-2">
+          {/* Official DepEd Certification Clause */}
+          <div className="text-[10px] text-slate-800 leading-relaxed text-justify border-t border-slate-300 pt-2">
             <p>
               <strong>CERTIFICATION:</strong> I hereby certify that the official enrollment statistical figures, track distributions, and gender-disaggregated learner metrics detailed herein have been cross-verified with student permanent records (DepEd Form 137 / SF10), validated against the official Department of Education Learner Information System (LIS), and represent the true and certified enrollment population of <strong>Placido L. Señor National High School</strong> for School Year 2026–2027.
             </p>
           </div>
 
-          {/* SECTION 6: DepEd Tri-Signatory Sign-Off Block */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs text-center">
+          {/* DepEd Tri-Signatory Sign-Off Block */}
+          <div className="grid grid-cols-3 gap-6 text-xs text-center pt-1">
             {/* Signatory 1: Registrar */}
             <div className="flex flex-col items-center">
-              <p className="text-[11px] font-semibold text-slate-800 mb-10 uppercase tracking-wider">
+              <p className="text-[10.5px] font-semibold text-slate-700 mb-9 uppercase tracking-wider">
                 Prepared &amp; Consolidated by:
               </p>
-              <div className="official-sign-line border-b-2 border-black w-48 pb-1 font-black text-slate-950 uppercase text-[11.5px]">
+              <div className="official-sign-line border-b-2 border-slate-900 w-48 pb-1 font-black text-slate-950 uppercase text-[11px]">
                 MARIA ELENA R. REGISTRAR
               </div>
-              <p className="text-[10.5px] font-bold text-slate-900 mt-1.5">School Registrar II</p>
-              <p className="text-[9.5px] text-slate-700">LIS &amp; Student Records In-Charge</p>
+              <p className="text-[10px] font-bold text-slate-900 mt-1">School Registrar II</p>
+              <p className="text-[9px] text-slate-600">LIS &amp; Student Records In-Charge</p>
             </div>
 
             {/* Signatory 2: SHS Coordinator */}
             <div className="flex flex-col items-center">
-              <p className="text-[11px] font-semibold text-slate-800 mb-10 uppercase tracking-wider">
+              <p className="text-[10.5px] font-semibold text-slate-700 mb-9 uppercase tracking-wider">
                 Reviewed &amp; Verified by:
               </p>
-              <div className="official-sign-line border-b-2 border-black w-48 pb-1 font-black text-slate-950 uppercase text-[11.5px]">
+              <div className="official-sign-line border-b-2 border-slate-900 w-48 pb-1 font-black text-slate-950 uppercase text-[11px]">
                 JHERICO MAURIN
               </div>
-              <p className="text-[10.5px] font-bold text-slate-900 mt-1.5">SHS Program Coordinator</p>
-              <p className="text-[9.5px] text-slate-700">Master Teacher I / Academics</p>
+              <p className="text-[10px] font-bold text-slate-900 mt-1">SHS Program Coordinator</p>
+              <p className="text-[9px] text-slate-600">Master Teacher I / Academics</p>
             </div>
 
             {/* Signatory 3: Principal */}
             <div className="flex flex-col items-center">
-              <p className="text-[11px] font-semibold text-slate-800 mb-10 uppercase tracking-wider">
+              <p className="text-[10.5px] font-semibold text-slate-700 mb-9 uppercase tracking-wider">
                 Certified Correct &amp; Approved:
               </p>
-              <div className="official-sign-line border-b-2 border-black w-48 pb-1 font-black text-slate-950 uppercase text-[11.5px]">
+              <div className="official-sign-line border-b-2 border-slate-900 w-48 pb-1 font-black text-slate-950 uppercase text-[11px]">
                 JUSTINE MANGILA, EdD
               </div>
-              <p className="text-[10.5px] font-bold text-slate-900 mt-1.5">Secondary School Principal II</p>
-              <p className="text-[9.5px] text-slate-700">School Head / Authorized Official</p>
+              <p className="text-[10px] font-bold text-slate-900 mt-1">Secondary School Principal II</p>
+              <p className="text-[9px] text-slate-600">School Head / Authorized Official</p>
             </div>
           </div>
 
-          {/* SECTION 7: Document Verification & Security Tracking Footer */}
-          <div className="pt-2 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between text-[9.5px] text-slate-800 leading-tight">
+          {/* Document Verification & Security Tracking Footer */}
+          <div className="pt-2 border-t-2 border-slate-900 flex items-center justify-between text-[9px] text-slate-600 leading-tight">
             <span>Placido L. Señor National High School · DepEd School ID: 303035</span>
             <span className="font-mono font-medium">Doc Ref: PLSNHS-REG-STAT-2026-004 · Security Hash Verified</span>
-            <span className="font-bold">Page 1 of 1 · Official DepEd Statistical Form</span>
+            <span className="font-bold text-slate-800">Page 1 of 1 · Official DepEd Statistical Form</span>
           </div>
         </div>
       </div>
