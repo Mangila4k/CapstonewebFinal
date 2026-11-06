@@ -48,6 +48,50 @@ interface CategoryDefinition {
   };
 }
 
+const GRADE_LEVEL_OPTIONS = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+const STUDENT_TYPE_OPTIONS = ['New Student', 'Old Student', 'Repeater', 'Transferee'];
+const STRAND_OPTIONS = [
+  { code: 'STEM', label: 'STEM – Science, Technology, Engineering & Mathematics' },
+  { code: 'HUMSS', label: 'HUMSS – Humanities & Social Sciences' },
+  { code: 'GAS', label: 'GAS – General Academic Strand' },
+  { code: 'TVL-ICT', label: 'TVL – Information & Communications Technology' },
+  { code: 'TVL-Cookery', label: 'TVL – Cookery' },
+];
+const GUARDIAN_RELATIONSHIP_OPTIONS = ['Mother', 'Father', 'Grandparent', 'Sibling', 'Aunt / Uncle', 'Legal Guardian', 'Other'];
+
+const ENROLL_LABEL_CLS = 'block text-[11px] font-bold text-slate-700 uppercase mb-1';
+const ENROLL_INPUT_CLS =
+  'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden';
+
+const createEmptyEnrollmentForm = () => ({
+  middleName: '',
+  suffix: '',
+  dob: '',
+  gender: '',
+  contactNumber: '',
+  address: '',
+  studentType: 'New Student',
+  gradeLevel: 'Grade 7',
+  strand: '',
+  schoolYear: '2026-2027',
+  previousSchool: '',
+  generalAverage: '',
+  guardianName: '',
+  guardianRelationship: '',
+  guardianContact: '',
+});
+
+const computeAge = (dob: string): number | null => {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? age : null;
+};
+
 const CATEGORY_DEFINITIONS: CategoryDefinition[] = [
   {
     key: 'student',
@@ -176,6 +220,13 @@ export const AdminAccountsPage: React.FC = () => {
     role: 'teacher' as UserRole,
   });
 
+  // Enrollment Information (shown only when creating a Student account)
+  const [enrollForm, setEnrollForm] = useState(createEmptyEnrollmentForm());
+  const isStudentRole = form.role === 'student';
+  const isSeniorHighGrade = enrollForm.gradeLevel === 'Grade 11' || enrollForm.gradeLevel === 'Grade 12';
+  const updateEnroll = (field: keyof ReturnType<typeof createEmptyEnrollmentForm>, value: string) =>
+    setEnrollForm((prev) => ({ ...prev, [field]: value }));
+
   const fetchAccounts = async () => {
     setLoading(true);
     try {
@@ -206,16 +257,23 @@ export const AdminAccountsPage: React.FC = () => {
 
   const openCreateModalForRole = (role: UserRole = 'teacher') => {
     setForm({ firstName: '', lastName: '', email: '', password: '', role });
+    setEnrollForm(createEmptyEnrollmentForm());
     setIsModalOpen(true);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
+
+    if (isStudentRole && isSeniorHighGrade && !enrollForm.strand) {
+      setNotice({ type: 'error', message: 'Please select a strand for Senior High School (Grade 11 / Grade 12) students.' });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         first_name: form.firstName.trim(),
         last_name: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
@@ -224,10 +282,80 @@ export const AdminAccountsPage: React.FC = () => {
         created_at: new Date().toISOString(),
       };
 
+      if (isStudentRole) {
+        payload.contact_number = enrollForm.contactNumber.trim() || null;
+        payload.address = enrollForm.address.trim() || null;
+      }
+
       const { error } = await supabase.from('users').insert([payload]);
 
       if (error) {
         throw new Error(error.message);
+      }
+
+      // For Student accounts, also file the enrollment information record
+      let enrollmentWarning = '';
+      if (isStudentRole) {
+        const finalStrand = isSeniorHighGrade ? enrollForm.strand : null;
+        const enrollmentPayload = {
+          first_name: payload.first_name,
+          last_name: payload.last_name,
+          middle_name: enrollForm.middleName.trim() || null,
+          suffix: enrollForm.suffix.trim() || null,
+          email: payload.email,
+          dob: enrollForm.dob || null,
+          date_of_birth: enrollForm.dob || null,
+          age: computeAge(enrollForm.dob),
+          gender: enrollForm.gender || null,
+          contact_number: enrollForm.contactNumber.trim() || null,
+          address: enrollForm.address.trim() || null,
+          nationality: 'Filipino',
+          guardian_name: enrollForm.guardianName.trim() || null,
+          guardian_relationship: enrollForm.guardianRelationship || null,
+          guardian_contact: enrollForm.guardianContact.trim() || null,
+          guardian_address: enrollForm.address.trim() || null,
+          student_type: enrollForm.studentType,
+          grade_level: enrollForm.gradeLevel,
+          strand: finalStrand,
+          school_year: enrollForm.schoolYear.trim() || '2026-2027',
+          last_school_year: enrollForm.schoolYear.trim() || '2026-2027',
+          previous_school: enrollForm.previousSchool.trim() || null,
+          general_average: enrollForm.generalAverage ? parseFloat(enrollForm.generalAverage) : null,
+          status: 'Pending',
+        };
+
+        const { data: enrData, error: enrError } = await supabase
+          .from('enrollments')
+          .insert(enrollmentPayload)
+          .select()
+          .single();
+
+        if (enrError) {
+          enrollmentWarning = ` (Note: enrollment information could not be saved: ${enrError.message})`;
+        } else {
+          try {
+            await supabase.from('notifications').insert({
+              title: 'New Student Enrollment Record',
+              message: `Admin filed an enrollment record for ${payload.first_name} ${payload.last_name} – ${enrollForm.gradeLevel}${finalStrand ? ` (${finalStrand})` : ''} (${enrollForm.studentType}), awaiting verification.`,
+              type: 'enrollment',
+              role: 'registrar',
+              enrollment_id: enrData?.id || null,
+            });
+          } catch {
+            // ignore
+          }
+
+          try {
+            const rawCache = localStorage.getItem('plsnhs_enrollments_cache_v2');
+            const parsedCache = rawCache ? JSON.parse(rawCache) : [];
+            if (Array.isArray(parsedCache) && enrData) {
+              localStorage.setItem('plsnhs_enrollments_cache_v2', JSON.stringify([enrData, ...parsedCache]));
+            }
+            window.dispatchEvent(new Event('plsnhs-enrollment-updated'));
+          } catch {
+            // ignore storage errors
+          }
+        }
       }
 
       // Record in activity_logs
@@ -235,7 +363,9 @@ export const AdminAccountsPage: React.FC = () => {
         const logRecord = {
           role: 'admin',
           action: 'Account Created',
-          details: `Admin created new ${form.role.toUpperCase()} account for ${form.firstName} ${form.lastName} (${form.email}).`,
+          details: `Admin created new ${form.role.toUpperCase()} account for ${form.firstName} ${form.lastName} (${form.email})${
+            isStudentRole ? ` with enrollment information for ${enrollForm.gradeLevel}` : ''
+          }.`,
           timestamp: new Date().toISOString(),
         };
         await supabase.from('activity_logs').insert([logRecord]);
@@ -244,9 +374,13 @@ export const AdminAccountsPage: React.FC = () => {
         // ignore
       }
 
-      setNotice({ type: 'success', message: `Account created successfully for ${form.email}` });
+      setNotice({
+        type: enrollmentWarning ? 'error' : 'success',
+        message: `Account created successfully for ${form.email}${enrollmentWarning}`,
+      });
       setIsModalOpen(false);
       setForm({ firstName: '', lastName: '', email: '', password: '', role: 'teacher' });
+      setEnrollForm(createEmptyEnrollmentForm());
       fetchAccounts();
     } catch (err: any) {
       setNotice({ type: 'error', message: err.message || 'Failed to create user account' });
@@ -828,7 +962,12 @@ export const AdminAccountsPage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Create New User Account"
-        subtitle="Provision portal credentials for faculty, students, or administrative staff"
+        subtitle={
+          isStudentRole
+            ? 'Provision student portal credentials and fill out the learner enrollment information'
+            : 'Provision portal credentials for faculty, students, or administrative staff'
+        }
+        maxWidth={isStudentRole ? '2xl' : 'lg'}
       >
         <form onSubmit={handleCreate} autoComplete="off" className="space-y-4">
           <input type="text" name="fake_acc_user_trap" autoComplete="username" className="hidden" tabIndex={-1} />
@@ -918,6 +1057,261 @@ export const AdminAccountsPage: React.FC = () => {
               <option value="admin">👑 Administrator</option>
             </select>
           </div>
+
+          {/* Student Enrollment Information (only for Student accounts) */}
+          {isStudentRole && (
+            <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+              <div className="flex items-start gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-100 text-emerald-700">
+                  <GraduationCap className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-900">Enrollment Information</h4>
+                  <p className="text-[11px] text-emerald-800/80">
+                    Learner details filed as an enrollment record (status: Pending) for registrar verification.
+                  </p>
+                </div>
+              </div>
+
+              {/* Personal Details */}
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Personal Details</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="sm:col-span-2">
+                    <label className={ENROLL_LABEL_CLS}>Middle Name</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={enrollForm.middleName}
+                      onChange={(e) => updateEnroll('middleName', e.target.value)}
+                      placeholder="Middle name (optional)"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>Suffix</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={enrollForm.suffix}
+                      onChange={(e) => updateEnroll('suffix', e.target.value)}
+                      placeholder="Jr., III (optional)"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      Date of Birth <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={enrollForm.dob}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => updateEnroll('dob', e.target.value)}
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      Sex <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={enrollForm.gender}
+                      onChange={(e) => updateEnroll('gender', e.target.value)}
+                      className={ENROLL_INPUT_CLS}
+                    >
+                      <option value="">Select</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>Contact Number</label>
+                    <input
+                      type="tel"
+                      autoComplete="off"
+                      value={enrollForm.contactNumber}
+                      onChange={(e) => updateEnroll('contactNumber', e.target.value)}
+                      placeholder="09XX XXX XXXX"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className={ENROLL_LABEL_CLS}>
+                      Home Address <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="off"
+                      value={enrollForm.address}
+                      onChange={(e) => updateEnroll('address', e.target.value)}
+                      placeholder="House No. / Street, Barangay, City / Municipality, Province"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Academic Placement */}
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Academic Placement</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      Student Type <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={enrollForm.studentType}
+                      onChange={(e) => updateEnroll('studentType', e.target.value)}
+                      className={ENROLL_INPUT_CLS}
+                    >
+                      {STUDENT_TYPE_OPTIONS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      Grade Level <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={enrollForm.gradeLevel}
+                      onChange={(e) => {
+                        const grade = e.target.value;
+                        setEnrollForm((prev) => ({
+                          ...prev,
+                          gradeLevel: grade,
+                          strand: grade === 'Grade 11' || grade === 'Grade 12' ? prev.strand : '',
+                        }));
+                      }}
+                      className={ENROLL_INPUT_CLS}
+                    >
+                      {GRADE_LEVEL_OPTIONS.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      School Year <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="off"
+                      value={enrollForm.schoolYear}
+                      onChange={(e) => updateEnroll('schoolYear', e.target.value)}
+                      placeholder="e.g., 2026-2027"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  {isSeniorHighGrade && (
+                    <div className="sm:col-span-3">
+                      <label className={ENROLL_LABEL_CLS}>
+                        SHS Strand <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={enrollForm.strand}
+                        onChange={(e) => updateEnroll('strand', e.target.value)}
+                        className={ENROLL_INPUT_CLS}
+                      >
+                        <option value="">Select strand</option>
+                        {STRAND_OPTIONS.map((s) => (
+                          <option key={s.code} value={s.code}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div className="sm:col-span-2">
+                    <label className={ENROLL_LABEL_CLS}>Last School Attended</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={enrollForm.previousSchool}
+                      onChange={(e) => updateEnroll('previousSchool', e.target.value)}
+                      placeholder="Previous school (optional)"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>General Average</label>
+                    <input
+                      type="number"
+                      min={60}
+                      max={100}
+                      step="0.01"
+                      value={enrollForm.generalAverage}
+                      onChange={(e) => updateEnroll('generalAverage', e.target.value)}
+                      placeholder="e.g., 89.50"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Parent / Guardian */}
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Parent / Guardian</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      Guardian Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="off"
+                      value={enrollForm.guardianName}
+                      onChange={(e) => updateEnroll('guardianName', e.target.value)}
+                      placeholder="Full name"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>Relationship</label>
+                    <select
+                      value={enrollForm.guardianRelationship}
+                      onChange={(e) => updateEnroll('guardianRelationship', e.target.value)}
+                      className={ENROLL_INPUT_CLS}
+                    >
+                      <option value="">Select</option>
+                      {GUARDIAN_RELATIONSHIP_OPTIONS.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={ENROLL_LABEL_CLS}>
+                      Guardian Contact <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      autoComplete="off"
+                      value={enrollForm.guardianContact}
+                      onChange={(e) => updateEnroll('guardianContact', e.target.value)}
+                      placeholder="09XX XXX XXXX"
+                      className={ENROLL_INPUT_CLS}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
             <button
