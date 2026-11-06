@@ -11,7 +11,6 @@ import {
   BookOpen,
   ShieldCheck,
   CreditCard,
-  RotateCw,
   CheckCircle2,
   Clock,
   Award,
@@ -28,7 +27,6 @@ import QRCode from 'qrcode';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import type { Subject } from '../../types';
-import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { Modal } from '../../components/common/Modal';
 
 const FALLBACK_SUBJECTS: Subject[] = [
@@ -83,9 +81,6 @@ export const StudentDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studentRecord, setStudentRecord] = useState<any>(null);
-  const [cardSide, setCardSide] = useState<'both' | 'front' | 'back'>('both');
-  const [cardFlipped, setCardFlipped] = useState(false);
-  const [idViewMode, setIdViewMode] = useState<'qr_pass' | 'card_preview'>('qr_pass');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedLrn, setCopiedLrn] = useState(false);
@@ -269,265 +264,158 @@ export const StudentDashboardPage: React.FC = () => {
 
       {/* Main 12-Column Balanced Workspace (6 + 6 on lg/xl so both columns sit side-by-side) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 items-start">
-        {/* Left Column (6 cols): Emergency Attendance QR Gate Pass & ID Preview */}
+        {/* Left Column (6 cols): Emergency Attendance QR Gate Pass */}
         <div className="xl:col-span-6 rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-3.5 sm:p-6 shadow-xs flex flex-col justify-between">
           <div>
-            {/* Header with Switcher Tabs */}
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-2 border-b border-slate-100 pb-3 sm:pb-4 mb-4">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#152e69] text-[#F5C518]">
-                  {idViewMode === 'qr_pass' ? (
-                    <QrCode className="h-4 w-4" />
-                  ) : (
-                    <CreditCard className="h-4 w-4" />
-                  )}
+                  <QrCode className="h-4 w-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-900 leading-tight">
-                    {idViewMode === 'qr_pass'
-                      ? 'Attendance QR Pass (Gate Entry)'
-                      : 'Official Student ID Preview'}
+                    Attendance QR Pass (Gate Entry)
                   </h3>
                   <p className="text-[10px] sm:text-[11px] text-slate-400">
-                    {idViewMode === 'qr_pass'
-                      ? 'Emergency scannable pass for campus turnstiles & classrooms'
-                      : 'Read-only ID Card Preview · CR80 Standard'}
+                    Emergency scannable pass for campus turnstiles & classrooms
                   </p>
                 </div>
               </div>
 
-              {/* View Switcher Tabs */}
-              <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/80 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIdViewMode('qr_pass')}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                    idViewMode === 'qr_pass'
-                      ? 'bg-[#152e69] text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <QrCode className="h-3 w-3" />
-                  <span>QR Gate Pass</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIdViewMode('card_preview')}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                    idViewMode === 'card_preview'
-                      ? 'bg-[#152e69] text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <CreditCard className="h-3 w-3" />
-                  <span>ID Preview</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200 transition-all cursor-pointer shrink-0"
+              >
+                <Maximize2 className="h-3.5 w-3.5 text-[#152e69]" />
+                <span>Enlarge Pass</span>
+              </button>
             </div>
 
-            {/* TAB 1: EMERGENCY ATTENDANCE QR PASS */}
-            {idViewMode === 'qr_pass' && (
-              <div className="space-y-4">
-                {/* Official Pass Card with Navy gradient */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0c1833] via-[#152e69] to-[#1e3a8a] text-white p-5 sm:p-6 shadow-md border border-slate-700/40">
-                  {/* Decorative backdrop shapes */}
-                  <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-blue-400/10 blur-2xl pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-56 h-56 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
+            {/* Official Pass Card with Navy gradient */}
+            <div className="space-y-4">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0c1833] via-[#152e69] to-[#1e3a8a] text-white p-5 sm:p-6 shadow-md border border-slate-700/40">
+                {/* Decorative backdrop shapes */}
+                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-blue-400/10 blur-2xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-56 h-56 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
 
-                  {/* Header Row inside Pass */}
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src="/plsnhs_logo.png"
-                        alt="PLSNHS Logo"
-                        className="w-7 h-7 object-contain drop-shadow-sm"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                      <div>
-                        <p className="text-[10px] font-black tracking-widest uppercase text-amber-300">
-                          Placido L. Señor NHS
-                        </p>
-                        <p className="text-[9px] text-blue-200 uppercase font-semibold">
-                          Digital Attendance Pass
-                        </p>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-bold text-emerald-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Live Gate Pass
-                    </span>
-                  </div>
-
-                  {/* QR Code Presentation Box */}
-                  <div className="flex flex-col items-center justify-center my-1 text-center">
-                    <div className="bg-white p-3 rounded-2xl shadow-lg border-2 border-amber-300/60 inline-flex flex-col items-center">
-                      {qrDataUrl ? (
-                        <img
-                          src={qrDataUrl}
-                          alt="Student Gate Attendance QR Code"
-                          className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
-                        />
-                      ) : (
-                        <div className="w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center text-slate-400">
-                          <QrCode className="w-12 h-12 animate-pulse text-slate-300" />
-                        </div>
-                      )}
-                      <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest mt-1">
-                        Turnstile & Teacher Scanner
-                      </p>
-                    </div>
-
-                    {/* Quick Enlarge Action */}
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsQrModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 transition-all cursor-pointer backdrop-blur-xs shadow-2xs"
-                      >
-                        <Maximize2 className="h-3.5 w-3.5 text-amber-300" />
-                        <span>Enlarge for Scanner</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCopyLrn}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all cursor-pointer"
-                        title="Copy LRN to clipboard"
-                      >
-                        {copiedLrn ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-emerald-400" />
-                            <span className="text-emerald-300">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5 text-slate-300" />
-                            <span>Copy LRN</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Learner Info Strip */}
-                  <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <div>
-                      <p className="font-extrabold text-white text-sm tracking-tight">
-                        {fullName}
-                      </p>
-                      <p className="text-slate-300 text-[11px] font-mono">
-                        LRN: <span className="font-bold text-amber-300">{lrn}</span>
-                      </p>
-                    </div>
-                    <div className="sm:text-right">
-                      <p className="font-bold text-blue-100 text-[11px]">
-                        {gradeLevel} · {strand}
-                      </p>
-                      <p className="text-slate-400 text-[10px]">
-                        {section} • S.Y. {schoolYear}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Emergency Guidance & Printing Policy Notice */}
-                <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 sm:p-3.5 text-xs text-amber-950 flex items-start gap-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shrink-0 mt-0.5">
-                    <ShieldAlert className="h-4 w-4" />
-                  </div>
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <p className="font-extrabold text-amber-900 text-xs">
-                      Emergency Attendance Pass & ID Policy
-                    </p>
-                    <p className="text-[11px] text-amber-800/90 leading-relaxed">
-                      If you misplaced or forgot your physical ID today, present this digital QR pass directly to the campus gate scanner or your subject teacher to log your attendance.
-                    </p>
-                    <div className="pt-1.5 mt-1 border-t border-amber-200/80 flex items-center gap-1.5 text-[10px] text-amber-900 font-semibold">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
-                      Physical PVC ID issuance is strictly authorized and printed by the School Admin & Registrar.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: OFFICIAL ID CARD PREVIEW (READ-ONLY) */}
-            {idViewMode === 'card_preview' && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-2 border border-slate-200">
-                  <div className="flex items-center rounded-lg bg-white p-0.5 border border-slate-200">
-                    {(['both', 'front', 'back'] as const).map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setCardSide(s)}
-                        className={`rounded-md px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-bold capitalize transition-all cursor-pointer ${
-                          cardSide === s
-                            ? 'bg-[#152e69] text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-
+                {/* Header Row inside Pass */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
                   <div className="flex items-center gap-2">
-                    {cardSide === 'both' && (
-                      <button
-                        type="button"
-                        onClick={() => setCardFlipped(!cardFlipped)}
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 px-2 sm:px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
-                        title="Swap Front & Back order"
-                      >
-                        <RotateCw className="h-3 w-3" /> Flip
-                      </button>
-                    )}
-
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-200/70 px-2.5 py-1 rounded-lg border border-slate-300/80">
-                      <ShieldCheck className="h-3 w-3 text-slate-500" />
-                      Print: Admin & Registrar Only
-                    </span>
+                    <img
+                      src="/plsnhs_logo.png"
+                      alt="PLSNHS Logo"
+                      className="w-7 h-7 object-contain drop-shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <div>
+                      <p className="text-[10px] font-black tracking-widest uppercase text-amber-300">
+                        Placido L. Señor NHS
+                      </p>
+                      <p className="text-[9px] text-blue-200 uppercase font-semibold">
+                        Digital Attendance Pass
+                      </p>
+                    </div>
                   </div>
-                </div>
-
-                <div
-                  className="w-full overflow-x-auto flex justify-center py-1"
-                  id="studentDashboardCardContainer"
-                >
-                  <StudentIdCard
-                    data={{
-                      id: user?.student_id || user?.id,
-                      student_id: user?.student_id || user?.id,
-                      fullname: fullName,
-                      first_name: user?.first_name,
-                      last_name: user?.last_name,
-                      lrn,
-                      grade_level: gradeLevel,
-                      strand,
-                      parent_name: studentRecord?.parent_name || studentRecord?.guardian_name || 'Parent / Guardian',
-                      parent_contact: studentRecord?.parent_contact || studentRecord?.guardian_contact || user?.phone || '0912-345-6789',
-                      photo_url:
-                        studentRecord?.two_by_two_picture_url ||
-                        studentRecord?.avatar_url ||
-                        user?.avatar_url ||
-                        '',
-                      school_year: schoolYear,
-                    }}
-                    flipped={cardFlipped}
-                    side={cardSide}
-                  />
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[#152e69] shrink-0" />
-                  <span>
-                    Official physical ID cards are printed exclusively by the School Administrator and Registrar's Office.
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-bold text-emerald-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Live Gate Pass
                   </span>
                 </div>
+
+                {/* QR Code Presentation Box */}
+                <div className="flex flex-col items-center justify-center my-1 text-center">
+                  <div className="bg-white p-3 rounded-2xl shadow-lg border-2 border-amber-300/60 inline-flex flex-col items-center">
+                    {qrDataUrl ? (
+                      <img
+                        src={qrDataUrl}
+                        alt="Student Gate Attendance QR Code"
+                        className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
+                      />
+                    ) : (
+                      <div className="w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center text-slate-400">
+                        <QrCode className="w-12 h-12 animate-pulse text-slate-300" />
+                      </div>
+                    )}
+                    <p className="text-[9px] font-extrabold text-slate-600 uppercase tracking-widest mt-1">
+                      Turnstile & Teacher Scanner
+                    </p>
+                  </div>
+
+                  {/* Quick Enlarge & Copy Actions */}
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsQrModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 transition-all cursor-pointer backdrop-blur-xs shadow-2xs"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5 text-amber-300" />
+                      <span>Enlarge for Scanner</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyLrn}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all cursor-pointer"
+                      title="Copy LRN to clipboard"
+                    >
+                      {copiedLrn ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          <span className="text-emerald-300">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5 text-slate-300" />
+                          <span>Copy LRN</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Learner Info Strip */}
+                <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div>
+                    <p className="font-extrabold text-white text-sm tracking-tight">
+                      {fullName}
+                    </p>
+                    <p className="text-slate-300 text-[11px] font-mono">
+                      LRN: <span className="font-bold text-amber-300">{lrn}</span>
+                    </p>
+                  </div>
+                  <div className="sm:text-right">
+                    <p className="font-bold text-blue-100 text-[11px]">
+                      {gradeLevel} · {strand}
+                    </p>
+                    <p className="text-slate-400 text-[10px]">
+                      {section} • S.Y. {schoolYear}
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Emergency Guidance & Printing Policy Notice */}
+              <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 sm:p-3.5 text-xs text-amber-950 flex items-start gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+                  <ShieldAlert className="h-4 w-4" />
+                </div>
+                <div className="space-y-1 min-w-0 flex-1">
+                  <p className="font-extrabold text-amber-900 text-xs">
+                    Emergency Attendance Pass & ID Policy
+                  </p>
+                  <p className="text-[11px] text-amber-800/90 leading-relaxed">
+                    If you misplaced or forgot your physical ID today, present this digital QR pass directly to the campus gate scanner or your subject teacher to log your attendance.
+                  </p>
+                  <div className="pt-1.5 mt-1 border-t border-amber-200/80 flex items-center gap-1.5 text-[10px] text-amber-900 font-semibold">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    Physical PVC ID cards are printed and issued exclusively by the School Admin & Registrar.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

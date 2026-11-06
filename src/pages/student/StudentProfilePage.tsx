@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   User,
   Mail,
@@ -10,18 +11,13 @@ import {
   Lock,
   Eye,
   EyeOff,
-  CreditCard,
-  RotateCw,
   BadgeCheck,
   CheckCircle2,
   RefreshCw,
-  ShieldAlert,
-  ShieldCheck,
+  QrCode,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
-import { Modal } from '../../components/common/Modal';
-import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { supabase } from '../../lib/supabase';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
@@ -46,11 +42,6 @@ export const StudentProfilePage: React.FC = () => {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
-
-  // Digital ID Modal State
-  const [showIdModal, setShowIdModal] = useState(false);
-  const [idCardSide, setIdCardSide] = useState<'both' | 'front' | 'back'>('both');
-  const [idCardFlipped, setIdCardFlipped] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -274,14 +265,13 @@ export const StudentProfilePage: React.FC = () => {
           </div>
 
           <div className="flex items-center shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowIdModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-sm transition-all cursor-pointer"
+            <Link
+              to="/student"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer backdrop-blur-xs"
             >
-              <CreditCard className="h-3.5 w-3.5" />
-              View Official ID
-            </button>
+              <QrCode className="h-3.5 w-3.5 text-amber-300" />
+              Attendance QR Pass
+            </Link>
           </div>
         </div>
       </div>
@@ -509,84 +499,6 @@ export const StudentProfilePage: React.FC = () => {
           </form>
         </div>
       </div>
-
-      {/* Digital Student ID Modal */}
-      <Modal
-        isOpen={showIdModal}
-        onClose={() => setShowIdModal(false)}
-        title={`Official Digital Student ID • ${fullNameDisplay}`}
-        subtitle={`LRN: ${studentLrn} • ${studentGrade}`}
-        maxWidth="2xl"
-      >
-        <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-            <div className="flex items-center gap-1 rounded-lg bg-white p-1 border border-slate-200">
-              {(['both', 'front', 'back'] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setIdCardSide(s)}
-                  className={`rounded-md px-3 py-1 text-xs font-bold capitalize transition-all cursor-pointer ${
-                    idCardSide === s
-                      ? 'bg-[#152e69] text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {s === 'both' ? 'Both Sides' : `${s} Only`}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {idCardSide === 'both' && (
-                <button
-                  type="button"
-                  onClick={() => setIdCardFlipped((f) => !f)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                >
-                  <RotateCw className="h-3.5 w-3.5" /> Flip Order
-                </button>
-              )}
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-bold text-amber-800">
-                <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
-                Print Authority: Admin & Registrar Only
-              </span>
-            </div>
-          </div>
-
-          <div
-            id="studentProfileIdArea"
-            className="flex justify-center overflow-x-auto py-2"
-          >
-            <StudentIdCard
-              data={{
-                id: user?.student_id || user?.id,
-                student_id: user?.student_id || user?.id,
-                lrn: studentLrn,
-                fullname: fullNameDisplay,
-                grade_level: studentGrade,
-                strand: studentStrand,
-                photo_url: avatarUrl,
-                school_year: schoolYear,
-              }}
-              side={idCardSide}
-              flipped={idCardFlipped}
-              frontId="studentProfileCardFront"
-              backId="studentProfileCardBack"
-            />
-          </div>
-
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-900 flex items-start gap-2.5">
-            <ShieldAlert className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
-            <div className="space-y-0.5 text-[11px] leading-relaxed">
-              <p className="font-bold text-amber-950">Official ID Issuance Policy</p>
-              <p className="text-amber-800">
-                Physical PVC ID cards are printed and issued exclusively by the School Administration and Registrar's Office. Students cannot print their own IDs. For gate and classroom attendance, please use your digital QR pass from the Student Dashboard.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };
