@@ -27,6 +27,10 @@ import {
 export const TeacherFaceAttendancePage: React.FC = () => {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<any>(null);
+  const scanTimeoutRef = useRef<any>(null);
+
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -35,6 +39,7 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanProgress, setScanProgress] = useState<number>(0);
   const [scanType, setScanType] = useState<'in' | 'out'>('in');
+  const [autoTurnOffAfterScan, setAutoTurnOffAfterScan] = useState<boolean>(false);
   const [lastScannedResult, setLastScannedResult] = useState<{
     type: 'in' | 'out';
     time: string;
@@ -107,9 +112,68 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   }, [teacherName]);
 
   // Camera Management
+  const stopCamera = () => {
+    // 1. Cancel any active scanning timers immediately
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+      scanTimeoutRef.current = null;
+    }
+    setIsScanning(false);
+    setScanProgress(0);
+
+    // 2. Stop and completely release all active MediaStream tracks
+    if (streamRef.current) {
+      try {
+        streamRef.current.getTracks().forEach((track) => {
+          track.enabled = false;
+          track.stop();
+        });
+      } catch (err) {
+        console.warn('Error stopping streamRef tracks:', err);
+      }
+      streamRef.current = null;
+    }
+
+    // 3. Detach stream and pause video element so camera hardware turns off
+    if (videoRef.current) {
+      try {
+        if (videoRef.current.srcObject) {
+          const videoStream = videoRef.current.srcObject as MediaStream;
+          if (videoStream && typeof videoStream.getTracks === 'function') {
+            videoStream.getTracks().forEach((track) => {
+              track.enabled = false;
+              track.stop();
+            });
+          }
+        }
+        videoRef.current.srcObject = null;
+        videoRef.current.pause();
+      } catch (err) {
+        console.warn('Error clearing videoRef element:', err);
+      }
+    }
+
+    setStream(null);
+    setIsCameraActive(false);
+  };
+
   const startCamera = async () => {
     try {
       setCameraError(null);
+
+      // Cleanly power off any previous stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => {
+          t.enabled = false;
+          t.stop();
+        });
+        streamRef.current = null;
+      }
+
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -117,37 +181,61 @@ export const TeacherFaceAttendancePage: React.FC = () => {
             height: { ideal: 720 },
             facingMode: 'user',
           },
+          audio: false,
         });
+
+        // Add auto shutdown listener if camera is disconnected or revoked
+        mediaStream.getVideoTracks().forEach((track) => {
+          track.onended = () => {
+            stopCamera();
+          };
+        });
+
+        streamRef.current = mediaStream;
         setStream(mediaStream);
+
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
+          try {
+            await videoRef.current.play();
+          } catch {
+            // Autoplay will proceed via playsInline and muted
+          }
         }
         setIsCameraActive(true);
       } else {
-        setCameraError('Webcam access not supported in this browser environment.');
+        setCameraError('Webcam access is not supported in this browser environment.');
+        setIsCameraActive(false);
       }
     } catch (err: any) {
       console.warn('Camera error:', err);
-      setCameraError('Could not connect to camera. Simulated biometric mode will be used.');
+      setCameraError(
+        err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+          ? 'Camera permission was denied. Please allow camera access in browser settings.'
+          : 'Could not connect to camera device. Biometric simulation mode is available.'
+      );
       setIsCameraActive(false);
     }
   };
 
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsCameraActive(false);
-  };
-
   useEffect(() => {
     startCamera();
+
+    const handleBeforeUnload = () => {
+      stopCamera();
+    };
+
+    const handlePageHide = () => {
+      stopCamera();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+
     return () => {
       stopCamera();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, []);
 
@@ -174,23 +262,35 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   // Perform Face Scan Check-In
   const handlePerformFaceScan = async (type: 'in' | 'out') => {
     if (isScanning) return;
+
+    // If the camera is currently turned off, reactivate it first
+    if (!isCameraActive || !streamRef.current) {
+      await startCamera();
+    }
+
     setIsScanning(true);
     setScanType(type);
     setScanProgress(15);
 
     // Simulate AI Facial Landmark detection progression
-    const interval = setInterval(() => {
+    scanIntervalRef.current = setInterval(() => {
       setScanProgress((prev) => {
         if (prev >= 95) {
-          clearInterval(interval);
+          if (scanIntervalRef.current) {
+            clearInterval(scanIntervalRef.current);
+            scanIntervalRef.current = null;
+          }
           return 100;
         }
         return prev + 25;
       });
     }, 250);
 
-    setTimeout(async () => {
-      clearInterval(interval);
+    scanTimeoutRef.current = setTimeout(async () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
       setScanProgress(100);
       playBeep();
 
@@ -230,7 +330,15 @@ export const TeacherFaceAttendancePage: React.FC = () => {
 
       setIsScanning(false);
       setScanProgress(0);
+      scanTimeoutRef.current = null;
       loadAttendanceRecords();
+
+      // If user enabled auto-turn off camera after attendance
+      if (autoTurnOffAfterScan) {
+        setTimeout(() => {
+          stopCamera();
+        }, 1000);
+      }
     }, 1200);
   };
 
@@ -304,17 +412,22 @@ export const TeacherFaceAttendancePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={isCameraActive ? stopCamera : startCamera}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                    isCameraActive
+                      ? 'border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700'
+                      : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
+                  }`}
+                  title={isCameraActive ? 'Turn off webcam and shut down camera hardware' : 'Turn on webcam for face attendance'}
                 >
                   {isCameraActive ? (
                     <>
-                      <CameraOff className="h-3.5 w-3.5 text-rose-500" />
-                      <span>Pause Cam</span>
+                      <CameraOff className="h-3.5 w-3.5 text-rose-600" />
+                      <span>Turn Off Camera</span>
                     </>
                   ) : (
                     <>
                       <Camera className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Start Cam</span>
+                      <span>Turn On Camera</span>
                     </>
                   )}
                 </button>
@@ -324,68 +437,92 @@ export const TeacherFaceAttendancePage: React.FC = () => {
             {/* Video Viewport Container */}
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center border-2 border-slate-800 shadow-inner">
               {isCameraActive ? (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover scale-x-[-1]"
-                />
-              ) : (
-                <div className="text-center p-6 space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-400 mx-auto">
-                    <Camera className="w-8 h-8 text-slate-500" />
+                <>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover scale-x-[-1]"
+                  />
+
+                  {/* Biometric Scanning Overlay Elements */}
+                  <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
+                    {/* Targeting HUD Box */}
+                    <div className="relative w-48 h-60 sm:w-56 sm:h-68 rounded-3xl border-2 border-dashed border-amber-400/80 flex items-center justify-center shadow-lg">
+                      {/* Corner Targets */}
+                      <span className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-3 border-l-3 border-[#F5C518] rounded-tl-sm" />
+                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-3 border-r-3 border-[#F5C518] rounded-tr-sm" />
+                      <span className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-3 border-l-3 border-[#F5C518] rounded-bl-sm" />
+                      <span className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-3 border-r-3 border-[#F5C518] rounded-br-sm" />
+
+                      {/* Scanning Laser Beam */}
+                      {isScanning && (
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-amber-300 to-emerald-400 animate-pulse shadow-md" />
+                      )}
+
+                      {/* Overlay Center Guide */}
+                      <div className="text-center space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-300 drop-shadow-md">
+                          {isScanning ? 'Extracting Landmarks...' : 'Faculty Face Target'}
+                        </p>
+                        <p className="text-[9px] text-white/80 font-mono">
+                          {isScanning ? `${scanProgress}% Processed` : 'Keep Head Steady'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Top Terminal Status */}
+                    <div className="absolute top-3 left-3 flex items-center gap-2 bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] text-white">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="font-mono font-bold">Biometric Engine v2.4</span>
+                    </div>
+
+                    {/* Cancel & Turn Off Camera button while scanning */}
+                    {isScanning && (
+                      <div className="absolute top-3 right-3 pointer-events-auto">
+                        <button
+                          type="button"
+                          onClick={stopCamera}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white text-[11px] font-bold shadow-lg backdrop-blur-sm cursor-pointer transition-all active:scale-95 border border-rose-400/40"
+                          title="Cancel scanning and turn off camera"
+                        >
+                          <CameraOff className="h-3.5 w-3.5" />
+                          <span>Stop &amp; Turn Off</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Bottom Matatag Seal */}
+                    <div className="absolute bottom-3 right-3 text-[10px] font-bold text-white/70 bg-black/50 px-2.5 py-0.5 rounded-lg border border-white/10">
+                      DepEd School ID: 303035
+                    </div>
                   </div>
-                  <p className="text-xs font-bold text-slate-300">
-                    {cameraError || 'Webcam paused. Ready for biometric scan.'}
-                  </p>
+                </>
+              ) : (
+                <div className="text-center p-8 space-y-4 max-w-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-rose-950/60 border border-rose-800/60 flex items-center justify-center text-rose-400 mx-auto shadow-inner">
+                    <CameraOff className="w-8 h-8 text-rose-400" />
+                  </div>
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-950 border border-rose-800 text-rose-300">
+                      <span className="h-2 w-2 rounded-full bg-rose-500" />
+                      Camera Powered Down
+                    </span>
+                    <p className="text-xs text-slate-400 mt-2">
+                      {cameraError || 'The webcam has been stopped and powered off. No camera hardware sensor or video feed is active.'}
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={startCamera}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-all shadow-md active:scale-95"
                   >
-                    Activate Camera
+                    <Camera className="h-4 w-4" />
+                    <span>Turn On Camera</span>
                   </button>
                 </div>
               )}
-
-              {/* Biometric Scanning Overlay Elements */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
-                {/* Targeting HUD Box */}
-                <div className="relative w-48 h-60 sm:w-56 sm:h-68 rounded-3xl border-2 border-dashed border-amber-400/80 flex items-center justify-center shadow-lg">
-                  {/* Corner Targets */}
-                  <span className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-3 border-l-3 border-[#F5C518] rounded-tl-sm" />
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-3 border-r-3 border-[#F5C518] rounded-tr-sm" />
-                  <span className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-3 border-l-3 border-[#F5C518] rounded-bl-sm" />
-                  <span className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-3 border-r-3 border-[#F5C518] rounded-br-sm" />
-
-                  {/* Scanning Laser Beam */}
-                  {isScanning && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-amber-300 to-emerald-400 animate-pulse shadow-md" />
-                  )}
-
-                  {/* Overlay Center Guide */}
-                  <div className="text-center space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-300 drop-shadow-md">
-                      {isScanning ? 'Extracting Landmarks...' : 'Faculty Face Target'}
-                    </p>
-                    <p className="text-[9px] text-white/80 font-mono">
-                      {isScanning ? `${scanProgress}% Processed` : 'Keep Head Steady'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Top Terminal Status */}
-                <div className="absolute top-3 left-3 flex items-center gap-2 bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] text-white">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="font-mono font-bold">Biometric Engine v2.4</span>
-                </div>
-
-                {/* Bottom Matatag Seal */}
-                <div className="absolute bottom-3 right-3 text-[10px] font-bold text-white/70 bg-black/50 px-2.5 py-0.5 rounded-lg border border-white/10">
-                  DepEd School ID: 303035
-                </div>
-              </div>
             </div>
 
             {/* Teacher Details & Action Row */}
@@ -459,9 +596,33 @@ export const TeacherFaceAttendancePage: React.FC = () => {
                 </button>
               </div>
 
+              {/* Extra Camera Settings & Quick Turn Off */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-200/80 text-xs text-slate-600">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={autoTurnOffAfterScan}
+                    onChange={(e) => setAutoTurnOffAfterScan(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <span className="font-medium text-slate-600">Turn off camera automatically after check-in</span>
+                </label>
+
+                {isCameraActive && (
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                  >
+                    <CameraOff className="h-3 w-3" />
+                    <span>Turn Off Camera</span>
+                  </button>
+                )}
+              </div>
+
               {/* Result Notice */}
               {lastScannedResult && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex items-center justify-between text-xs animate-fade-in">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs animate-fade-in">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                     <div>
@@ -475,9 +636,22 @@ export const TeacherFaceAttendancePage: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold bg-white text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
-                    Synced with Admin
-                  </span>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {isCameraActive && (
+                      <button
+                        type="button"
+                        onClick={stopCamera}
+                        className="text-[10.5px] font-bold bg-white text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
+                        title="Turn off camera"
+                      >
+                        <CameraOff className="h-3 w-3" />
+                        <span>Turn Off Camera</span>
+                      </button>
+                    )}
+                    <span className="text-[10px] font-bold bg-white text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                      Synced with Admin
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
