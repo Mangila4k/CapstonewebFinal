@@ -257,23 +257,18 @@ export const DashboardLayout: React.FC = () => {
 
   const navSections = getNavSections();
 
-  // Determine Grade level and Junior / Senior High title for students
+  // Determine Junior High (Grades 7-10) vs Senior High (Grades 11-12) for students
   const getStudentLevelTitle = () => {
     const rawGrade = String(user?.student_grade || '').trim();
     const numMatch = rawGrade.match(/\d+/);
     if (numMatch) {
       const gradeNum = parseInt(numMatch[0], 10);
-      if (gradeNum >= 11 && gradeNum <= 12) {
-        return `Grade ${gradeNum} · Senior High`;
-      }
-      if (gradeNum >= 7 && gradeNum <= 10) {
-        return `Grade ${gradeNum} · Junior High`;
-      }
-      return `Grade ${gradeNum} Student`;
+      if (gradeNum >= 11 && gradeNum <= 12) return 'Senior High';
+      if (gradeNum >= 7 && gradeNum <= 10) return 'Junior High';
     }
     if (rawGrade.toLowerCase().includes('senior')) return 'Senior High';
     if (rawGrade.toLowerCase().includes('junior')) return 'Junior High';
-    return user?.student_grade ? `${user.student_grade} Student` : 'Student (Learner)';
+    return 'Junior High';
   };
 
   // Role title mappings
