@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -36,19 +36,51 @@ import type { Enrollment, ActivityLog } from '../../types';
 const ADMIN_DASH_ENR_KEY = 'plsnhs_admin_dash_enr_v2';
 const ADMIN_DASH_STATS_KEY = 'plsnhs_admin_dash_stats_v2';
 
+const getGradeSortOrder = (grade?: string): number => {
+  if (!grade) return 99;
+  const match = grade.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 99;
+};
+
 const FALLBACK_RECENT_ENROLLMENTS: Enrollment[] = [
   {
-    id: '7eb9f35e-2054-4ffb-a778-5acda1097f14',
+    id: 'b8192a01-4444-4991-88f4-2a0462615e01',
     first_name: 'April',
-    last_name: 'Sellar',
-    email: 'mylene@yahoo.com',
-    grade_level: 'Grade 12',
-    strand: 'STEM',
+    last_name: 'Raganas',
+    email: 'mylenesellar10@gmail.com',
+    grade_level: 'Grade 7',
+    strand: '',
     status: 'Pending',
-    student_type: 'transferee',
-    guardian_name: 'Catalina Sellar',
-    guardian_contact: '09984087040',
-    created_at: '2026-10-24T22:48:35.097Z',
+    student_type: 'new',
+    guardian_name: 'Mylene Sellar',
+    guardian_contact: '09123456789',
+    created_at: '2026-11-02T10:00:00.000Z',
+  },
+  {
+    id: 'd7b81081-a9cd-4e13-b7f3-bd1b7f90b93b',
+    first_name: 'Jesriel',
+    last_name: 'Getuaban',
+    email: 'getuaban@gmail.com',
+    grade_level: 'Grade 7',
+    strand: '',
+    status: 'Pending',
+    student_type: 'new',
+    guardian_name: 'micole',
+    guardian_contact: '09123456789',
+    created_at: '2026-10-18T21:05:47.269Z',
+  },
+  {
+    id: '099e0a69-bf44-4003-808b-26f7de18c0d4',
+    first_name: 'John Micole',
+    last_name: 'Mangila',
+    email: 'micoli@gmail.com',
+    grade_level: 'Grade 7',
+    strand: '',
+    status: 'Pending',
+    student_type: 'new',
+    guardian_name: 'jiggy aligado',
+    guardian_contact: '09123456789',
+    created_at: '2026-10-18T20:10:12.272Z',
   },
   {
     id: '3fa73777-fda3-4991-88f4-2a0462615e6f',
@@ -90,30 +122,30 @@ const FALLBACK_RECENT_ENROLLMENTS: Enrollment[] = [
     created_at: '2026-10-19T08:49:36.145Z',
   },
   {
-    id: 'd7b81081-a9cd-4e13-b7f3-bd1b7f90b93b',
-    first_name: 'Jesriel',
-    last_name: 'Getuaban',
-    email: 'getuaban@gmail.com',
-    grade_level: 'Grade 7',
+    id: 'c8201a02-5555-4991-88f4-2a0462615e02',
+    first_name: 'Rexxy Genn',
+    last_name: 'Sabayton',
+    email: 'rexxygenn.sabayton.119518160061@gmail.com',
+    grade_level: 'Grade 10',
     strand: '',
-    status: 'Pending',
-    student_type: 'new',
-    guardian_name: 'micole',
+    status: 'Enrolled',
+    student_type: 'continuing',
+    guardian_name: 'Sabayton Guardian',
     guardian_contact: '09123456789',
-    created_at: '2026-10-17T21:05:47.269Z',
+    created_at: '2026-10-25T14:20:00.000Z',
   },
   {
-    id: '099e0a69-bf44-4003-808b-26f7de18c0d4',
-    first_name: 'John Micole',
-    last_name: 'Mangila',
-    email: 'micoli@gmail.com',
-    grade_level: 'Grade 7',
-    strand: '',
+    id: '7eb9f35e-2054-4ffb-a778-5acda1097f14',
+    first_name: 'April',
+    last_name: 'Sellar',
+    email: 'mylene@yahoo.com',
+    grade_level: 'Grade 12',
+    strand: 'STEM',
     status: 'Pending',
-    student_type: 'new',
-    guardian_name: 'jiggy aligado',
-    guardian_contact: '09123456789',
-    created_at: '2026-10-17T20:10:12.272Z',
+    student_type: 'transferee',
+    guardian_name: 'Catalina Sellar',
+    guardian_contact: '09984087040',
+    created_at: '2026-10-24T22:48:35.097Z',
   },
 ];
 
@@ -163,6 +195,43 @@ export const AdminDashboardPage: React.FC = () => {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
+  const [yearLevelFilter, setYearLevelFilter] = useState<string>('All');
+
+  // Group and sort submissions by School Year Level (Grade 7 to Grade 12)
+  const groupedEnrollments = useMemo(() => {
+    const list = recentEnrollments.filter((e) => {
+      if (yearLevelFilter === 'All') return true;
+      return e.grade_level === yearLevelFilter;
+    });
+
+    // Sort by Grade Level (7 -> 8 -> 9 -> 10 -> 11 -> 12), then Pending first, then newest first
+    const sorted = [...list].sort((a, b) => {
+      const gDiff = getGradeSortOrder(a.grade_level) - getGradeSortOrder(b.grade_level);
+      if (gDiff !== 0) return gDiff;
+
+      const isPendA = (a.status || '').toLowerCase() === 'pending' ? 0 : 1;
+      const isPendB = (b.status || '').toLowerCase() === 'pending' ? 0 : 1;
+      if (isPendA !== isPendB) return isPendA - isPendB;
+
+      const tA = new Date(a.created_at || '').getTime() || 0;
+      const tB = new Date(b.created_at || '').getTime() || 0;
+      return tB - tA;
+    });
+
+    const groups: { grade: string; items: Enrollment[] }[] = [];
+    const map = new Map<string, Enrollment[]>();
+
+    sorted.forEach((enr) => {
+      const g = enr.grade_level || 'Grade 7';
+      if (!map.has(g)) {
+        map.set(g, []);
+        groups.push({ grade: g, items: map.get(g)! });
+      }
+      map.get(g)!.push(enr);
+    });
+
+    return groups;
+  }, [recentEnrollments, yearLevelFilter]);
 
   // Quick Generate ID Modal State
   const [generatingIdEnr, setGeneratingIdEnr] = useState<Enrollment | null>(null);
@@ -468,17 +537,38 @@ export const AdminDashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Recent Enrollments Table */}
         <div className="lg:col-span-8 min-w-0 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Clock className="h-4 w-4 text-emerald-600" />
-              Incoming & Recent Enrollment Submissions
-            </h2>
-            <Link
-              to="/admin/enrollments"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
-            >
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-emerald-600" />
+                Incoming &amp; Recent Enrollment Submissions
+              </h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Organized by School Year Level (Grade 7 to Grade 12)
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <select
+                value={yearLevelFilter}
+                onChange={(e) => setYearLevelFilter(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs focus:border-[#1B2A4A] focus:outline-hidden"
+              >
+                <option value="All">All Year Levels (7–12)</option>
+                <option value="Grade 7">Grade 7</option>
+                <option value="Grade 8">Grade 8</option>
+                <option value="Grade 9">Grade 9</option>
+                <option value="Grade 10">Grade 10</option>
+                <option value="Grade 11">Grade 11</option>
+                <option value="Grade 12">Grade 12</option>
+              </select>
+
+              <Link
+                to="/admin/enrollments"
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
+              >
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
@@ -488,146 +578,190 @@ export const AdminDashboardPage: React.FC = () => {
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="w-[34%] px-4 py-3 rounded-tl-2xl">Applicant Name</th>
-                      <th className="w-[18%] px-3 py-3">Grade & Strand</th>
+                      <th className="w-[18%] px-3 py-3">Grade &amp; Strand</th>
                       <th className="w-[15%] px-3 py-3">Status</th>
                       <th className="w-[16%] px-3 py-3">Date</th>
                       <th className="w-[17%] px-4 py-3 text-right rounded-tr-2xl">Quick Decision</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {recentEnrollments.map((enr, idx) => {
-                      const isManageOpen = activeManageId === enr.id;
-                      const openUpward =
-                        recentEnrollments.length > 2 && idx >= recentEnrollments.length - 2;
-                      return (
-                        <tr key={enr.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="px-4 py-3 font-semibold text-slate-900 truncate">
-                            <div className="truncate font-bold text-slate-900">
-                              {enr.first_name} {enr.last_name}
-                            </div>
-                            <div
-                              className="text-[10px] text-slate-400 font-normal truncate"
-                              title={enr.email}
-                            >
-                              {enr.email}
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 font-medium text-slate-700 whitespace-nowrap">
-                            <span className="font-bold text-slate-800">{enr.grade_level}</span>
-                            {enr.strand &&
-                              parseInt(String(enr.grade_level).replace(/\D/g, '') || '10', 10) >=
-                                11 && (
-                                <span className="ml-1.5 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-800">
-                                  {enr.strand}
-                                </span>
-                              )}
-                          </td>
-                          <td className="px-3 py-3 whitespace-nowrap">
-                            <Badge
-                              variant={
-                                (enr.status || '').toLowerCase() === 'approved' ||
-                                (enr.status || '').toLowerCase() === 'enrolled'
-                                  ? 'success'
-                                  : (enr.status || '').toLowerCase() === 'rejected'
-                                  ? 'danger'
-                                  : 'warning'
-                              }
-                              size="sm"
-                            >
-                              {enr.status}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-3 text-slate-500 whitespace-nowrap">
-                            {formatDate(enr.created_at)}
-                          </td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap">
-                            <div className="relative inline-block text-left">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveManageId(isManageOpen ? null : enr.id);
-                                }}
-                                className={`inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border px-3.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-                                  isManageOpen
-                                    ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                              >
-                                <span>Manage</span>
-                                <ChevronDown
-                                  className={`h-3.5 w-3.5 transition-transform ${
-                                    isManageOpen ? 'rotate-180' : ''
-                                  }`}
-                                />
-                              </button>
-
-                              {isManageOpen && (
-                                <>
-                                  <div
-                                    className="fixed inset-0 z-40"
-                                    onClick={() => setActiveManageId(null)}
-                                  />
-                                  <div
-                                    className={`absolute right-0 z-50 w-52 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
-                                      openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-                                    }`}
-                                  >
-                                    <div className="py-1">
-                                      <Link
-                                        to="/admin/enrollments"
-                                        onClick={() => setActiveManageId(null)}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                      >
-                                        <Eye className="h-3.5 w-3.5 text-slate-500" />
-                                        <span>Review Application</span>
-                                      </Link>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveManageId(null);
-                                          setIdCardSide('both');
-                                          setIdCardFlipped(false);
-                                          setGeneratingIdEnr(enr);
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-900 hover:bg-amber-50/70 cursor-pointer"
-                                      >
-                                        <CreditCard className="h-3.5 w-3.5 text-amber-600" />
-                                        <span>Generate ID</span>
-                                      </button>
-                                    </div>
-                                    <div className="py-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveManageId(null);
-                                          handleQuickDecision(enr, 'Approved');
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                                      >
-                                        <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                        <span>Approve Application</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveManageId(null);
-                                          handleQuickDecision(enr, 'Rejected');
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                      >
-                                        <X className="h-3.5 w-3.5 text-rose-500" />
-                                        <span>Reject Application</span>
-                                      </button>
-                                    </div>
+                    {groupedEnrollments.length > 0 ? (
+                      groupedEnrollments.map((group, gIdx) => {
+                        const isShs =
+                          parseInt(group.grade.replace(/\D/g, '') || '7', 10) >= 11;
+                        const isLastGroup = gIdx === groupedEnrollments.length - 1;
+                        return (
+                          <React.Fragment key={group.grade}>
+                            {/* Year Level Subheader */}
+                            <tr className="bg-slate-50/90 border-y border-slate-200/90">
+                              <td colSpan={5} className="px-4 py-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1B2A4A] text-white font-extrabold text-[10px]">
+                                      {group.grade.replace('Grade ', 'G')}
+                                    </span>
+                                    <span className="font-extrabold text-[#1B2A4A] text-xs">
+                                      {group.grade}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-medium">
+                                      · {isShs ? 'Senior High School (SHS)' : 'Junior High School (JHS)'}
+                                    </span>
                                   </div>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                                  <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                                    {group.items.length}{' '}
+                                    {group.items.length === 1 ? 'Applicant' : 'Applicants'}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* Submissions under this Year Level */}
+                            {group.items.map((enr, idx) => {
+                              const isManageOpen = activeManageId === enr.id;
+                              const openUpward =
+                                isLastGroup && idx >= group.items.length - 2;
+                              return (
+                                <tr
+                                  key={enr.id}
+                                  className="hover:bg-slate-50/70 transition-colors"
+                                >
+                                  <td className="px-4 py-3 font-semibold text-slate-900 truncate">
+                                    <div className="truncate font-bold text-slate-900">
+                                      {enr.first_name} {enr.last_name}
+                                    </div>
+                                    <div
+                                      className="text-[10px] text-slate-400 font-normal truncate"
+                                      title={enr.email}
+                                    >
+                                      {enr.email}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-3 font-medium text-slate-700 whitespace-nowrap">
+                                    <span className="font-bold text-slate-800">
+                                      {enr.grade_level}
+                                    </span>
+                                    {enr.strand && isShs && (
+                                      <span className="ml-1.5 rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                        {enr.strand}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-3 whitespace-nowrap">
+                                    <Badge
+                                      variant={
+                                        (enr.status || '').toLowerCase() === 'approved' ||
+                                        (enr.status || '').toLowerCase() === 'enrolled'
+                                          ? 'success'
+                                          : (enr.status || '').toLowerCase() === 'rejected'
+                                          ? 'danger'
+                                          : 'warning'
+                                      }
+                                      size="sm"
+                                    >
+                                      {enr.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-3 py-3 text-slate-500 whitespace-nowrap">
+                                    {formatDate(enr.created_at)}
+                                  </td>
+                                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                                    <div className="relative inline-block text-left">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveManageId(isManageOpen ? null : enr.id);
+                                        }}
+                                        className={`inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border px-3.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                                          isManageOpen
+                                            ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
+                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <span>Manage</span>
+                                        <ChevronDown
+                                          className={`h-3.5 w-3.5 transition-transform ${
+                                            isManageOpen ? 'rotate-180' : ''
+                                          }`}
+                                        />
+                                      </button>
+
+                                      {isManageOpen && (
+                                        <>
+                                          <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setActiveManageId(null)}
+                                          />
+                                          <div
+                                            className={`absolute right-0 z-50 w-52 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
+                                              openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                                            }`}
+                                          >
+                                            <div className="py-1">
+                                              <Link
+                                                to="/admin/enrollments"
+                                                onClick={() => setActiveManageId(null)}
+                                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                              >
+                                                <Eye className="h-3.5 w-3.5 text-slate-500" />
+                                                <span>Review Application</span>
+                                              </Link>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveManageId(null);
+                                                  setIdCardSide('both');
+                                                  setIdCardFlipped(false);
+                                                  setGeneratingIdEnr(enr);
+                                                }}
+                                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-900 hover:bg-amber-50/70 cursor-pointer"
+                                              >
+                                                <CreditCard className="h-3.5 w-3.5 text-amber-600" />
+                                                <span>Generate ID</span>
+                                              </button>
+                                            </div>
+                                            <div className="py-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveManageId(null);
+                                                  handleQuickDecision(enr, 'Approved');
+                                                }}
+                                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                                              >
+                                                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                                <span>Approve Application</span>
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveManageId(null);
+                                                  handleQuickDecision(enr, 'Rejected');
+                                                }}
+                                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                                              >
+                                                <X className="h-3.5 w-3.5 text-rose-500" />
+                                                <span>Reject Application</span>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-xs text-slate-400">
+                          No enrollment submissions found for the selected year level.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
