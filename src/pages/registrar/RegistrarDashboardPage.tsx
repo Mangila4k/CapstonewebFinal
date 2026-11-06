@@ -14,7 +14,6 @@ import {
   ChevronDown,
   Building,
   Calendar,
-  FileSpreadsheet,
   FileText,
   ShieldCheck,
   Search,
@@ -378,49 +377,6 @@ export const RegistrarDashboardPage: React.FC = () => {
     });
   }, [pendingQueue, searchQuery, typeFilter]);
 
-  // Export CSV
-  const exportToCSV = () => {
-    const headers = [
-      'Application ID',
-      'First Name',
-      'Last Name',
-      'Email',
-      'Grade Level',
-      'Strand',
-      'Student Type',
-      'Guardian Name',
-      'Guardian Contact',
-      'Status',
-      'Application Date',
-    ];
-    const rows = filteredQueue.map((enr) => [
-      `"${enr.id}"`,
-      `"${enr.first_name || ''}"`,
-      `"${enr.last_name || ''}"`,
-      `"${enr.email || ''}"`,
-      `"${enr.grade_level || ''}"`,
-      `"${enr.strand || ''}"`,
-      `"${enr.student_type || 'New'}"`,
-      `"${enr.guardian_name || ''}"`,
-      `"${enr.guardian_contact || ''}"`,
-      `"${enr.status || 'Pending'}"`,
-      `"${enr.created_at || ''}"`,
-    ]);
-    const csvContent =
-      'data:text/csv;charset=utf-8,\uFEFF' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `PLSNHS_Admissions_Review_Queue_${new Date().toISOString().split('T')[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
       {/* 1. Institutional DepEd Header */}
@@ -442,30 +398,7 @@ export const RegistrarDashboardPage: React.FC = () => {
         </div>
 
         {/* Header Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <Link
-            to="/registrar/enrollments"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
-          >
-            <ClipboardList className="h-4 w-4" /> Full Admissions Queue
-          </Link>
-
-          <Link
-            to="/registrar/requirements"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
-          >
-            <FileCheckIcon className="h-4 w-4 text-emerald-700" /> Audit Credentials
-          </Link>
-
-          <button
-            type="button"
-            onClick={exportToCSV}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
-            title="Export review queue to CSV"
-          >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
-          </button>
-
+        <div className="flex items-center gap-2.5 shrink-0">
           <PageHeaderNotificationSlot />
         </div>
       </div>
@@ -949,25 +882,3 @@ export const RegistrarDashboardPage: React.FC = () => {
     </div>
   );
 };
-
-// Internal icon component for credentials
-function FileCheckIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-      <polyline points="14 2 14 8 20 8" />
-      <path d="m9 15 2 2 4-4" />
-    </svg>
-  );
-}
