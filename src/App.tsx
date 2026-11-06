@@ -38,6 +38,7 @@ import { RegistrarRequirementsPage } from './pages/registrar/RegistrarRequiremen
 // Teacher Pages
 import { TeacherDashboardPage } from './pages/teacher/TeacherDashboardPage';
 import { TeacherClassesPage } from './pages/teacher/TeacherClassesPage';
+import { TeacherFaceAttendancePage } from './pages/teacher/TeacherFaceAttendancePage';
 import { TeacherAttendancePage } from './pages/teacher/TeacherAttendancePage';
 import { TeacherAttendanceQrPage } from './pages/teacher/TeacherAttendanceQrPage';
 import { TeacherGradesPage } from './pages/teacher/TeacherGradesPage';
@@ -360,7 +361,15 @@ export const App: React.FC = () => {
           />
           <Route path="/teacher/student-attendance.html" element={<Navigate to="/teacher/attendance" replace />} />
           <Route path="/teacher/attendance-qr.html" element={<Navigate to="/teacher/attendance" replace />} />
-          <Route path="/teacher/attendance-face.html" element={<Navigate to="/teacher/attendance" replace />} />
+          <Route path="/teacher/attendance-face.html" element={<Navigate to="/teacher/face-attendance" replace />} />
+          <Route
+            path="/teacher/face-attendance"
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <TeacherFaceAttendancePage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/teacher/attendance-qr" element={<Navigate to="/teacher/attendance" replace />} />
           <Route
             path="/teacher/attendance"

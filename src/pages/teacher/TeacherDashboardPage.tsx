@@ -16,6 +16,8 @@ import {
   User,
   CheckCircle2,
   MapPin,
+  Camera,
+  Scan,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -389,6 +391,31 @@ export const TeacherDashboardPage: React.FC = () => {
 
         {/* Right Column (4 cols): Quick Shortcuts & Recent School Circulars */}
         <div className="lg:col-span-4 space-y-6">
+          {/* Daily Faculty Face Attendance Card */}
+          <div className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-indigo-50/40 to-white p-4.5 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 border border-purple-200 px-2.5 py-0.5 text-[10.5px] font-extrabold text-purple-900 uppercase tracking-wide">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-600 animate-pulse" />
+                Faculty Biometrics
+              </span>
+              <span className="text-[10.5px] font-mono font-bold text-slate-400">AI Kiosk</span>
+            </div>
+            <div>
+              <h4 className="text-xs font-extrabold text-slate-900">Personal Face Attendance</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Log your daily Time In &amp; Time Out via facial recognition scanner. Verified logs synchronize directly with Administration.
+              </p>
+            </div>
+            <Link
+              to="/teacher/face-attendance"
+              className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-purple-700 hover:bg-purple-800 text-white py-2.5 text-xs font-bold shadow-xs transition-all active:scale-98"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Launch Face Attendance</span>
+              <ArrowRight className="h-3.5 w-3.5 opacity-80" />
+            </Link>
+          </div>
+
           {/* Quick Shortcuts Box (matches Admin & Registrar Dashboards) */}
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-950">
@@ -396,11 +423,18 @@ export const TeacherDashboardPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-2 gap-2.5 text-xs font-semibold">
               <Link
+                to="/teacher/face-attendance"
+                className="rounded-xl bg-purple-50 p-3 border border-purple-200 text-purple-950 hover:bg-purple-700 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"
+              >
+                <Camera className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                <span>Face Attendance</span>
+              </Link>
+              <Link
                 to="/teacher/attendance"
                 className="rounded-xl bg-white p-3 border border-emerald-200/80 text-emerald-950 hover:bg-emerald-600 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"
               >
                 <UserCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span>Log Attendance</span>
+                <span>Class Attendance</span>
               </Link>
               <Link
                 to="/teacher/grades"
@@ -429,13 +463,6 @@ export const TeacherDashboardPage: React.FC = () => {
               >
                 <Clock className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <span>Class Program</span>
-              </Link>
-              <Link
-                to="/teacher/profile"
-                className="rounded-xl bg-white p-3 border border-emerald-200/80 text-emerald-950 hover:bg-emerald-600 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"
-              >
-                <User className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span>Faculty Profile</span>
               </Link>
             </div>
           </div>

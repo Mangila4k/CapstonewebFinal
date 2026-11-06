@@ -137,7 +137,8 @@ export const DashboardLayout: React.FC = () => {
             items: [
               { name: 'Dashboard', path: '/teacher/dashboard', icon: Gauge },
               { name: 'My Classes', path: '/teacher/classes', icon: Layers },
-              { name: 'Attendance', path: '/teacher/attendance', icon: CalendarCheck },
+              { name: 'Face Attendance', path: '/teacher/face-attendance', icon: Camera },
+              { name: 'Class Attendance', path: '/teacher/attendance', icon: CalendarCheck },
             ],
           },
           {
