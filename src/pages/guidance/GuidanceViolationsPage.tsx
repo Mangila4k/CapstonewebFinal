@@ -485,13 +485,6 @@ export const GuidanceViolationsPage: React.FC = () => {
       {/* 1. Institutional DepEd Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 border border-emerald-200">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              DepEd Child Protection &amp; Guidance Office
-            </span>
-            <span className="text-xs text-slate-400 font-mono">School ID: 303035</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
             Student Incident &amp; Behavioral Violations
           </h1>
