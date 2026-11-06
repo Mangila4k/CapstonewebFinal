@@ -7,7 +7,6 @@ import {
   ClipboardList,
   Layers,
   ArrowRight,
-  UserPlus,
   Bell,
   CheckCircle,
   Clock,
@@ -420,19 +419,7 @@ export const AdminDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
-          <Link
-            to="/admin/generate-id"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#152e69] px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#0f1c3f] transition-all whitespace-nowrap"
-          >
-            <CreditCard className="h-4 w-4 text-[#F5C518] shrink-0" /> Generate ID
-          </Link>
-          <Link
-            to="/admin/accounts"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all whitespace-nowrap"
-          >
-            <UserPlus className="h-4 w-4 shrink-0" /> Manage Accounts
-          </Link>
+        <div className="flex items-center gap-2.5 shrink-0">
           <PageHeaderNotificationSlot />
         </div>
       </div>
