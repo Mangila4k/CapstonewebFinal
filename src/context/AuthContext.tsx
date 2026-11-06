@@ -47,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               let updatedSection = parsed.student_section || '';
               let updatedLrn = parsed.student_lrn || '';
               let updatedStatus = parsed.student_status || 'Enrolled';
+              let updatedAvatar = parsed.avatar_url || '';
 
               try {
                 const { data: sRows } = await supabase
@@ -59,6 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   if (s.strand !== undefined && s.strand !== null) updatedStrand = s.strand;
                   if (s.section) updatedSection = s.section;
                   if (s.lrn) updatedLrn = s.lrn;
+                  if (!updatedAvatar && (s.two_by_two_picture_url || s.avatar_url)) {
+                    updatedAvatar = s.two_by_two_picture_url || s.avatar_url;
+                  }
                 }
               } catch {
                 // ignore
@@ -78,6 +82,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   if (enr.section) updatedSection = enr.section;
                   if (enr.lrn && !updatedLrn) updatedLrn = enr.lrn;
                   if (enr.status) updatedStatus = enr.status;
+                  if (!updatedAvatar && enr.two_by_two_picture_url) {
+                    updatedAvatar = enr.two_by_two_picture_url;
+                  }
                 }
               } catch {
                 // ignore
@@ -88,7 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 (updatedGrade !== parsed.student_grade ||
                   updatedStrand !== parsed.student_strand ||
                   updatedSection !== parsed.student_section ||
-                  updatedLrn !== parsed.student_lrn)
+                  updatedLrn !== parsed.student_lrn ||
+                  (updatedAvatar && updatedAvatar !== parsed.avatar_url))
               ) {
                 const refreshed = {
                   ...parsed,
@@ -97,9 +105,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   student_section: updatedSection,
                   student_lrn: updatedLrn,
                   student_status: updatedStatus,
+                  avatar_url: updatedAvatar || parsed.avatar_url,
                 };
                 setUser(refreshed);
                 localStorage.setItem('currentUser', JSON.stringify(refreshed));
+                if (updatedAvatar && cleanEmail) {
+                  localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, updatedAvatar);
+                }
+                window.dispatchEvent(new Event('plsnhs-avatar-updated'));
               }
             } else if ((parsed.role || '').toLowerCase() === 'parent') {
               try {

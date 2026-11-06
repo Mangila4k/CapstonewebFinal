@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import {
   Gauge,
   Users,
@@ -256,18 +257,23 @@ export const DashboardLayout: React.FC = () => {
 
   const navSections = getNavSections();
 
-  // Determine Junior High (Grades 7-10) vs Senior High (Grades 11-12) for students
+  // Determine Grade level and Junior / Senior High title for students
   const getStudentLevelTitle = () => {
     const rawGrade = String(user?.student_grade || '').trim();
     const numMatch = rawGrade.match(/\d+/);
     if (numMatch) {
       const gradeNum = parseInt(numMatch[0], 10);
-      if (gradeNum >= 7 && gradeNum <= 10) return 'Junior High';
-      if (gradeNum >= 11 && gradeNum <= 12) return 'Senior High';
+      if (gradeNum >= 11 && gradeNum <= 12) {
+        return `Grade ${gradeNum} · Senior High`;
+      }
+      if (gradeNum >= 7 && gradeNum <= 10) {
+        return `Grade ${gradeNum} · Junior High`;
+      }
+      return `Grade ${gradeNum} Student`;
     }
-    if (rawGrade.toLowerCase().includes('junior')) return 'Junior High';
     if (rawGrade.toLowerCase().includes('senior')) return 'Senior High';
-    return 'Junior High';
+    if (rawGrade.toLowerCase().includes('junior')) return 'Junior High';
+    return user?.student_grade ? `${user.student_grade} Student` : 'Student (Learner)';
   };
 
   // Role title mappings
@@ -294,6 +300,13 @@ export const DashboardLayout: React.FC = () => {
           localStorage.getItem(`plsnhs_avatar_${user?.email || ''}`);
         if (found) return found;
       }
+      const studentLrn = user?.student_lrn;
+      if (studentLrn) {
+        const byLrn = localStorage.getItem(`plsnhs_avatar_${studentLrn}`);
+        if (byLrn) return byLrn;
+      }
+      const studentFallback = localStorage.getItem('plsnhs_avatar_student');
+      if (studentFallback) return studentFallback;
       const fallback = localStorage.getItem('plsnhs_avatar_default');
       if (fallback) return fallback;
     }
@@ -309,6 +322,29 @@ export const DashboardLayout: React.FC = () => {
 
     handleSync();
 
+    // For students without avatar in user state, query students table for 2x2 picture
+    if (user?.role === 'student' && !user?.avatar_url && (user?.email || user?.student_lrn || user?.id)) {
+      const cleanEmail = (user.email || '').trim().toLowerCase();
+      supabase
+        .from('students')
+        .select('two_by_two_picture_url, avatar_url')
+        .or(`email.ilike.${cleanEmail},id.eq.${user.id}`)
+        .maybeSingle()
+        .then(
+          (res: any) => {
+            const data = res?.data;
+            const photo = data?.two_by_two_picture_url || data?.avatar_url;
+            if (photo) {
+              setSidebarAvatar(photo);
+              if (cleanEmail) {
+                localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, photo);
+              }
+            }
+          },
+          () => {}
+        );
+    }
+
     window.addEventListener('plsnhs-avatar-updated', handleSync);
     window.addEventListener('storage', handleSync);
 
@@ -316,7 +352,7 @@ export const DashboardLayout: React.FC = () => {
       window.removeEventListener('plsnhs-avatar-updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
-  }, [user?.avatar_url, user?.email]);
+  }, [user?.avatar_url, user?.email, user?.role, user?.id, user?.student_lrn]);
 
   // Display Name
   const displayName =
