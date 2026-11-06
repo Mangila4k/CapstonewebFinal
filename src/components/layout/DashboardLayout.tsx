@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   Gauge,
@@ -283,6 +283,41 @@ export const DashboardLayout: React.FC = () => {
 
   const roleTitle = roleLabels[user?.role || 'student'] || 'Portal User';
 
+  // Resolve profile picture from user object, localStorage, or custom event
+  const resolveProfileAvatar = () => {
+    if (user?.avatar_url) return user.avatar_url;
+    if (typeof window !== 'undefined') {
+      const email = (user?.email || '').trim().toLowerCase();
+      if (email) {
+        const found =
+          localStorage.getItem(`plsnhs_avatar_${email}`) ||
+          localStorage.getItem(`plsnhs_avatar_${user?.email || ''}`);
+        if (found) return found;
+      }
+      const fallback = localStorage.getItem('plsnhs_avatar_default');
+      if (fallback) return fallback;
+    }
+    return null;
+  };
+
+  const [sidebarAvatar, setSidebarAvatar] = useState<string | null>(resolveProfileAvatar);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setSidebarAvatar(resolveProfileAvatar());
+    };
+
+    handleSync();
+
+    window.addEventListener('plsnhs-avatar-updated', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      window.removeEventListener('plsnhs-avatar-updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, [user?.avatar_url, user?.email]);
+
   // Display Name
   const displayName =
     user?.full_name ||
@@ -415,14 +450,15 @@ export const DashboardLayout: React.FC = () => {
           <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-2.5 flex items-center gap-3">
             {/* Avatar Circle with Initials and Online Dot */}
             <div className="relative shrink-0">
-              {user?.avatar_url ? (
+              {sidebarAvatar ? (
                 <img
-                  src={user.avatar_url}
+                  src={sidebarAvatar}
                   alt={displayName}
-                  className="h-10 w-10 rounded-full object-cover border border-[#FACC15]"
+                  className="h-10 w-10 rounded-full object-cover border-2 border-[#FACC15] shadow-xs"
+                  onError={() => setSidebarAvatar(null)}
                 />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-[#FACC15] flex items-center justify-center text-[#0b2b4a] font-extrabold text-sm tracking-tight select-none">
+                <div className="h-10 w-10 rounded-full bg-[#FACC15] flex items-center justify-center text-[#0b2b4a] font-extrabold text-sm tracking-tight select-none shadow-xs">
                   {getInitials()}
                 </div>
               )}
@@ -477,9 +513,18 @@ export const DashboardLayout: React.FC = () => {
             <span className="hidden sm:inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
               {roleTitle}
             </span>
-            <div className="h-8 w-8 rounded-full bg-[#1B2A4A] text-white flex items-center justify-center text-xs font-bold shadow-2xs">
-              {getInitials()}
-            </div>
+            {sidebarAvatar ? (
+              <img
+                src={sidebarAvatar}
+                alt={displayName}
+                className="h-8 w-8 rounded-full object-cover border border-[#1B2A4A] shadow-2xs"
+                onError={() => setSidebarAvatar(null)}
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-[#1B2A4A] text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+                {getInitials()}
+              </div>
+            )}
           </div>
         </header>
 

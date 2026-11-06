@@ -27,6 +27,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (stored) {
           const parsed = JSON.parse(stored);
           if (parsed && parsed.email) {
+            const cleanEmail = parsed.email.trim().toLowerCase();
+            if (!parsed.avatar_url) {
+              const localAvatar =
+                localStorage.getItem(`plsnhs_avatar_${cleanEmail}`) ||
+                localStorage.getItem(`plsnhs_avatar_${parsed.email}`) ||
+                localStorage.getItem('plsnhs_avatar_default') ||
+                undefined;
+              if (localAvatar) {
+                parsed.avatar_url = localAvatar;
+              }
+            }
             setUser(parsed);
 
             if ((parsed.role || '').toLowerCase() === 'student') {
@@ -397,6 +408,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const fullName = `${firstName} ${lastName}`.trim() || cleanEmail.split('@')[0];
 
+      const storedAvatar =
+        localStorage.getItem(`plsnhs_avatar_${cleanEmail}`) ||
+        localStorage.getItem(`plsnhs_avatar_${matchedUser.email}`) ||
+        localStorage.getItem('plsnhs_avatar_default') ||
+        undefined;
+
       const fullUser: User = {
         id: matchedUser.id,
         email: matchedUser.email || cleanEmail,
@@ -413,6 +430,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         student_section: studentSection,
         student_status: studentStatus,
         school_year: schoolYear,
+        avatar_url: storedAvatar,
       };
 
       setUser(fullUser);
@@ -523,7 +541,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const updated = { ...user, ...updates };
     setUser(updated);
-    localStorage.setItem('currentUser', JSON.stringify(updated));
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(updated));
+      if (updated.avatar_url && updated.email) {
+        const clean = updated.email.trim().toLowerCase();
+        localStorage.setItem(`plsnhs_avatar_${clean}`, updated.avatar_url);
+        localStorage.setItem(`plsnhs_avatar_${updated.email}`, updated.avatar_url);
+        localStorage.setItem('plsnhs_avatar_default', updated.avatar_url);
+      }
+      window.dispatchEvent(new Event('plsnhs-avatar-updated'));
+    } catch {
+      // ignore
+    }
   };
 
   const hasRole = (allowedRoles: UserRole[]): boolean => {

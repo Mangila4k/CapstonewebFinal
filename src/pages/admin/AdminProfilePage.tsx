@@ -139,9 +139,13 @@ export const AdminProfilePage: React.FC = () => {
         const compressed = canvas.toDataURL('image/jpeg', 0.85);
         setAvatarUrl(compressed);
         if (user?.email) {
+          const cleanEmail = user.email.trim().toLowerCase();
+          localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, compressed);
           localStorage.setItem(`plsnhs_avatar_${user.email}`, compressed);
         }
+        localStorage.setItem('plsnhs_avatar_default', compressed);
         updateCurrentUser({ avatar_url: compressed });
+        window.dispatchEvent(new Event('plsnhs-avatar-updated'));
         setNotice({ type: 'success', message: 'Profile photo updated.' });
       };
       img.src = String(ev.target?.result || '');
@@ -186,6 +190,16 @@ export const AdminProfilePage: React.FC = () => {
         phone: phone.trim(),
         avatar_url: avatarUrl,
       });
+
+      if (avatarUrl) {
+        if (user?.email) {
+          const cleanEmail = user.email.trim().toLowerCase();
+          localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, avatarUrl);
+          localStorage.setItem(`plsnhs_avatar_${user.email}`, avatarUrl);
+        }
+        localStorage.setItem('plsnhs_avatar_default', avatarUrl);
+      }
+      window.dispatchEvent(new Event('plsnhs-avatar-updated'));
 
       setNotice({
         type: 'success',
