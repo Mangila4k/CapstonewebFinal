@@ -600,15 +600,9 @@ export const StudentGradesPage: React.FC = () => {
       {/* Screen Control Header (Aligned with Dashboard & Admin standard) */}
       <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-              Learner Progress Report Card (SF9)
-            </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 whitespace-nowrap shrink-0">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              DepEd JHS Form 138 Format
-            </span>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
+            Learner Progress Report Card (SF9)
+          </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Junior High School (JHS) Unified 4-Quarter Progress &amp; Academic Ratings · S.Y. {schoolYear}
           </p>
