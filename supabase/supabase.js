@@ -1,22 +1,7 @@
-/**
- * Supabase Helper Functions
- * HES - HES, PLSNHS Enrollment System
- * 
- * Kini nga file kay naghatag og helper functions para sa:
- * - Authentication (login, logout, register)
- * - User role management
- * - Database queries
- */
 
 import { supabase } from './config.js';
 
-// ============================================
-// AUTHENTICATION HELPERS
-// ============================================
 
-/**
- * Login user with email and password
- */
 export async function loginUser(email, password) {
     try {
         const { data, error } = await supabase.auth.signInWithPassword({

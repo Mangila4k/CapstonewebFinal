@@ -1170,29 +1170,6 @@ export const StudentGradesPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Official Action Controls (Bottom Aligned) */}
-        <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-            title="Download official DepEd JHS Form 138 dataset as CSV"
-          >
-            <Download className="h-4 w-4 text-slate-500" />
-            <span>Export CSV</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
-            title="Print official Form 138 Grade Card on standard short bond paper (8.5&quot; × 11&quot;)"
-          >
-            <Printer className="h-4 w-4 text-[#F5C518]" />
-            <span>Print Report Card</span>
-          </button>
-        </div>
       </div>
 
       {/* ================================================================ */}
