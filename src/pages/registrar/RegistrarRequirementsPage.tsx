@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   CheckCircle2,
@@ -669,14 +669,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
         </div>
 
         {/* Header Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <Link
-            to="/registrar/dashboard"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
-          >
-            <GraduationCap className="h-4 w-4" /> Registrar Dashboard
-          </Link>
-
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={handleExportCSV}
