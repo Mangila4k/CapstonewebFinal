@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Mail, GraduationCap, ShieldCheck } from 'lucide-react';
+import { MapPin, Mail, Globe, GraduationCap, ShieldCheck } from 'lucide-react';
 
 export const PublicFooter: React.FC = () => {
   return (
@@ -71,15 +71,35 @@ export const PublicFooter: React.FC = () => {
             <div className="mt-4 space-y-3 text-xs text-slate-300">
               <div className="flex items-start gap-2.5">
                 <MapPin className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                <span>Langtad, City of Naga, Cebu, Philippines</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-amber-400 shrink-0" />
-                <span>(032) 123-4567 / 0912-345-6789</span>
+                <span>
+                  <strong className="text-white">Address:</strong> Langtad, City of Naga, Cebu
+                </span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-amber-400 shrink-0" />
-                <span>info@PLSNHS.edu.ph</span>
+                <span>
+                  <strong className="text-white">Email Address:</strong>{' '}
+                  <a
+                    href="mailto:303035@deped.gov.ph"
+                    className="text-amber-300 underline hover:text-white transition-colors"
+                  >
+                    303035@deped.gov.ph
+                  </a>
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Globe className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>
+                  <strong className="text-white">Facebook:</strong>{' '}
+                  <a
+                    href="https://www.facebook.com/search/top?q=Placido%20L.%20Senor%20303035"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-300 underline hover:text-white transition-colors"
+                  >
+                    Placido L. Senor 303035
+                  </a>
+                </span>
               </div>
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="h-4 w-4 text-amber-400 shrink-0" />

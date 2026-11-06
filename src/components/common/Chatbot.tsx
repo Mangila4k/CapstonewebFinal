@@ -62,15 +62,15 @@ export const Chatbot: React.FC = () => {
       } else if (lower.includes('requirement') || lower.includes('document') || lower.includes('card')) {
         botReply =
           'Enrollment requirements include:\n• Form 138 (Junior High School Report Card)\n• PSA Birth Certificate (photocopy)\n• Certificate of Good Moral Character\n• 2x2 ID Pictures with white background\n• 12-digit Learner Reference Number (LRN)';
-      } else if (lower.includes('contact') || lower.includes('location') || lower.includes('address') || lower.includes('phone')) {
+      } else if (lower.includes('contact') || lower.includes('location') || lower.includes('address') || lower.includes('phone') || lower.includes('facebook') || lower.includes('email')) {
         botReply =
-          '📍 Address: Langtad, City of Naga, Cebu\n📞 Phone: (032) 123-4567\n✉️ Email: info@PLSNHS.edu.ph\nOffice hours are Monday to Friday, 8:00 AM – 5:00 PM.';
+          '📍 Address: Langtad, City of Naga, Cebu\n✉️ Email Address: 303035@deped.gov.ph\n🌐 Facebook: Placido L. Senor 303035\nOffice hours are Monday to Friday, 8:00 AM – 5:00 PM.';
       } else if (lower.includes('login') || lower.includes('password') || lower.includes('account')) {
         botReply =
           'You can sign in from the Login page using your registered email and password. If you forgot your password, click "Forgot Password" or ask your class adviser for assistance.';
       } else {
         botReply =
-          'Thank you for your message! For official queries, you may also reach our Registrar office at info@PLSNHS.edu.ph or visit the administration building during office hours.';
+          'Thank you for your message! For official queries, you may also reach our Registrar office at 303035@deped.gov.ph or message our official Facebook page (Placido L. Senor 303035).';
       }
 
       setMessages((prev) => [

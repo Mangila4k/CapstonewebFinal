@@ -165,7 +165,7 @@ NEXT STEPS:
 3. Track Application: You can log into your Student Dashboard at any time to monitor your submission status and requirement verification progress.
 
 NEED ASSISTANCE?
-If you need to update any submitted details or have inquiries, please contact the Office of the Registrar at (032) 123-4567 or email registrar@hes.edu.ph.
+If you need to update any submitted details or have inquiries, please contact the Office of the Registrar at 303035@deped.gov.ph or message our official Facebook page (Placido L. Senor 303035).
 
 Sincerely,
 Office of the Registrar

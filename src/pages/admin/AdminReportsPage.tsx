@@ -822,6 +822,18 @@ export const AdminReportsPage: React.FC = () => {
             <span className="font-mono font-medium">Doc Ref: PLSNHS-REG-STAT-2026-004 · Security Hash Verified</span>
             <span className="font-bold text-slate-800">Page 1 of 1 · Official DepEd Statistical Form</span>
           </div>
+
+          {/* Official Institutional Contact Footer */}
+          <div className="pt-1.5 border-t border-black flex items-center justify-between text-[8px] text-slate-800 leading-tight">
+            <span><strong>Address:</strong> Langtad, City of Naga, Cebu</span>
+            <span>
+              <strong>Email Address:</strong>{' '}
+              <a href="mailto:303035@deped.gov.ph" className="text-blue-700 underline font-medium">
+                303035@deped.gov.ph
+              </a>
+            </span>
+            <span><strong>Facebook:</strong> 🌐 Placido L. Senor 303035</span>
+          </div>
         </div>
       </div>
     </div>

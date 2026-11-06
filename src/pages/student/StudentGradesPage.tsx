@@ -1486,6 +1486,23 @@ export const StudentGradesPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* 10. Official Institutional Contact Footer */}
+          <div className="pt-1 border-t border-black text-[6pt] text-slate-800 flex items-center justify-between leading-tight mt-1">
+            <div>
+              <span className="font-bold">Address:</span> Langtad, City of Naga, Cebu
+            </div>
+            <div>
+              <span className="font-bold">Email Address:</span>{' '}
+              <a href="mailto:303035@deped.gov.ph" className="text-blue-700 underline font-medium">
+                303035@deped.gov.ph
+              </a>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-bold">Facebook:</span>{' '}
+              <span>🌐 Placido L. Senor 303035</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1623,7 +1623,7 @@ export const GuidanceViolationsPage: React.FC = () => {
                   Placido L. Señor National High School
                 </div>
                 <div className="text-[10px] text-slate-500 font-sans">
-                  Langtad, City of Naga, Cebu · School ID: 303035 · Contact: (032) 489-0000
+                  Langtad, City of Naga, Cebu · School ID: 303035 · Email: 303035@deped.gov.ph · FB: Placido L. Senor 303035
                 </div>
                 <div className="text-xs font-bold tracking-widest uppercase text-emerald-900 pt-2 font-sans">
                   GUIDANCE & COUNSELING CENTER · CHILD PROTECTION COMMITTEE

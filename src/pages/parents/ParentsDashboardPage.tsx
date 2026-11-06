@@ -921,9 +921,18 @@ export const ParentsDashboardPage: React.FC = () => {
               For parent-teacher conferences, excused absence slips, or credential inquiries, reach out during office hours (Mon–Fri, 8:00 AM – 5:00 PM).
             </p>
             <div className="pt-1 flex flex-wrap items-center gap-3 text-xs font-semibold text-amber-300">
-              <span>📞 (032) 123-4567</span>
+              <span>📍 Langtad, City of Naga, Cebu</span>
               <span>•</span>
-              <span>✉️ info@PLSNHS.edu.ph</span>
+              <a href="mailto:303035@deped.gov.ph" className="hover:underline">✉️ 303035@deped.gov.ph</a>
+              <span>•</span>
+              <a
+                href="https://www.facebook.com/search/top?q=Placido%20L.%20Senor%20303035"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:underline"
+              >
+                🌐 FB: Placido L. Senor 303035
+              </a>
             </div>
           </div>
         </div>

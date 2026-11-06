@@ -9,8 +9,8 @@ import {
   ArrowLeft,
   BookOpen,
   MapPin,
-  Phone,
   Mail,
+  Globe,
   Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -321,16 +321,34 @@ export const LoginPage: React.FC = () => {
 
           <div className="pt-8 border-t border-white/10 text-xs text-slate-200/80 space-y-2">
             <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-amber-400" />
-              <span>Langtad, City of Naga, Cebu</span>
+              <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span><strong>Address:</strong> Langtad, City of Naga, Cebu</span>
             </div>
             <div className="flex items-center gap-2">
-              <Phone className="h-3.5 w-3.5 text-amber-400" />
-              <span>(032) 123-4567</span>
+              <Mail className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>
+                <strong>Email Address:</strong>{' '}
+                <a
+                  href="mailto:303035@deped.gov.ph"
+                  className="text-amber-300 underline hover:text-white transition-colors"
+                >
+                  303035@deped.gov.ph
+                </a>
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <Mail className="h-3.5 w-3.5 text-amber-400" />
-              <span>info@PLSNHS.edu.ph</span>
+              <Globe className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>
+                <strong>Facebook:</strong>{' '}
+                <a
+                  href="https://www.facebook.com/search/top?q=Placido%20L.%20Senor%20303035"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-amber-300 underline hover:text-white transition-colors"
+                >
+                  Placido L. Senor 303035
+                </a>
+              </span>
             </div>
           </div>
         </div>

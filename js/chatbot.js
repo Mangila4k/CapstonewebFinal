@@ -620,7 +620,7 @@
         if (query.match(/\b(pta|parent teacher|card giving|report card release|consultation|parent meeting|homeroom)\b/)) {
             return `👨‍👩‍👧 **Parent-Teacher Consultations & Report Card Distribution:**\n\n` +
                 `• **Quarterly Card-Giving Day:** Held at the end of each quarter on scheduled Saturdays/Fridays for parents to receive report cards and discuss academic progress with class advisers.\n` +
-                `• **Individual Consultations:** Parents may book an appointment with teachers during vacant advisory periods by contacting the school office at **(032) 123-4567** or messaging via the Parent Portal.`;
+                `• **Individual Consultations:** Parents may book an appointment with teachers during vacant advisory periods by contacting the school office at **303035@deped.gov.ph** or messaging via the Parent Portal.`;
         }
 
         // 12. Password Reset & Account Recovery
@@ -693,7 +693,7 @@
             {
                 keywords: ['contact', 'phone', 'email', 'address', 'location', 'where', 'map', 'principal', 'office', 'naga', 'cebu', 'langtad'],
                 title: "Contact & Location",
-                response: `📍 **HES, PLSNHS Enrollment System**, Langtad, City of Naga, Cebu 6037\n📞 Phone: (032) 123-4567\n✉️ Email: info@HES.edu.ph\n\n<a href="https://www.google.com/maps/place/City+of+Naga,+Cebu" target="_blank" class="hes-cb-action-btn"><i class="fas fa-map-location-dot"></i> View on Google Maps</a>`
+                response: `📍 **HES, PLSNHS Enrollment System**, Langtad, City of Naga, Cebu 6037\n📞 Phone: 303035@deped.gov.ph\n✉️ Email: 303035@deped.gov.ph\n\n<a href="https://www.google.com/maps/place/City+of+Naga,+Cebu" target="_blank" class="hes-cb-action-btn"><i class="fas fa-map-location-dot"></i> View on Google Maps</a>`
             }
         ];
 
