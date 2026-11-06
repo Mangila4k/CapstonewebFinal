@@ -520,15 +520,9 @@ export const AdminLogsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
-              System Activity Audit Trail
-            </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Live Audit Feed
-            </span>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
+            System Activity Audit Trail
+          </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Chronological audit trail categorized by user role for administrative security and compliance.
           </p>
