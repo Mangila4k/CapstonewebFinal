@@ -11,17 +11,17 @@ import {
   Eye,
   EyeOff,
   CreditCard,
-  Printer,
   RotateCw,
   BadgeCheck,
   CheckCircle2,
   RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
 import { Modal } from '../../components/common/Modal';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
-import { printOfficialStudentId } from '../../lib/printIdCard';
 import { supabase } from '../../lib/supabase';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
@@ -547,13 +547,10 @@ export const StudentProfilePage: React.FC = () => {
                   <RotateCw className="h-3.5 w-3.5" /> Flip Order
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => printOfficialStudentId('studentProfileIdArea')}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#152e69] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#0f1c3f] cursor-pointer"
-              >
-                <Printer className="h-3.5 w-3.5 text-[#F5C518]" /> Print ID
-              </button>
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-bold text-amber-800">
+                <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                Print Authority: Admin & Registrar Only
+              </span>
             </div>
           </div>
 
@@ -577,6 +574,16 @@ export const StudentProfilePage: React.FC = () => {
               frontId="studentProfileCardFront"
               backId="studentProfileCardBack"
             />
+          </div>
+
+          <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-900 flex items-start gap-2.5">
+            <ShieldAlert className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+            <div className="space-y-0.5 text-[11px] leading-relaxed">
+              <p className="font-bold text-amber-950">Official ID Issuance Policy</p>
+              <p className="text-amber-800">
+                Physical PVC ID cards are printed and issued exclusively by the School Administration and Registrar's Office. Students cannot print their own IDs. For gate and classroom attendance, please use your digital QR pass from the Student Dashboard.
+              </p>
+            </div>
           </div>
         </div>
       </Modal>
