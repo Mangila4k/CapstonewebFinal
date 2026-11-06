@@ -568,6 +568,11 @@ export const TeacherGradesPage: React.FC = () => {
     try {
       const recordsToSave: GradeRecord[] = [];
       const currentSection = sections.find((s) => s.id === selectedSectionId);
+      const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
+      const teacherName =
+        user?.full_name ||
+        `${user?.first_name || ''} ${user?.last_name || ''}`.trim() ||
+        'Class Subject Teacher';
 
       students.forEach((student) => {
         const entry = gradesMap[student.id];
@@ -577,12 +582,23 @@ export const TeacherGradesPage: React.FC = () => {
         quarters.forEach((qKey, index) => {
           const val = entry[qKey];
           if (typeof val === 'number' && !isNaN(val)) {
+            const qNum = index + 1;
             recordsToSave.push({
               student_id: student.id,
+              student_lrn: student.lrn || (student as any).student_lrn,
+              student_name:
+                `${student.first_name || ''} ${student.last_name || ''}`.trim() ||
+                (student as any).name ||
+                '',
               subject_id: selectedSubjectId,
+              subject_name: currentSubject?.name || 'Subject',
+              subject_code: currentSubject?.code || '',
+              teacher_name: teacherName,
               section_id: currentSection?.id || (student as any).section_id || null,
+              section_name: currentSection?.name || (student as any).section || null,
               school_year: schoolYear,
-              quarter: index + 1,
+              quarter: qNum,
+              term: `Quarter ${qNum}`,
               grade: val,
               remarks: val >= 75 ? 'Passed' : 'Failed',
               updated_at: new Date().toISOString(),
@@ -595,21 +611,22 @@ export const TeacherGradesPage: React.FC = () => {
         const result = await saveGradesToStore(recordsToSave);
         setIsDirty(false);
 
+        const subTitle = currentSubject?.name || 'Subject';
         if (result.savedToCloud) {
           setNotice({
             type: 'success',
-            message: `Successfully saved and synchronized ${result.count} quarterly marks to the official cloud database! Real-time ratings are now live on student report cards (SF9) and parent portals.`,
+            message: `Successfully submitted ${result.count} quarterly marks for "${subTitle}"! The subject, grades, and terms are now officially updated on the student portal and parent report cards.`,
           });
         } else {
           setNotice({
             type: 'success',
-            message: `Successfully saved ${result.count} quarterly marks! Grades are verified, saved in persistent storage, and synchronized with student report cards.`,
+            message: `Successfully submitted ${result.count} quarterly marks for "${subTitle}"! Grades, subject, and terms are preserved and synchronized with the student portal.`,
           });
         }
       } else {
         setNotice({
           type: 'info',
-          message: 'No grades have been entered yet. Type marks into the quarter boxes below and click Save Grades.',
+          message: 'No grades have been entered yet. Type marks into the quarter boxes below and click Submit Grades.',
         });
       }
     } catch (err: any) {
@@ -1046,18 +1063,22 @@ export const TeacherGradesPage: React.FC = () => {
             <button
               type="button"
               onClick={handleSaveAll}
-              disabled={saving || loading}
+              disabled={saving || loading || !selectedSubjectId || students.length === 0}
               className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-2xs transition-all cursor-pointer whitespace-nowrap active:scale-98 ${
                 isDirty ? 'bg-emerald-700 hover:bg-emerald-800 ring-2 ring-emerald-400/50' : 'bg-[#152e69] hover:bg-[#0f1f4b]'
               }`}
-              title="Save all grades (Ctrl+S)"
+              title="Submit grades for this subject and term (Ctrl+S)"
             >
               {saving ? (
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Save className="h-3.5 w-3.5" />
               )}
-              {saving ? 'Saving...' : isDirty ? 'Save Grades *' : 'Save Grades'}
+              {saving
+                ? 'Submitting...'
+                : isDirty
+                ? 'Submit Grades *'
+                : 'Submit Grades'}
             </button>
           </div>
         </div>

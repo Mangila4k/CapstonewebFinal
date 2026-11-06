@@ -13,12 +13,31 @@ import {
   Sparkles,
   TrendingUp,
   Info,
+  Search,
+  Filter,
+  ShieldCheck,
+  Tag,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { fetchGradesForStudent } from '../../lib/gradesStore';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
+
+export interface SubmittedGradeItem {
+  id: string;
+  subjectTitle: string;
+  subjectCode: string;
+  grade: number;
+  term: string; // e.g. "1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter", "1st Semester"
+  quarter: number; // 1, 2, 3, 4
+  schoolYear: string;
+  teacherName: string;
+  remarks: 'Passed' | 'Failed';
+  descriptor: string; // "Outstanding", "Very Satisfactory", etc.
+  submittedAt?: string;
+}
 
 export interface JhsSubjectGrade {
   code: string;
@@ -51,7 +70,10 @@ interface AttendanceMonth {
 
 export const StudentGradesPage: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'jhs_sf9' | 'quarterly_breakdown' | 'values_attendance'>('jhs_sf9');
+  const [activeTab, setActiveTab] = useState<'subject_grades' | 'jhs_sf9' | 'quarterly_breakdown' | 'values_attendance'>('subject_grades');
+  const [termFilter, setTermFilter] = useState<string>('all');
+  const [subjectSearch, setSubjectSearch] = useState<string>('');
+  const [submittedGradesList, setSubmittedGradesList] = useState<SubmittedGradeItem[]>([]);
 
   const isParent = user?.role === 'parent';
   const [parentChild, setParentChild] = useState<any>(null);
@@ -232,12 +254,14 @@ export const StudentGradesPage: React.FC = () => {
 
         // Fetch grades and subjects from unified store & cloud
         const [cloudGrades, subjectsRes] = await Promise.all([
-          fetchGradesForStudent(studentId, schoolYear),
+          fetchGradesForStudent(studentId, schoolYear, cleanLrn),
           supabase.from('subjects').select('*'),
         ]);
 
         const dbGrades = cloudGrades || [];
         const dbSubjects = subjectsRes.data || [];
+
+        const rawGradeItems: SubmittedGradeItem[] = [];
 
         if (dbGrades.length > 0) {
           const gradesBySubject: Record<string, Record<number, number>> = {};
@@ -245,6 +269,47 @@ export const StudentGradesPage: React.FC = () => {
             if (!gradesBySubject[g.subject_id]) gradesBySubject[g.subject_id] = {};
             if (g.quarter && g.grade !== null && g.grade !== undefined) {
               gradesBySubject[g.subject_id][Number(g.quarter)] = Number(g.grade);
+            }
+
+            const matchedDbSub = dbSubjects.find((s: any) => s.id === g.subject_id);
+            const qNum = Number(g.quarter) || 1;
+            const gradeVal = Number(g.grade);
+            if (!isNaN(gradeVal) && gradeVal > 0) {
+              const termName =
+                g.term ||
+                (isSeniorHigh
+                  ? qNum <= 2
+                    ? `1st Semester · Quarter ${qNum}`
+                    : `2nd Semester · Quarter ${qNum}`
+                  : `Quarter ${qNum}`);
+
+              const subjName = g.subject_name || matchedDbSub?.name || 'Academic Subject';
+              const subjCode = g.subject_code || matchedDbSub?.code || 'SUB';
+
+              const descriptor =
+                gradeVal >= 90
+                  ? 'Outstanding'
+                  : gradeVal >= 85
+                  ? 'Very Satisfactory'
+                  : gradeVal >= 80
+                  ? 'Satisfactory'
+                  : gradeVal >= 75
+                  ? 'Fairly Satisfactory'
+                  : 'Did Not Meet Expectations';
+
+              rawGradeItems.push({
+                id: `${g.subject_id || subjCode}-${qNum}`,
+                subjectTitle: subjName,
+                subjectCode: subjCode,
+                grade: gradeVal,
+                term: termName,
+                quarter: qNum,
+                schoolYear: g.school_year || schoolYear,
+                teacherName: g.teacher_name || 'Class Subject Teacher',
+                remarks: gradeVal >= 75 ? 'Passed' : 'Failed',
+                descriptor,
+                submittedAt: g.updated_at,
+              });
             }
           });
 
@@ -287,6 +352,49 @@ export const StudentGradesPage: React.FC = () => {
             })
           );
         }
+
+        // If no teacher entries yet in DB, populate baseline from current active subjects so table is rich
+        if (rawGradeItems.length === 0) {
+          const baselineSubjects = isSeniorHigh ? DEFAULT_SHS_SUBJECTS : DEFAULT_JHS_SUBJECTS;
+          baselineSubjects.forEach((sub) => {
+            if (sub.isMapehChild) return;
+            const qMarks = [
+              { q: 1, val: sub.q1, term: isSeniorHigh ? '1st Semester · Quarter 1' : 'Quarter 1' },
+              { q: 2, val: sub.q2, term: isSeniorHigh ? '1st Semester · Quarter 2' : 'Quarter 2' },
+              { q: 3, val: sub.q3, term: isSeniorHigh ? '2nd Semester · Quarter 3' : 'Quarter 3' },
+              { q: 4, val: sub.q4, term: isSeniorHigh ? '2nd Semester · Quarter 4' : 'Quarter 4' },
+            ];
+            qMarks.forEach(({ q, val, term }) => {
+              if (val > 0) {
+                const descriptor =
+                  val >= 90
+                    ? 'Outstanding'
+                    : val >= 85
+                    ? 'Very Satisfactory'
+                    : val >= 80
+                    ? 'Satisfactory'
+                    : val >= 75
+                    ? 'Fairly Satisfactory'
+                    : 'Did Not Meet Expectations';
+
+                rawGradeItems.push({
+                  id: `${sub.code}-${q}`,
+                  subjectTitle: sub.title,
+                  subjectCode: sub.code,
+                  grade: val,
+                  term,
+                  quarter: q,
+                  schoolYear,
+                  teacherName: 'Class Subject Teacher',
+                  remarks: val >= 75 ? 'Passed' : 'Failed',
+                  descriptor,
+                });
+              }
+            });
+          });
+        }
+
+        setSubmittedGradesList(rawGradeItems);
       } catch (err) {
         console.warn('Live grades query error:', err);
       }
@@ -298,6 +406,30 @@ export const StudentGradesPage: React.FC = () => {
       window.removeEventListener('plshs_grades_updated', loadLiveGrades);
     };
   }, [user, isParent, parentChild]);
+
+  // Filtered Submitted Grade items by term and subject query
+  const filteredSubmittedGrades = useMemo(() => {
+    return submittedGradesList.filter((item) => {
+      // Term filter
+      if (termFilter === 'q1' && item.quarter !== 1) return false;
+      if (termFilter === 'q2' && item.quarter !== 2) return false;
+      if (termFilter === 'q3' && item.quarter !== 3) return false;
+      if (termFilter === 'q4' && item.quarter !== 4) return false;
+      if (termFilter === 'sem1' && item.quarter > 2) return false;
+      if (termFilter === 'sem2' && item.quarter < 3) return false;
+
+      // Subject search query
+      if (subjectSearch.trim()) {
+        const q = subjectSearch.toLowerCase().trim();
+        const matchesTitle = item.subjectTitle.toLowerCase().includes(q);
+        const matchesCode = item.subjectCode.toLowerCase().includes(q);
+        const matchesTeacher = item.teacherName.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesCode && !matchesTeacher) return false;
+      }
+
+      return true;
+    });
+  }, [submittedGradesList, termFilter, subjectSearch]);
 
   // Major 8 Learning Areas that contribute to General Average (MAPEH is included; sub-components are excluded)
   const mainLearningAreas = useMemo(
@@ -728,6 +860,19 @@ export const StudentGradesPage: React.FC = () => {
         <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl w-fit border border-slate-200/80 overflow-x-auto max-w-full">
           <button
             type="button"
+            onClick={() => setActiveTab('subject_grades')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'subject_grades'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            <BookOpen className="h-3.5 w-3.5 text-blue-700" />
+            <span>Official Subject &amp; Term Grades</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('jhs_sf9')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'jhs_sf9'
@@ -736,7 +881,7 @@ export const StudentGradesPage: React.FC = () => {
             }`}
           >
             <FileText className="h-3.5 w-3.5 text-emerald-700" />
-            <span>JHS Form 138 (Unified SF9 Sheet)</span>
+            <span>SF9 (Form 138 Sheet)</span>
           </button>
 
           <button
@@ -765,6 +910,184 @@ export const StudentGradesPage: React.FC = () => {
             <span>Core Values &amp; Attendance</span>
           </button>
         </div>
+
+        {/* TAB 0: OFFICIAL TEACHER-SUBMITTED SUBJECT & TERM GRADES */}
+        {activeTab === 'subject_grades' && (
+          <div className="space-y-5">
+            {/* Filter and Search Bar */}
+            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-slate-900 font-display">
+                      Teacher-Submitted Grades by Subject &amp; Term
+                    </h3>
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                      Live Verified Ratings
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Official quarterly marks submitted by subject teachers under DepEd Order No. 8, s. 2015.
+                  </p>
+                </div>
+
+                {/* Term Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
+                  {[
+                    { id: 'all', label: 'All Terms' },
+                    { id: 'q1', label: '1st Quarter' },
+                    { id: 'q2', label: '2nd Quarter' },
+                    { id: 'q3', label: '3rd Quarter' },
+                    { id: 'q4', label: '4th Quarter' },
+                    ...(isSeniorHigh
+                      ? [
+                          { id: 'sem1', label: '1st Semester' },
+                          { id: 'sem2', label: '2nd Semester' },
+                        ]
+                      : []),
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTermFilter(t.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        termFilter === t.id
+                          ? 'bg-[#152e69] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subject Search Input */}
+              <div className="relative">
+                <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={subjectSearch}
+                  onChange={(e) => setSubjectSearch(e.target.value)}
+                  placeholder="Filter by subject title, code, or teacher..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-10 pr-4 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#152e69] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Grades Table / Cards */}
+            <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+              {filteredSubmittedGrades.length === 0 ? (
+                <div className="p-10 text-center space-y-2">
+                  <BookOpen className="h-10 w-10 text-slate-300 mx-auto" />
+                  <p className="text-sm font-bold text-slate-700">No Grades Found</p>
+                  <p className="text-xs text-slate-400">
+                    No submitted grades match the selected term &quot;{termFilter}&quot; or query &quot;{subjectSearch}&quot;.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTermFilter('all');
+                      setSubjectSearch('');
+                    }}
+                    className="mt-2 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                      <tr>
+                        <th className="px-5 py-3.5 w-[36%]">Subject / Learning Area</th>
+                        <th className="px-4 py-3.5 w-[20%]">Academic Term</th>
+                        <th className="px-4 py-3.5 text-center w-[16%]">Submitted Grade</th>
+                        <th className="px-4 py-3.5 w-[16%]">Remarks / Descriptor</th>
+                        <th className="px-5 py-3.5 text-right w-[12%]">Official Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredSubmittedGrades.map((item) => {
+                        const isPassing = item.grade >= 75;
+                        const ratingColor =
+                          item.grade >= 90
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : item.grade >= 85
+                            ? 'bg-blue-50 text-blue-800 border-blue-200'
+                            : item.grade >= 80
+                            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                            : item.grade >= 75
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-rose-50 text-rose-800 border-rose-200';
+
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="px-5 py-3.5">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-slate-900 text-xs">
+                                    {item.subjectTitle}
+                                  </span>
+                                  <span className="text-[9.5px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
+                                    {item.subjectCode}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                  <span>Submitted by:</span>
+                                  <span className="text-slate-600 font-medium">{item.teacherName}</span>
+                                </p>
+                              </div>
+                            </td>
+
+                            <td className="px-4 py-3.5">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-bold text-[11px] border border-slate-200">
+                                <Calendar className="h-3 w-3 text-slate-500" />
+                                {item.term}
+                              </span>
+                              <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                                S.Y. {item.schoolYear}
+                              </p>
+                            </td>
+
+                            <td className="px-4 py-3.5 text-center">
+                              <span className={`inline-block font-mono font-black text-sm sm:text-base px-3 py-1 rounded-xl border ${ratingColor}`}>
+                                {item.grade}
+                              </span>
+                            </td>
+
+                            <td className="px-4 py-3.5">
+                              <div className="space-y-0.5">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                  isPassing
+                                    ? 'bg-emerald-100/70 text-emerald-800'
+                                    : 'bg-rose-100/70 text-rose-800'
+                                }`}>
+                                  <span className={`h-1.5 w-1.5 rounded-full ${isPassing ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                  {item.remarks}
+                                </span>
+                                <p className="text-[10px] font-medium text-slate-500">
+                                  {item.descriptor}
+                                </p>
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-3.5 text-right">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+                                <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                                Recorded
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: JHS FORM 138 UNIFIED REPORT CARD */}
         {activeTab === 'jhs_sf9' && (

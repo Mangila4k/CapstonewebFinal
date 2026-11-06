@@ -26,6 +26,7 @@ import {
 import QRCode from 'qrcode';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { fetchGradesForStudent } from '../../lib/gradesStore';
 import type { Subject } from '../../types';
 import { Modal } from '../../components/common/Modal';
 
@@ -84,6 +85,7 @@ export const StudentDashboardPage: React.FC = () => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedLrn, setCopiedLrn] = useState(false);
+  const [subjectGradesMap, setSubjectGradesMap] = useState<Record<string, { grade: number; term: string }>>({});
 
   useEffect(() => {
     async function loadStudentDashboardData() {
@@ -102,6 +104,7 @@ export const StudentDashboardPage: React.FC = () => {
         }
 
         // Also fetch student's full record if available for parent/guardian details on ID
+        let resolvedLrn = user?.student_lrn;
         if (user?.student_lrn || user?.email) {
           const { data: stData } = await supabase
             .from('students')
@@ -114,6 +117,27 @@ export const StudentDashboardPage: React.FC = () => {
             .maybeSingle();
           if (stData) {
             setStudentRecord(stData);
+            if (stData.lrn) resolvedLrn = stData.lrn;
+          }
+        }
+
+        // Load latest teacher-submitted grades for enrolled subjects
+        const studentId = user?.student_id || user?.id;
+        if (studentId || resolvedLrn) {
+          const grades = await fetchGradesForStudent(
+            studentId || '',
+            user?.school_year || '2026–2027',
+            resolvedLrn
+          );
+          if (grades && grades.length > 0) {
+            const gMap: Record<string, { grade: number; term: string }> = {};
+            grades.forEach((g) => {
+              const termStr = g.term || `Quarter ${g.quarter}`;
+              if (g.subject_id) gMap[g.subject_id] = { grade: g.grade, term: termStr };
+              if (g.subject_code) gMap[g.subject_code] = { grade: g.grade, term: termStr };
+              if (g.subject_name) gMap[g.subject_name.toLowerCase()] = { grade: g.grade, term: termStr };
+            });
+            setSubjectGradesMap(gMap);
           }
         }
       } catch (err) {
@@ -122,6 +146,10 @@ export const StudentDashboardPage: React.FC = () => {
       }
     }
     loadStudentDashboardData();
+    window.addEventListener('plshs_grades_updated', loadStudentDashboardData);
+    return () => {
+      window.removeEventListener('plshs_grades_updated', loadStudentDashboardData);
+    };
   }, [user]);
 
   const fullName =
@@ -564,28 +592,44 @@ export const StudentDashboardPage: React.FC = () => {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {subjects.map((s) => (
-                <div
-                  key={s.id}
-                  className="py-2.5 sm:py-3 flex items-center justify-between gap-3 text-xs"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold text-slate-800 truncate">{s.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="font-mono text-[10px] text-emerald-700 font-bold">
-                        {s.code}
-                      </span>
-                      <span className="text-[10px] text-slate-400">•</span>
-                      <span className="text-[10px] text-slate-500 font-medium">
-                        {s.semester || '1st Semester'}
-                      </span>
+              {subjects.map((s) => {
+                const subTitle = s.title || s.name || 'Subject';
+                const gradeInfo =
+                  subjectGradesMap[s.id] ||
+                  (s.code ? subjectGradesMap[s.code] : undefined) ||
+                  subjectGradesMap[subTitle.toLowerCase()];
+
+                return (
+                  <div
+                    key={s.id}
+                    className="py-2.5 sm:py-3 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-800 truncate">{subTitle}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-[10px] text-emerald-700 font-bold">
+                          {s.code}
+                        </span>
+                        <span className="text-[10px] text-slate-400">•</span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {s.semester || '1st Semester'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {gradeInfo ? (
+                        <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] sm:text-[11px] font-extrabold text-emerald-800">
+                          Grade: {gradeInfo.grade} · {gradeInfo.term}
+                        </span>
+                      ) : (
+                        <span className="rounded-lg bg-slate-100 border border-slate-200/70 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold text-slate-700">
+                          {s.units || 3}.0 Units
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="rounded-lg bg-slate-100 border border-slate-200/70 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold text-slate-700 shrink-0">
-                    {s.units || 3}.0 Units
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

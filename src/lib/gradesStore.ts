@@ -13,10 +13,17 @@ import { supabase } from './supabase';
 export interface GradeRecord {
   id?: string;
   student_id: string | number;
+  student_lrn?: string;
+  student_name?: string;
   subject_id: string;
+  subject_name?: string;
+  subject_code?: string;
+  teacher_name?: string;
   section_id?: string | null;
+  section_name?: string;
   school_year: string;
   quarter: number; // 1, 2, 3, or 4
+  term?: string; // e.g. "1st Quarter", "2nd Quarter", "1st Semester"
   grade: number; // 60 - 100
   remarks?: 'Passed' | 'Failed';
   updated_at?: string;
@@ -69,16 +76,19 @@ export function makeGradeKey(
  */
 export async function fetchGradesForStudent(
   studentId: string | number,
-  schoolYear: string = '2026–2027'
+  schoolYear: string = '2026–2027',
+  studentLrn?: string
 ): Promise<GradeRecord[]> {
   const mergedMap = new Map<string, GradeRecord>();
 
   // 1. Fetch from Supabase
   try {
-    const { data: cloudGrades, error } = await supabase
-      .from('grades')
-      .select('*')
-      .eq('student_id', studentId);
+    let query = supabase.from('grades').select('*');
+    if (studentId) {
+      query = query.eq('student_id', studentId);
+    }
+
+    const { data: cloudGrades, error } = await query;
 
     if (!error && cloudGrades && cloudGrades.length > 0) {
       cloudGrades.forEach((g: any) => {
@@ -86,10 +96,16 @@ export async function fetchGradesForStudent(
         mergedMap.set(k, {
           id: g.id,
           student_id: g.student_id,
+          student_lrn: g.student_lrn,
+          student_name: g.student_name,
           subject_id: g.subject_id,
+          subject_name: g.subject_name,
+          subject_code: g.subject_code,
+          teacher_name: g.teacher_name,
           section_id: g.section_id,
           school_year: g.school_year || schoolYear,
           quarter: Number(g.quarter),
+          term: g.term || `Quarter ${g.quarter}`,
           grade: Number(g.grade),
           remarks: Number(g.grade) >= 75 ? 'Passed' : 'Failed',
           updated_at: g.updated_at,
@@ -103,7 +119,9 @@ export async function fetchGradesForStudent(
   // 2. Overlay local cache (which contains latest teacher inputs)
   const localCache = getLocalGradesCache();
   Object.values(localCache).forEach((g) => {
-    if (String(g.student_id) === String(studentId)) {
+    const matchId = studentId && String(g.student_id) === String(studentId);
+    const matchLrn = studentLrn && g.student_lrn && String(g.student_lrn) === String(studentLrn);
+    if (matchId || matchLrn) {
       const k = makeGradeKey(g.student_id, g.subject_id, g.school_year || schoolYear, g.quarter);
       mergedMap.set(k, g);
     }
