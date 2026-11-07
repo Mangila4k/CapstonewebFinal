@@ -5,10 +5,12 @@ import {
   X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import type { Activity as ActivityType } from '../../types';
 import './homepage_original.css';
 
 export const HomePage: React.FC = () => {
+  const { isOpen: isEnrollmentOpen } = useEnrollmentStatus();
   const [activities, setActivities] = useState<ActivityType[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
 
@@ -94,7 +96,8 @@ export const HomePage: React.FC = () => {
           </p>
           <div className="hero-buttons">
             <Link to="/enroll" className="btn-enroll">
-              <i className="fas fa-pen-fancy"></i> Enroll Now
+              <i className={isEnrollmentOpen ? "fas fa-pen-fancy" : "fas fa-lock"}></i>{' '}
+              {isEnrollmentOpen ? 'Enroll Now' : 'Enrollment Notice (Closed)'}
             </Link>
           </div>
         </div>

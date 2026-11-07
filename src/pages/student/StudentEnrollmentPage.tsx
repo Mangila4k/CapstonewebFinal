@@ -18,9 +18,12 @@ import {
   Check,
   Sparkles,
   RefreshCw,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 
@@ -172,6 +175,7 @@ const REQUIREMENTS: RequirementItem[] = [
 
 export const StudentEnrollmentPage: React.FC = () => {
   const { user } = useAuth();
+  const { settings: enrollmentSettings, isOpen: isEnrollmentOpen } = useEnrollmentStatus();
 
   const [studentRecord, setStudentRecord] = useState<any>(null);
   const [sectionRecord, setSectionRecord] = useState<any>(null);
@@ -418,6 +422,31 @@ export const StudentEnrollmentPage: React.FC = () => {
           <PageHeaderNotificationSlot />
         </div>
       </div>
+
+      {/* Admin Enrollment Status Banner */}
+      {!isEnrollmentOpen && (
+        <div className="no-print rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white shadow-sm">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-amber-950">
+                  Student Enrollment Is Closed by School Administration
+                </h3>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-200 text-amber-900">
+                  S.Y. {enrollmentSettings.schoolYear}
+                </span>
+              </div>
+              <p className="text-xs text-amber-900/80 mt-0.5 leading-relaxed">
+                {enrollmentSettings.message ||
+                  'New admissions and student enrollment applications are currently paused by the Admin. Your existing enrolled courses, schedule, and registration record below remain active and verified.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Learner Demographic Matrix Strip */}
       <div className="no-print rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">

@@ -21,9 +21,13 @@ import {
   Eye,
   ChevronDown,
   Calendar,
+  Lock,
+  Unlock,
+  Power,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { StatCard } from '../../components/common/StatCard';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
@@ -185,6 +189,7 @@ function loadCachedAdminStats() {
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isOpen: isEnrollmentOpen } = useEnrollmentStatus();
   const [stats, setStats] = useState(loadCachedAdminStats);
   const [recentEnrollments, setRecentEnrollments] = useState<Enrollment[]>(
     loadCachedAdminEnrollments
@@ -489,6 +494,22 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            to="/admin/enrollments"
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs transition-all ${
+              isEnrollmentOpen
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
+            }`}
+            title="Click to manage student enrollment status"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isEnrollmentOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+              }`}
+            />
+            {isEnrollmentOpen ? 'Enrollment: OPEN' : 'Enrollment: CLOSED'}
+          </Link>
           <PageHeaderNotificationSlot />
         </div>
       </div>

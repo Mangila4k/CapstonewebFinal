@@ -17,9 +17,15 @@ import {
   Users,
   ChevronDown,
   School,
+  Power,
+  Lock,
+  Unlock,
+  ShieldAlert,
+  CheckCircle2,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
@@ -327,6 +333,33 @@ export const AdminEnrollmentsPage: React.FC = () => {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
+
+  // Live Enrollment Control Status (Admin On/Off Switch)
+  const { settings: enrollmentSettings, isOpen: isEnrollmentOpen, setStatus: updateEnrollmentStatus, loading: isEnrollmentLoading } = useEnrollmentStatus();
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const handleToggleEnrollment = async () => {
+    setIsUpdatingStatus(true);
+    try {
+      const targetState = !isEnrollmentOpen;
+      await updateEnrollmentStatus(targetState);
+      setShowToggleModal(false);
+      setNotice({
+        type: 'success',
+        message: targetState
+          ? 'Student enrollment has been successfully turned ON (OPEN). Prospective students can now submit admission applications.'
+          : 'Student enrollment has been successfully turned OFF (CLOSED). Student admission forms are now blocked.',
+      });
+    } catch (err: any) {
+      setNotice({
+        type: 'error',
+        message: err?.message || 'Failed to update enrollment status.',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   // Quick Generate ID Modal State
   const [generatingIdEnr, setGeneratingIdEnr] = useState<EnrichedEnrollment | null>(null);
@@ -929,6 +962,78 @@ export const AdminEnrollmentsPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <PageHeaderNotificationSlot />
+        </div>
+      </div>
+
+      {/* Admin Student Enrollment On/Off Control Center */}
+      <div
+        className={`rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
+          isEnrollmentOpen
+            ? 'border-emerald-200 bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white'
+            : 'border-rose-200 bg-gradient-to-r from-rose-50/90 via-amber-50/40 to-white'
+        }`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div
+              className={`mt-0.5 rounded-xl p-2.5 shrink-0 transition-transform ${
+                isEnrollmentOpen
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                  : 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
+              }`}
+            >
+              {isEnrollmentOpen ? (
+                <Unlock className="h-5 w-5" />
+              ) : (
+                <Lock className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+                  Student Enrollment Control
+                </h2>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                    isEnrollmentOpen
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      : 'bg-rose-100 text-rose-800 border border-rose-300'
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      isEnrollmentOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                    }`}
+                  />
+                  {isEnrollmentOpen ? 'ENROLLMENT IS OPEN' : 'ENROLLMENT IS CLOSED'}
+                </span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 shadow-2xs">
+                  S.Y. {enrollmentSettings.schoolYear} · {enrollmentSettings.semester}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                {isEnrollmentOpen
+                  ? 'Student admission applications are currently active. Prospective learners can fill out the admission form and register online. Turning enrollment OFF will immediately block all student submissions.'
+                  : 'Student enrollment is currently turned OFF. Prospective learners are blocked from submitting admission forms or enrolling. Existing student records and schedules remain fully intact.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+            <button
+              type="button"
+              onClick={() => setShowToggleModal(true)}
+              disabled={isEnrollmentLoading || isUpdatingStatus}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer ${
+                isEnrollmentOpen
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20 active:scale-95'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 active:scale-95'
+              }`}
+            >
+              <Power className="h-4 w-4" />
+              {isEnrollmentOpen ? 'Turn Off Enrollment' : 'Turn On Enrollment'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1584,6 +1689,93 @@ export const AdminEnrollmentsPage: React.FC = () => {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Confirmation Modal for Turning Enrollment ON / OFF */}
+      {showToggleModal && (
+        <Modal
+          isOpen={showToggleModal}
+          onClose={() => {
+            if (!isUpdatingStatus) setShowToggleModal(false);
+          }}
+          title={isEnrollmentOpen ? 'Turn Off Student Enrollment' : 'Turn On Student Enrollment'}
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3.5 rounded-2xl bg-slate-50 border border-slate-200 p-4">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white ${
+                  isEnrollmentOpen ? 'bg-rose-600' : 'bg-emerald-600'
+                }`}
+              >
+                {isEnrollmentOpen ? <Lock className="h-6 w-6" /> : <Unlock className="h-6 w-6" />}
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-extrabold text-slate-900">
+                  {isEnrollmentOpen
+                    ? 'Confirm Closing Enrollment Applications'
+                    : 'Confirm Opening Enrollment Applications'}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {isEnrollmentOpen
+                    ? 'Are you sure you want to turn OFF student enrollment? Once turned off, students and applicants will not be able to fill out or submit enrollment applications. Existing student records will not be affected.'
+                    : 'Are you sure you want to turn ON student enrollment? Prospective and continuing students will immediately be able to submit their admissions and enrollment applications online for S.Y. ' +
+                      enrollmentSettings.schoolYear +
+                      '.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5 text-xs space-y-2">
+              <div className="flex justify-between text-slate-600">
+                <span>School Year:</span>
+                <strong className="text-slate-900">{enrollmentSettings.schoolYear}</strong>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Academic Term:</span>
+                <strong className="text-slate-900">{enrollmentSettings.semester}</strong>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>New Status After Toggle:</span>
+                <span
+                  className={`font-black uppercase ${
+                    isEnrollmentOpen ? 'text-rose-600' : 'text-emerald-600'
+                  }`}
+                >
+                  {isEnrollmentOpen ? 'CLOSED (OFF)' : 'OPEN (ON)'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isUpdatingStatus}
+                onClick={() => setShowToggleModal(false)}
+                className="rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingStatus}
+                onClick={handleToggleEnrollment}
+                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all cursor-pointer ${
+                  isEnrollmentOpen
+                    ? 'bg-rose-600 hover:bg-rose-700 active:scale-95'
+                    : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
+                }`}
+              >
+                {isUpdatingStatus ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Power className="h-4 w-4" />
+                )}
+                {isEnrollmentOpen ? 'Yes, Turn Off Enrollment' : 'Yes, Turn On Enrollment'}
+              </button>
             </div>
           </div>
         </Modal>

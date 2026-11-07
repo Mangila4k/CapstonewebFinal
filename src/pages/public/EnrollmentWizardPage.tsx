@@ -18,9 +18,13 @@ import {
   CloudUpload,
   Trash2,
   AlertCircle,
+  Lock,
+  Mail,
+  MapPin,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../../lib/supabase';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { Alert } from '../../components/common/Alert';
 import './enrollment_original.css';
 
@@ -80,6 +84,9 @@ const DOCUMENT_CONFIG: DocConfig[] = [
 export const EnrollmentWizardPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const preselectedStrand = searchParams.get('strand') || '';
+
+  // Live Admin Enrollment Control
+  const { settings: enrollmentSettings, isOpen: isEnrollmentOpen, loading: isEnrollmentLoading } = useEnrollmentStatus();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -181,6 +188,14 @@ export const EnrollmentWizardPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Hard check: Admin Enrollment On/Off Switch
+    if (!isEnrollmentOpen) {
+      setError(
+        'Student enrollment is currently closed by the School Administration. Applications cannot be submitted at this time.'
+      );
+      return;
+    }
 
     // Validation
     if (!formData.lastName.trim() || !formData.firstName.trim()) {
@@ -492,6 +507,107 @@ export const EnrollmentWizardPage: React.FC = () => {
               >
                 Submit Another Enrollment
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // When student enrollment is turned OFF by admin, display institutional closed notice
+  if (!isEnrollmentLoading && !isEnrollmentOpen) {
+    return (
+      <div className="enrollment-page-bg min-h-screen py-12 px-4 sm:px-6 flex items-center justify-center">
+        <div className="max-w-xl w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-center animate-fade-in">
+          {/* DepEd & PLSNHS Header Banner */}
+          <div className="bg-[#1B2A4A] p-6 text-white relative">
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src="/pictures/logo sa skwelahan.png"
+                alt="PLSNHS Logo"
+                className="h-14 w-14 rounded-full border-2 border-amber-400 bg-white p-0.5 object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/pictures/logo sa skwelahan.jpg';
+                }}
+              />
+              <div className="text-left">
+                <span className="text-[10px] uppercase tracking-widest font-black text-amber-400 block">
+                  Republic of the Philippines · Department of Education
+                </span>
+                <h1 className="text-lg font-black tracking-tight text-white leading-tight">
+                  Placido L. Señor National High School
+                </h1>
+                <p className="text-[11px] text-slate-300">
+                  School ID: 303035 · Division of City of Naga, Cebu
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Lock Icon */}
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 shadow-sm">
+              <Lock className="h-8 w-8" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                Admissions Closed
+              </span>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display">
+                Enrollment is Currently Closed
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                {enrollmentSettings.message ||
+                  `Online student admissions and enrollment for S.Y. ${enrollmentSettings.schoolYear} are currently turned off by the School Administration.`}
+              </p>
+            </div>
+
+            {/* School details & guidance card */}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 text-left space-y-2.5">
+              <div className="font-bold text-slate-900 border-b border-slate-200 pb-2 flex items-center justify-between">
+                <span>Registrar &amp; Admissions Office</span>
+                <span className="text-[11px] font-semibold text-slate-500">
+                  S.Y. {enrollmentSettings.schoolYear}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-600">
+                <Mail className="h-3.5 w-3.5 text-[#1B2A4A] shrink-0" />
+                <span>
+                  Email:{' '}
+                  <strong className="text-slate-800">303035@deped.gov.ph</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-600">
+                <MapPin className="h-3.5 w-3.5 text-[#1B2A4A] shrink-0" />
+                <span>
+                  Campus:{' '}
+                  <strong className="text-slate-800">Langtad, City of Naga, Cebu</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-600">
+                <School className="h-3.5 w-3.5 text-[#1B2A4A] shrink-0" />
+                <span>
+                  DepEd School ID: <strong className="text-slate-800">303035</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Navigation Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3 text-xs font-bold transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" /> Return to Home
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B2A4A] hover:bg-[#142038] text-white px-5 py-3 text-xs font-bold shadow-md transition-all"
+              >
+                Student / Faculty Sign In
+              </Link>
             </div>
           </div>
         </div>

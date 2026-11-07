@@ -14,9 +14,11 @@ import {
   Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { Alert } from '../../components/common/Alert';
 
 export const LoginPage: React.FC = () => {
+  const { isOpen: isEnrollmentOpen } = useEnrollmentStatus();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -269,9 +271,19 @@ export const LoginPage: React.FC = () => {
 
             <div className="mt-6 text-center text-xs text-slate-500">
               Don't have an enrolled student account yet?{' '}
-              <Link to="/enroll" className="font-bold text-[#1B2A4A] hover:underline">
-                Enroll Now
-              </Link>
+              {isEnrollmentOpen ? (
+                <Link to="/enroll" className="font-bold text-[#1B2A4A] hover:underline">
+                  Enroll Now
+                </Link>
+              ) : (
+                <Link
+                  to="/enroll"
+                  className="font-bold text-amber-700 hover:text-amber-800 underline"
+                  title="Enrollment is currently closed"
+                >
+                  Enrollment Closed
+                </Link>
+              )}
             </div>
           </div>
 

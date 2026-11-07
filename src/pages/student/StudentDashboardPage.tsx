@@ -26,6 +26,7 @@ import {
 import QRCode from 'qrcode';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { fetchGradesForStudent } from '../../lib/gradesStore';
 import type { Subject } from '../../types';
 import { Modal } from '../../components/common/Modal';
@@ -80,6 +81,7 @@ const FALLBACK_SUBJECTS: Subject[] = [
 
 export const StudentDashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { isOpen: isEnrollmentOpen } = useEnrollmentStatus();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studentRecord, setStudentRecord] = useState<any>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
@@ -556,9 +558,16 @@ export const StudentDashboardPage: React.FC = () => {
                   <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-xs font-extrabold text-slate-900 block truncate">
-                    Enrollment
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-extrabold text-slate-900 block truncate">
+                      Enrollment
+                    </span>
+                    {!isEnrollmentOpen && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-rose-100 text-rose-700 uppercase">
+                        Closed
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[10px] text-slate-500 block truncate">
                     Registration Info
                   </span>
