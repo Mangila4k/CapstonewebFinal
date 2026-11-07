@@ -582,6 +582,11 @@ export const TeacherAttendancePage: React.FC = () => {
 
       const { error } = await supabase.from('attendance').insert(recordsToInsert);
 
+      // Broadcast real-time update event so student attendance syncs immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('plsnhs_attendance_updated'));
+      }
+
       if (error) {
         console.warn('Attendance database notice:', error);
         setNotice({

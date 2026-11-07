@@ -243,6 +243,11 @@ export const TeacherAttendanceQrPage: React.FC = () => {
               timestamp: new Date().toISOString(),
             },
           ]);
+
+          // Broadcast real-time update event so student attendance syncs immediately
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('plsnhs_attendance_updated'));
+          }
         }
       } catch (insertErr) {
         console.warn('Attendance DB sync note:', insertErr);
