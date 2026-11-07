@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   if (s.strand !== undefined && s.strand !== null) updatedStrand = s.strand;
                   if (s.section) updatedSection = s.section;
                   if (s.lrn) updatedLrn = s.lrn;
-                  if (!updatedAvatar && (s.two_by_two_picture_url || s.avatar_url)) {
+                  if (s.two_by_two_picture_url || s.avatar_url) {
                     updatedAvatar = s.two_by_two_picture_url || s.avatar_url;
                   }
                 }
@@ -89,6 +89,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               } catch {
                 // ignore
+              }
+
+              if (!updatedAvatar && cleanEmail) {
+                try {
+                  const { data: appRow } = await supabase
+                    .from('app_settings')
+                    .select('value')
+                    .eq('key', `avatar_${cleanEmail}`)
+                    .maybeSingle();
+                  if (appRow?.value) updatedAvatar = appRow.value;
+                } catch {
+                  // ignore
+                }
               }
 
               if (
@@ -306,6 +319,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let studentSection = '';
       let studentStatus = 'Enrolled';
       let schoolYear = '2026-2027';
+      let userAvatar: string | undefined = undefined;
 
       let studentID = matchedUser.student_id || matchedUser.id;
       let studentName = '';
@@ -319,12 +333,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (sRows && sRows.length > 0) {
             const s = sRows[0];
+            if (s.id) studentID = s.id;
             if (s.first_name && !firstName) firstName = s.first_name;
             if (s.last_name && !lastName) lastName = s.last_name;
             if (s.lrn) studentLRN = s.lrn;
             if (s.grade_level) studentGrade = s.grade_level;
             if (s.strand) studentStrand = s.strand;
             if (s.section) studentSection = s.section;
+            if (s.avatar_url || s.two_by_two_picture_url) {
+              userAvatar = s.avatar_url || s.two_by_two_picture_url;
+            }
           }
         } catch {
         }
@@ -347,6 +365,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (enr.section) studentSection = enr.section;
             if (enr.school_year) schoolYear = enr.school_year;
             if (enr.status) studentStatus = enr.status;
+            if (!userAvatar && enr.two_by_two_picture_url) {
+              userAvatar = enr.two_by_two_picture_url;
+            }
           }
         } catch {
           // ignore
@@ -455,8 +476,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         student_section: studentSection,
         student_status: studentStatus,
         school_year: schoolYear,
-        avatar_url: storedAvatar,
+        avatar_url: userAvatar || storedAvatar,
       };
+
+      if (userAvatar && cleanEmail) {
+        localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, userAvatar);
+        localStorage.setItem(`plsnhs_avatar_${matchedUser.email}`, userAvatar);
+        localStorage.setItem('plsnhs_avatar_default', userAvatar);
+      }
 
       setUser(fullUser);
       localStorage.setItem('currentUser', JSON.stringify(fullUser));

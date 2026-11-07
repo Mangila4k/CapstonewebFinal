@@ -159,20 +159,24 @@ export const StudentProfilePage: React.FC = () => {
       }
 
       // Sync changes to students table in Supabase
-      if (user?.student_id || user?.student_lrn || user?.email) {
-        const studentUpdates: Record<string, any> = {
-          first_name: cleanFirst,
-          last_name: cleanLast,
-          contact_number: phone.trim(),
-          avatar_url: avatarUrl,
+      const cleanEmail = (user?.email || '').trim().toLowerCase();
+      const studentUpdates: Record<string, any> = {
+        first_name: cleanFirst,
+        last_name: cleanLast,
+        contact_number: phone.trim(),
+        avatar_url: avatarUrl,
+        two_by_two_picture_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      };
+      if (cleanEmail) {
+        await supabase.from('students').update(studentUpdates).ilike('email', cleanEmail);
+        await supabase.from('enrollments').update({
           two_by_two_picture_url: avatarUrl,
           updated_at: new Date().toISOString(),
-        };
-        let sQ = supabase.from('students').update(studentUpdates);
-        if (user?.student_id) sQ = sQ.eq('id', user.student_id);
-        else if (user?.student_lrn) sQ = sQ.eq('lrn', user.student_lrn);
-        else if (user?.email) sQ = sQ.eq('email', user.email);
-        await sQ;
+        }).ilike('email', cleanEmail);
+      }
+      if (user?.student_lrn) {
+        await supabase.from('students').update(studentUpdates).eq('lrn', user.student_lrn);
       }
 
       updateCurrentUser({

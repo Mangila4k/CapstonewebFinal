@@ -67,7 +67,7 @@ export async function uploadAndSaveAvatar(
     }
   }
 
-  // 4. If student, also update students table in Supabase
+  // 4. If student, also update students and enrollments table in Supabase
   if (user.role === 'student' && finalAvatar) {
     try {
       const studentUpdates: Record<string, any> = {
@@ -75,12 +75,18 @@ export async function uploadAndSaveAvatar(
         two_by_two_picture_url: finalAvatar,
         updated_at: new Date().toISOString(),
       };
-      let sQ = supabase.from('students').update(studentUpdates);
-      if (user.id) sQ = sQ.eq('id', user.id);
-      else if (cleanEmail) sQ = sQ.ilike('email', cleanEmail);
-      await sQ;
-    } catch {
-      // ignore
+      if (cleanEmail) {
+        await supabase.from('students').update(studentUpdates).ilike('email', cleanEmail);
+        await supabase.from('enrollments').update({
+          two_by_two_picture_url: finalAvatar,
+          updated_at: new Date().toISOString(),
+        }).ilike('email', cleanEmail);
+      }
+      if (user.id) {
+        await supabase.from('students').update(studentUpdates).eq('id', user.id);
+      }
+    } catch (err) {
+      console.warn('Notice updating student avatar in database:', err);
     }
   }
 
@@ -88,6 +94,7 @@ export async function uploadAndSaveAvatar(
   if (typeof window !== 'undefined' && finalAvatar) {
     if (cleanEmail) {
       localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, finalAvatar);
+      localStorage.setItem(`plsnhs_avatar_${user.email}`, finalAvatar);
     }
     localStorage.setItem('plsnhs_avatar_default', finalAvatar);
     window.dispatchEvent(new Event('plsnhs-avatar-updated'));
@@ -107,17 +114,31 @@ export async function fetchUserAvatarFromDatabase(user: {
   const cleanEmail = (user.email || '').trim().toLowerCase();
   if (!cleanEmail) return null;
 
-  // 1. If student, check students table
-  if (user.role === 'student') {
+  // 1. If student, check students table by email
+  if (user.role === 'student' || !user.role) {
     try {
-      const idFilter = user.id ? `,id.eq.${user.id}` : '';
       const { data } = await supabase
         .from('students')
         .select('avatar_url, two_by_two_picture_url')
-        .or(`email.ilike.${cleanEmail}${idFilter}`)
+        .ilike('email', cleanEmail)
         .maybeSingle();
       const photo = data?.avatar_url || data?.two_by_two_picture_url;
-      if (photo) return photo;
+      if (photo && photo.trim().length > 0) return photo;
+    } catch {
+      // ignore
+    }
+
+    try {
+      const { data } = await supabase
+        .from('enrollments')
+        .select('two_by_two_picture_url')
+        .ilike('email', cleanEmail)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.two_by_two_picture_url && data.two_by_two_picture_url.trim().length > 0) {
+        return data.two_by_two_picture_url;
+      }
     } catch {
       // ignore
     }
@@ -131,20 +152,8 @@ export async function fetchUserAvatarFromDatabase(user: {
       .eq('key', `avatar_${cleanEmail}`)
       .maybeSingle();
 
-    if (setting?.value) {
+    if (setting?.value && setting.value.trim().length > 0) {
       return setting.value;
-    }
-  } catch {
-    // ignore
-  }
-
-  // 3. Check public Supabase storage directly
-  try {
-    const safeId = cleanEmail.replace(/[^a-z0-9]/g, '_');
-    const filePath = `avatars/avatar_${safeId}.jpg`;
-    const { data } = supabase.storage.from('student_documents').getPublicUrl(filePath);
-    if (data?.publicUrl) {
-      return `${data.publicUrl}?t=${Date.now()}`;
     }
   } catch {
     // ignore
