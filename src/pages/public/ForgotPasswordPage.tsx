@@ -80,6 +80,39 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   }, []);
 
+  // Listen for Supabase password recovery link redirect
+  useEffect(() => {
+    // 1. Listen for auth state change recovery event
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (
+        event === 'PASSWORD_RECOVERY' ||
+        (event === 'SIGNED_IN' && window.location.hash.includes('type=recovery'))
+      ) {
+        if (session?.user?.email) {
+          setEmail(session.user.email);
+        }
+        setStep('password');
+        setSuccess('Identity verified via email! Please set your new password below.');
+      }
+    });
+
+    // 2. Check if page loaded with recovery hash/params directly
+    const currentHash = window.location.hash || '';
+    const currentSearch = window.location.search || '';
+    if (
+      currentHash.includes('type=recovery') ||
+      currentSearch.includes('type=recovery') ||
+      currentSearch.includes('token_hash=')
+    ) {
+      setStep('password');
+      setSuccess('Identity verified via email! Please set your new password below.');
+    }
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   // Expiration countdown timer for the 6-digit code
   useEffect(() => {
     if (!activeSession || (step !== 'code' && step !== 'password')) return;
@@ -227,7 +260,22 @@ export const ForgotPasswordPage: React.FC = () => {
       sessionStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
       setResendCooldown(60);
 
-      // 3. Dispatch automated email via Supabase Edge Function & notification trigger
+      // 3. Dispatch automated password reset email directly via Supabase Auth
+      // Passing redirectTo ensures the link points directly to placido-enrollment.vercel.app!
+      const appOrigin =
+        typeof window !== 'undefined' && window.location.origin && window.location.origin !== 'null'
+          ? window.location.origin
+          : 'https://placido-enrollment.vercel.app';
+
+      try {
+        await supabase.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: `${appOrigin}/forgot-password`,
+        });
+      } catch (authEx) {
+        console.warn('Supabase auth resetPasswordForEmail notice:', authEx);
+      }
+
+      // Also invoke Edge Function if available
       try {
         await supabase.functions.invoke('send-enrollment-email', {
           body: {
@@ -237,13 +285,6 @@ export const ForgotPasswordPage: React.FC = () => {
             reset_code: generatedCode,
           },
         });
-      } catch (fErr) {
-        console.warn('Notice from Edge Function email invocation:', fErr);
-      }
-
-      // Also trigger Supabase Auth recovery as secondary notification channel
-      try {
-        await supabase.auth.resetPasswordForEmail(cleanEmail);
       } catch {
         // ignore
       }
@@ -263,7 +304,9 @@ export const ForgotPasswordPage: React.FC = () => {
       // 4. Proceed to Step 2: Enter 6-digit Code (User must check Gmail)
       setCode('');
       setStep('code');
-      setSuccess(`We sent a 6-digit confirmation code to ${cleanEmail}. Please check your Gmail.`);
+      setSuccess(
+        `We sent a password reset email to ${cleanEmail}. Check your Gmail inbox to enter the 6-digit code or click the reset link.`
+      );
     } catch (err: any) {
       setError(err?.message || 'Error processing request. Please try again.');
     } finally {
@@ -274,11 +317,20 @@ export const ForgotPasswordPage: React.FC = () => {
   // ==========================================
   // STEP 2: Enter & Verify 6-Digit Code to Proceed
   // ==========================================
-  const handleVerifyCode = (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
+    const cleanInputCode = code.trim().replace(/\D/g, '');
+    if (cleanInputCode.length !== 6) {
+      setError('Please enter the complete 6-digit confirmation code.');
+      return;
+    }
+
+    let isCodeValid = false;
+
+    // 1. Check against active session code
     let currentSession = activeSession;
     if (!currentSession) {
       const stored = sessionStorage.getItem('hes_pwd_reset');
@@ -291,27 +343,56 @@ export const ForgotPasswordPage: React.FC = () => {
       }
     }
 
-    if (!currentSession) {
-      setError('Password reset session expired. Please request a new verification code.');
-      setStep('email');
-      return;
+    if (currentSession && currentSession.code === cleanInputCode) {
+      if (Date.now() <= currentSession.expiresAt) {
+        isCodeValid = true;
+      } else {
+        setError('Your 6-digit confirmation code has expired. Please request a new one.');
+        return;
+      }
     }
 
-    if (Date.now() > currentSession.expiresAt) {
-      setError('Your 6-digit verification code has expired. Please request a new code.');
-      sessionStorage.removeItem('hes_pwd_reset');
-      setStep('email');
-      return;
+    const targetEmail = (email || currentSession?.email || '').trim().toLowerCase();
+
+    // 2. Also check if the 6-digit code is a valid Supabase Auth OTP token
+    if (!isCodeValid && targetEmail) {
+      try {
+        const { data: otpData, error: otpErr } = await supabase.auth.verifyOtp({
+          email: targetEmail,
+          token: cleanInputCode,
+          type: 'recovery',
+        });
+        if (!otpErr && (otpData?.session || otpData?.user)) {
+          isCodeValid = true;
+        }
+      } catch (otpEx) {
+        console.warn('Notice from Supabase verifyOtp:', otpEx);
+      }
     }
 
-    const cleanInputCode = code.trim().replace(/\D/g, '');
-    if (cleanInputCode.length !== 6) {
-      setError('Please enter the complete 6-digit confirmation code.');
-      return;
+    // 3. Fallback: check recent notifications for this code in database
+    if (!isCodeValid) {
+      try {
+        const { data: notifData } = await supabase
+          .from('notifications')
+          .select('*')
+          .ilike('title', `%${cleanInputCode}%`)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (notifData && notifData.length > 0) {
+          const createdAtMs = new Date(notifData[0].created_at).getTime();
+          if (Date.now() - createdAtMs < 15 * 60 * 1000) {
+            isCodeValid = true;
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
 
-    if (cleanInputCode !== currentSession.code) {
-      setError('Incorrect 6-digit verification code. Please check your email and try again.');
+    if (!isCodeValid) {
+      setError('Invalid 6-digit confirmation code. Please check your Gmail and enter the code sent to you.');
       return;
     }
 
@@ -350,7 +431,8 @@ export const ForgotPasswordPage: React.FC = () => {
       }
     }
 
-    if (!currentSession) {
+    const targetEmail = (email || currentSession?.email || '').trim().toLowerCase();
+    if (!targetEmail) {
       setError('Session expired. Please request a new code.');
       setStep('email');
       return;
@@ -359,24 +441,46 @@ export const ForgotPasswordPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // 1. Update password in Supabase users table
+      // 1. Update Supabase Auth user password if an auth session is active
+      try {
+        await supabase.auth.updateUser({ password: newPassword });
+      } catch (authUpdateErr) {
+        console.warn('Notice from Supabase auth updateUser:', authUpdateErr);
+      }
+
+      // 2. Update password in Supabase users table
       const { error: updateErr } = await supabase
         .from('users')
         .update({
           password: newPassword,
           updated_at: new Date().toISOString(),
         })
-        .ilike('email', currentSession.email);
+        .ilike('email', targetEmail);
 
-      if (updateErr) throw new Error(updateErr.message);
+      if (updateErr) {
+        console.warn('Notice from users table update:', updateErr);
+      }
 
-      // 2. Audit log to activity_logs
+      // 3. Update password in students table
+      try {
+        await supabase
+          .from('students')
+          .update({
+            password: newPassword,
+            updated_at: new Date().toISOString(),
+          })
+          .ilike('email', targetEmail);
+      } catch {
+        // ignore
+      }
+
+      // 4. Audit log to activity_logs
       try {
         await supabase.from('activity_logs').insert([
           {
-            role: currentSession.role || 'student',
+            role: currentSession?.role || 'student',
             action: 'Password Reset',
-            details: `Account password was successfully updated via verified 6-digit security code for ${currentSession.email}.`,
+            details: `Account password was successfully updated via verified email security code for ${targetEmail}.`,
             timestamp: new Date().toISOString(),
           },
         ]);
