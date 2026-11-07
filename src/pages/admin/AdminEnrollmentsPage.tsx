@@ -1007,9 +1007,6 @@ export const AdminEnrollmentsPage: React.FC = () => {
                   />
                   {isEnrollmentOpen ? 'ENROLLMENT IS OPEN' : 'ENROLLMENT IS CLOSED'}
                 </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 shadow-2xs">
-                  S.Y. {enrollmentSettings.schoolYear} · {enrollmentSettings.semester}
-                </span>
               </div>
               <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
                 {isEnrollmentOpen
