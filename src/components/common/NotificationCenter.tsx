@@ -309,10 +309,20 @@ export const NotificationCenter: React.FC = () => {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    // Deduplicate identical notifications by title + content
+    // Deduplicate identical notifications by title + content and filter out any sensitive security messages
     const seenKeys = new Set<string>();
     const deduped: UnifiedNotificationItem[] = [];
     for (const item of sorted) {
+      const lowerTitle = (item.title || '').toLowerCase();
+      const lowerContent = (item.content || '').toLowerCase();
+      if (
+        lowerTitle.includes('password reset code') ||
+        lowerContent.includes('password reset verification code') ||
+        lowerTitle.includes('reset code:')
+      ) {
+        continue;
+      }
+
       const sig = `${(item.title || '').trim().toLowerCase()}|${(item.content || '')
         .trim()
         .toLowerCase()}`;

@@ -289,18 +289,6 @@ export const ForgotPasswordPage: React.FC = () => {
         // ignore
       }
 
-      // Record in system notifications
-      try {
-        await supabase.from('notifications').insert({
-          title: `Password Reset Code: ${generatedCode}`,
-          message: `Your 6-digit password reset verification code is ${generatedCode}. Valid for 15 minutes.`,
-          type: 'account',
-          role: matchedUser.role || 'student',
-        });
-      } catch {
-        // ignore
-      }
-
       // 4. Proceed to Step 2: Enter 6-digit Code (User must check Gmail)
       setCode('');
       setStep('code');
@@ -367,27 +355,6 @@ export const ForgotPasswordPage: React.FC = () => {
         }
       } catch (otpEx) {
         console.warn('Notice from Supabase verifyOtp:', otpEx);
-      }
-    }
-
-    // 3. Fallback: check recent notifications for this code in database
-    if (!isCodeValid) {
-      try {
-        const { data: notifData } = await supabase
-          .from('notifications')
-          .select('*')
-          .ilike('title', `%${cleanInputCode}%`)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (notifData && notifData.length > 0) {
-          const createdAtMs = new Date(notifData[0].created_at).getTime();
-          if (Date.now() - createdAtMs < 15 * 60 * 1000) {
-            isCodeValid = true;
-          }
-        }
-      } catch {
-        // ignore
       }
     }
 
