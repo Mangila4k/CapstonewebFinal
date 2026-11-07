@@ -448,30 +448,31 @@ export const ForgotPasswordPage: React.FC = () => {
         console.warn('Notice from Supabase auth updateUser:', authUpdateErr);
       }
 
-      // 2. Update password in Supabase users table
-      const { error: updateErr } = await supabase
+      // 2. Update or insert login credentials in Supabase users table
+      const { data: existingUser } = await supabase
         .from('users')
-        .update({
-          password: newPassword,
-          updated_at: new Date().toISOString(),
-        })
-        .ilike('email', targetEmail);
+        .select('*')
+        .ilike('email', targetEmail)
+        .maybeSingle();
 
-      if (updateErr) {
-        console.warn('Notice from users table update:', updateErr);
-      }
-
-      // 3. Update password in students table
-      try {
+      if (existingUser) {
         await supabase
-          .from('students')
+          .from('users')
           .update({
             password: newPassword,
             updated_at: new Date().toISOString(),
           })
           .ilike('email', targetEmail);
-      } catch {
-        // ignore
+      } else {
+        // If account was only in students table, create their login account in users table
+        await supabase.from('users').insert({
+          email: targetEmail,
+          password: newPassword,
+          role: currentSession?.role || 'student',
+          first_name: currentSession?.userName?.split(' ')[0] || 'Learner',
+          last_name: currentSession?.userName?.split(' ').slice(1).join(' ') || '',
+          updated_at: new Date().toISOString(),
+        });
       }
 
       // 4. Audit log to activity_logs
