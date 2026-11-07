@@ -419,6 +419,7 @@ export const AdminGenerateIdPage: React.FC = () => {
       // Update in Supabase
       if (sid) {
         try {
+          const modalQr = computeStudentQrPayload(updatedRecord, modalQrMode);
           const { error: sbErr } = await supabase
             .from('students')
             .update({
@@ -431,6 +432,7 @@ export const AdminGenerateIdPage: React.FC = () => {
               parent_contact: updatedRecord.parent_contact,
               two_by_two_picture_url: updatedRecord.photo_url,
               avatar_url: updatedRecord.photo_url,
+              qr_code: modalQr,
               updated_at: new Date().toISOString(),
             })
             .eq('id', sid);
@@ -526,9 +528,12 @@ export const AdminGenerateIdPage: React.FC = () => {
               lrn: updatedRecord.lrn,
               grade_level: updatedRecord.grade_level,
               strand: updatedRecord.strand,
-              guardian_name: updatedRecord.parent_name,
-              guardian_contact: updatedRecord.parent_contact,
+              parent_name: updatedRecord.parent_name,
+              parent_contact: updatedRecord.parent_contact,
               two_by_two_picture_url: updatedRecord.photo_url,
+              avatar_url: updatedRecord.photo_url,
+              qr_code: computedQrPayload,
+              updated_at: new Date().toISOString(),
             })
             .eq('id', sid);
 

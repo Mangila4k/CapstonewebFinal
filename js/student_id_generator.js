@@ -899,6 +899,7 @@ export class StudentIdGenerator {
             qrPayload = `${origin}${verifyPath}?lrn=${encodeURIComponent(lrn)}&id=${encodeURIComponent(idNo)}&name=${encodeURIComponent(name)}&grade=${encodeURIComponent(level)}&guardian=${encodeURIComponent(guardian)}&contact=${encodeURIComponent(contact)}`;
         }
 
+        let renderedSuccess = false;
         if (typeof QRCode !== 'undefined') {
             try {
                 this.qrCodeInstance = new QRCode(qrContainer, {
@@ -909,22 +910,24 @@ export class StudentIdGenerator {
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
-                return;
+                renderedSuccess = true;
             } catch (qrErr) {
                 console.warn('QRCode.js render notice:', qrErr);
             }
         }
 
-        // Fallback via high-res API image
-        const encoded = encodeURIComponent(qrPayload);
-        const img = document.createElement('img');
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encoded}&color=16-45-107`;
-        img.alt = 'Student QR Code';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        qrContainer.appendChild(img);
+        if (!renderedSuccess) {
+            // Fallback via high-res API image
+            const encoded = encodeURIComponent(qrPayload);
+            const img = document.createElement('img');
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encoded}&color=16-45-107`;
+            img.alt = 'Student QR Code';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            qrContainer.appendChild(img);
+        }
 
-        // Optionally persist generated QR code to Supabase
+        // Persist generated QR code to Supabase database
         if (supabase && (this.selectedStudent?.id || lrn)) {
             const studentId = this.selectedStudent?.id;
             const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(studentId || '');
@@ -936,6 +939,7 @@ export class StudentIdGenerator {
                     .eq('id', studentId)
                     .then(({ error }) => {
                         if (error) console.warn('Could not save QR code to student profile:', error);
+                        else console.log('✓ Successfully saved student QR code to Supabase for ID:', studentId);
                     })
                     .catch(e => console.warn('Student QR update notice:', e));
             } else if (lrn && lrn !== '000000000000') {
@@ -945,6 +949,7 @@ export class StudentIdGenerator {
                     .eq('lrn', lrn)
                     .then(({ error }) => {
                         if (error) console.warn('Could not save QR code by LRN:', error);
+                        else console.log('✓ Successfully saved student QR code to Supabase for LRN:', lrn);
                     })
                     .catch(e => console.warn('Student QR update by LRN notice:', e));
             }

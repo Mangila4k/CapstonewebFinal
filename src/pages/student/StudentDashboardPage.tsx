@@ -30,6 +30,7 @@ import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { fetchGradesForStudent } from '../../lib/gradesStore';
 import type { Subject } from '../../types';
 import { Modal } from '../../components/common/Modal';
+import { saveStudentQrToSupabase } from '../../lib/studentQrService';
 
 const FALLBACK_SUBJECTS: Subject[] = [
   {
@@ -187,7 +188,14 @@ export const StudentDashboardPage: React.FC = () => {
       },
       errorCorrectionLevel: 'M',
     })
-      .then((url) => setQrDataUrl(url))
+      .then((url) => {
+        setQrDataUrl(url);
+        // Persist QR code to Supabase students table
+        const targetSid = studentRecord?.id || (user as any)?.student_id || user?.id;
+        if (targetSid || (lrn && lrn !== '000000000000')) {
+          saveStudentQrToSupabase({ id: targetSid, lrn }, payload).catch(() => {});
+        }
+      })
       .catch((err) => {
         console.warn('QR code generation error:', err);
         const encoded = encodeURIComponent(payload);

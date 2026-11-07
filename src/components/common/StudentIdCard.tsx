@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { GraduationCap, Phone, Shield, Camera } from 'lucide-react';
+import { saveStudentQrToSupabase } from '../../lib/studentQrService';
 
 export interface StudentIdCardData {
   id?: string | number;
@@ -110,7 +111,18 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
       },
       errorCorrectionLevel: 'M',
     })
-      .then((url) => setQrDataUrl(url))
+      .then((url) => {
+        setQrDataUrl(url);
+        if (
+          data.id &&
+          data.id !== 'blank' &&
+          lrn &&
+          lrn !== '____________________' &&
+          lrn !== '—'
+        ) {
+          saveStudentQrToSupabase({ id: data.id, lrn }, payload).catch(() => {});
+        }
+      })
       .catch((err) => {
         console.warn('QRCode generation fallback:', err);
         const encoded = encodeURIComponent(payload);
