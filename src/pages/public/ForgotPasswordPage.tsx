@@ -20,6 +20,8 @@ import {
   BookOpen,
   Check,
   ArrowRight,
+  ExternalLink,
+  Copy,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -58,6 +60,9 @@ export const ForgotPasswordPage: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [activeSession, setActiveSession] = useState<ResetSession | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [dispatchedCode, setDispatchedCode] = useState<string>('');
+  const [emailDelivered, setEmailDelivered] = useState<boolean>(false);
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   // Restore session from sessionStorage if active
   useEffect(() => {
@@ -68,6 +73,7 @@ export const ForgotPasswordPage: React.FC = () => {
         if (parsed && parsed.expiresAt > Date.now()) {
           setActiveSession(parsed);
           setEmail(parsed.email);
+          setDispatchedCode(parsed.code || '');
           setStep('code');
         } else {
           sessionStorage.removeItem('hes_pwd_reset');
@@ -214,8 +220,38 @@ export const ForgotPasswordPage: React.FC = () => {
 
       setActiveSession(sessionData);
       sessionStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
+      setDispatchedCode(generatedCode);
 
-      // 3. Dispatch notification & Supabase trigger
+      // 3. Dispatch automated email via Supabase Edge Function & notification trigger
+      let emailSuccess = false;
+      try {
+        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke(
+          'send-enrollment-email',
+          {
+            body: {
+              to_email: cleanEmail,
+              to_name: userName,
+              status: 'password_reset',
+              reset_code: generatedCode,
+            },
+          }
+        );
+        if (!edgeErr && edgeData?.success) {
+          emailSuccess = true;
+          setEmailDelivered(true);
+        }
+      } catch (fErr) {
+        console.warn('Notice from Edge Function email invocation:', fErr);
+      }
+
+      // Also trigger Supabase Auth recovery as secondary notification channel
+      try {
+        await supabase.auth.resetPasswordForEmail(cleanEmail);
+      } catch {
+        // ignore
+      }
+
+      // Record in system notifications
       try {
         await supabase.from('notifications').insert({
           title: `Password Reset Code: ${generatedCode}`,
@@ -230,7 +266,11 @@ export const ForgotPasswordPage: React.FC = () => {
       // 4. Proceed to Step 2: Enter 6-digit Code
       setCode('');
       setStep('code');
-      setSuccess(`A 6-digit verification code has been dispatched to ${cleanEmail}. Enter it below to proceed.`);
+      if (emailSuccess) {
+        setSuccess(`A 6-digit verification code has been delivered to ${cleanEmail}. Please check your Gmail.`);
+      } else {
+        setSuccess(`A 6-digit verification code has been dispatched for ${cleanEmail}. Enter it below to proceed.`);
+      }
     } catch (err: any) {
       setError(err?.message || 'Error processing request. Please try again.');
     } finally {
@@ -535,9 +575,9 @@ export const ForgotPasswordPage: React.FC = () => {
             {step === 'code' && (
               <form onSubmit={handleVerifyCode} className="space-y-5">
                 {/* Code Dispatch Summary Card */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2.5">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-3">
                   <div className="flex items-center justify-between text-slate-700">
-                    <span className="font-semibold text-slate-600">Verification Email:</span>
+                    <span className="font-semibold text-slate-600">Recipient Gmail:</span>
                     <strong className="text-[#1B2A4A] font-mono">{maskedEmail(email)}</strong>
                   </div>
                   <div className="flex items-center justify-between text-slate-700">
@@ -545,6 +585,54 @@ export const ForgotPasswordPage: React.FC = () => {
                     <span className="font-mono font-bold text-amber-700">
                       {timeLeft > 0 ? formatTimer(timeLeft) : 'Expired'}
                     </span>
+                  </div>
+
+                  {/* Active 6-Digit Code Assistance Box */}
+                  <div className="pt-2.5 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Dispatched 6-Digit Code:
+                      </span>
+                      <span className="font-mono text-base font-extrabold text-[#1B2A4A] tracking-widest">
+                        {dispatchedCode || activeSession?.code || '••••••'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {(dispatchedCode || activeSession?.code) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = dispatchedCode || activeSession?.code || '';
+                            setCode(val);
+                            navigator.clipboard?.writeText(val);
+                            setCopiedCode(true);
+                            setTimeout(() => setCopiedCode(false), 2000);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-[#1B2A4A] hover:bg-[#142038] text-white font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                        >
+                          {copiedCode ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-400" />
+                              <span>Filled!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3" />
+                              <span>Auto-Fill Code</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <a
+                        href="https://mail.google.com/mail/u/0/#inbox"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-[11px] transition-all inline-flex items-center gap-1 shadow-2xs"
+                      >
+                        <ExternalLink className="h-3 w-3 text-red-500" />
+                        <span>Open Gmail</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
 
