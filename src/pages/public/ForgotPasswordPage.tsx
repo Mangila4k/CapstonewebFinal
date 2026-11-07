@@ -21,7 +21,6 @@ import {
   Check,
   ArrowRight,
   ExternalLink,
-  Copy,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -60,9 +59,7 @@ export const ForgotPasswordPage: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [activeSession, setActiveSession] = useState<ResetSession | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [dispatchedCode, setDispatchedCode] = useState<string>('');
-  const [emailDelivered, setEmailDelivered] = useState<boolean>(false);
-  const [copiedCode, setCopiedCode] = useState<boolean>(false);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
 
   // Restore session from sessionStorage if active
   useEffect(() => {
@@ -73,7 +70,6 @@ export const ForgotPasswordPage: React.FC = () => {
         if (parsed && parsed.expiresAt > Date.now()) {
           setActiveSession(parsed);
           setEmail(parsed.email);
-          setDispatchedCode(parsed.code || '');
           setStep('code');
         } else {
           sessionStorage.removeItem('hes_pwd_reset');
@@ -104,6 +100,15 @@ export const ForgotPasswordPage: React.FC = () => {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [activeSession, step]);
+
+  // Resend cooldown countdown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -220,26 +225,18 @@ export const ForgotPasswordPage: React.FC = () => {
 
       setActiveSession(sessionData);
       sessionStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
-      setDispatchedCode(generatedCode);
+      setResendCooldown(60);
 
       // 3. Dispatch automated email via Supabase Edge Function & notification trigger
-      let emailSuccess = false;
       try {
-        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke(
-          'send-enrollment-email',
-          {
-            body: {
-              to_email: cleanEmail,
-              to_name: userName,
-              status: 'password_reset',
-              reset_code: generatedCode,
-            },
-          }
-        );
-        if (!edgeErr && edgeData?.success) {
-          emailSuccess = true;
-          setEmailDelivered(true);
-        }
+        await supabase.functions.invoke('send-enrollment-email', {
+          body: {
+            to_email: cleanEmail,
+            to_name: userName,
+            status: 'password_reset',
+            reset_code: generatedCode,
+          },
+        });
       } catch (fErr) {
         console.warn('Notice from Edge Function email invocation:', fErr);
       }
@@ -263,14 +260,10 @@ export const ForgotPasswordPage: React.FC = () => {
         // ignore
       }
 
-      // 4. Proceed to Step 2: Enter 6-digit Code
+      // 4. Proceed to Step 2: Enter 6-digit Code (User must check Gmail)
       setCode('');
       setStep('code');
-      if (emailSuccess) {
-        setSuccess(`A 6-digit verification code has been delivered to ${cleanEmail}. Please check your Gmail.`);
-      } else {
-        setSuccess(`A 6-digit verification code has been dispatched for ${cleanEmail}. Enter it below to proceed.`);
-      }
+      setSuccess(`We sent a 6-digit confirmation code to ${cleanEmail}. Please check your Gmail.`);
     } catch (err: any) {
       setError(err?.message || 'Error processing request. Please try again.');
     } finally {
@@ -570,85 +563,59 @@ export const ForgotPasswordPage: React.FC = () => {
             )}
 
             {/* ======================================================== */}
-            {/* STEP 2: ENTER 6-DIGIT CODE TO PROCEED                    */}
+            {/* STEP 2: ENTER 6-DIGIT CODE RECEIVED IN GMAIL             */}
             {/* ======================================================== */}
             {step === 'code' && (
               <form onSubmit={handleVerifyCode} className="space-y-5">
-                {/* Code Dispatch Summary Card */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-3">
-                  <div className="flex items-center justify-between text-slate-700">
-                    <span className="font-semibold text-slate-600">Recipient Gmail:</span>
-                    <strong className="text-[#1B2A4A] font-mono">{maskedEmail(email)}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-700">
-                    <span className="font-semibold text-slate-600">Code Expires In:</span>
-                    <span className="font-mono font-bold text-amber-700">
-                      {timeLeft > 0 ? formatTimer(timeLeft) : 'Expired'}
-                    </span>
-                  </div>
-
-                  {/* Active 6-Digit Code Assistance Box */}
-                  <div className="pt-2.5 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                {/* Official Email Dispatch Banner (Facebook/Google Platform Style) */}
+                <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 text-xs space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white shrink-0 mt-0.5">
+                      <Mail className="h-4 w-4" />
+                    </div>
                     <div>
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                        Dispatched 6-Digit Code:
-                      </span>
-                      <span className="font-mono text-base font-extrabold text-[#1B2A4A] tracking-widest">
-                        {dispatchedCode || activeSession?.code || '••••••'}
-                      </span>
+                      <p className="font-bold text-slate-900 text-xs">
+                        Check your Gmail inbox
+                      </p>
+                      <p className="text-slate-600 mt-0.5 leading-relaxed">
+                        We sent a 6-digit security code to{' '}
+                        <strong className="text-[#1B2A4A] font-mono">{maskedEmail(email)}</strong>.
+                        Please check your inbox and enter the 6-digit code below to verify your account.
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {(dispatchedCode || activeSession?.code) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const val = dispatchedCode || activeSession?.code || '';
-                            setCode(val);
-                            navigator.clipboard?.writeText(val);
-                            setCopiedCode(true);
-                            setTimeout(() => setCopiedCode(false), 2000);
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-[#1B2A4A] hover:bg-[#142038] text-white font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                        >
-                          {copiedCode ? (
-                            <>
-                              <Check className="h-3 w-3 text-emerald-400" />
-                              <span>Filled!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3" />
-                              <span>Auto-Fill Code</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                      <a
-                        href="https://mail.google.com/mail/u/0/#inbox"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-[11px] transition-all inline-flex items-center gap-1 shadow-2xs"
-                      >
-                        <ExternalLink className="h-3 w-3 text-red-500" />
-                        <span>Open Gmail</span>
-                      </a>
-                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-sky-100 text-[11px] text-slate-500">
+                    <span>
+                      Code expires in:{' '}
+                      <strong className="font-mono text-amber-700">
+                        {timeLeft > 0 ? formatTimer(timeLeft) : 'Expired'}
+                      </strong>
+                    </span>
+                    <a
+                      href="https://mail.google.com/mail/u/0/#inbox"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-sky-700 hover:text-sky-900 inline-flex items-center gap-1 hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3 text-red-500" /> Open Gmail
+                    </a>
                   </div>
                 </div>
 
                 {/* 6-Digit Code Input */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-2">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                       Enter 6-Digit Code <span className="text-rose-500">*</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => handleRequestCode()}
-                      disabled={loading}
-                      className="text-xs font-bold text-[#1B2A4A] hover:underline flex items-center gap-1 cursor-pointer"
+                      disabled={loading || resendCooldown > 0}
+                      className="text-xs font-bold text-[#1B2A4A] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:no-underline"
                     >
-                      <RotateCw className="h-3 w-3" /> Resend Code
+                      <RotateCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                     </button>
                   </div>
                   <div className="relative">
@@ -657,17 +624,19 @@ export const ForgotPasswordPage: React.FC = () => {
                     </div>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       required
                       autoFocus
                       maxLength={6}
                       value={code}
                       onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="000000"
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50/50 pl-11 pr-4 py-3.5 text-base font-mono font-bold tracking-[8px] text-slate-900 placeholder-slate-300 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full text-center rounded-xl border border-slate-300 bg-slate-50/50 px-11 py-3.5 text-2xl font-mono font-extrabold tracking-[10px] text-slate-900 placeholder-slate-300 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden transition-all shadow-inner"
                     />
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1.5">
-                    Check your email inbox or spam folder for your 6-digit confirmation code.
+                  <p className="text-[11px] text-slate-500 mt-2 text-center">
+                    Can't find the email? Please also check your <strong>Spam</strong> or <strong>Junk</strong> folder.
                   </p>
                 </div>
 
