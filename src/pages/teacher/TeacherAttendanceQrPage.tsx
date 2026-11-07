@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   QrCode,
@@ -23,7 +23,13 @@ import {
 import { supabase } from '../../lib/supabase';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
-import { parseLrnFromInput, playAttendanceSound } from '../../lib/attendanceParser';
+import {
+  parseLrnFromInput,
+  playAttendanceSound,
+  validateStudentSectionAndGrade,
+  normalizeSectionName,
+  normalizeGradeLevel,
+} from '../../lib/attendanceParser';
 
 interface ScannedEntry {
   id: string | number;
@@ -70,16 +76,28 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   const [logSearch, setLogSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Present' | 'Late'>('All');
 
-  // Available sections for filtering
-  const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
+  // Available sections for filtering & validation
+  const [sections, setSections] = useState<{ id: string; name: string; grade_level?: string }[]>([]);
   const [selectedSectionFilter, setSelectedSectionFilter] = useState('All');
+  const [activeGradeTarget, setActiveGradeTarget] = useState<string>('All');
+  const [activeSectionTarget, setActiveSectionTarget] = useState<string>('All');
+
+  // Available sections for target class selection
+  const availableTargetSections = useMemo(() => {
+    if (activeGradeTarget === 'All') return sections;
+    return sections.filter(
+      (s) =>
+        !s.grade_level ||
+        normalizeGradeLevel(s.grade_level) === normalizeGradeLevel(activeGradeTarget)
+    );
+  }, [sections, activeGradeTarget]);
 
   // Load sections and initial recent attendance from Supabase
   useEffect(() => {
     async function initData() {
       try {
         const [{ data: secData }, { data: attData }, { data: stData }] = await Promise.all([
-          supabase.from('sections').select('id, name').order('name'),
+          supabase.from('sections').select('id, name, grade_level').order('name'),
           supabase
             .from('attendance')
             .select('*')
@@ -185,13 +203,35 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       if (student) {
         studentName = `${student.first_name} ${student.last_name}`;
         const matchedSec = sections.find((s) => String(s.id) === String(student.section_id));
-        sectionName = matchedSec?.name || student.grade_level || 'Enrolled';
+        sectionName = matchedSec?.name || 'Unassigned';
         studentId = student.id;
         avatarUrl = student.avatar_url;
-        gradeLevel = student.grade_level || '';
+        gradeLevel = matchedSec?.grade_level || student.grade_level || '';
       } else {
         // Fallback for simulated or freshly added LRN
         studentName = `Student (${cleanLrn})`;
+      }
+
+      // 2. Strict Section and Year Level Validation Check
+      if (activeSectionTarget !== 'All' || activeGradeTarget !== 'All') {
+        const validation = validateStudentSectionAndGrade(
+          sectionName,
+          gradeLevel,
+          activeSectionTarget !== 'All' ? activeSectionTarget : undefined,
+          activeGradeTarget !== 'All' ? activeGradeTarget : undefined
+        );
+
+        if (!validation.isValid) {
+          if (soundEnabled) playAttendanceSound('error');
+          setNotice({
+            type: 'error',
+            message:
+              validation.errorMessage ||
+              `❌ Attendance Denied: ${studentName} cannot record attendance outside their assigned section.`,
+          });
+          setIsProcessing(false);
+          return;
+        }
       }
 
       // Check for duplicate scan today
@@ -291,7 +331,16 @@ export const TeacherAttendanceQrPage: React.FC = () => {
         inputRef.current.focus();
       }
     }
-  }, [lateCutoff, scannedLogs, soundEnabled]);
+  }, [
+    lateCutoff,
+    scannedLogs,
+    soundEnabled,
+    activeGradeTarget,
+    activeSectionTarget,
+    sections,
+    determineStatus,
+    scanMode,
+  ]);
 
   // Handle Manual LRN Submit
   const handleManualSubmit = (e: React.FormEvent) => {
@@ -468,6 +517,41 @@ export const TeacherAttendanceQrPage: React.FC = () => {
             >
               🌙 Dismissal (Time-Out)
             </button>
+          </div>
+
+          {/* Active Class Target for Section/Grade Validation */}
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+            <Layers className="h-4 w-4 text-[#1a225a]" />
+            <span className="font-bold text-slate-500 uppercase text-[10px]">Active Class:</span>
+            <select
+              value={activeGradeTarget}
+              onChange={(e) => {
+                setActiveGradeTarget(e.target.value);
+                setActiveSectionTarget('All');
+              }}
+              className="bg-transparent font-bold text-slate-900 focus:outline-hidden cursor-pointer"
+            >
+              <option value="All">All Grades</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10">Grade 10</option>
+              <option value="Grade 11">Grade 11</option>
+              <option value="Grade 12">Grade 12</option>
+            </select>
+            <span className="text-slate-300">/</span>
+            <select
+              value={activeSectionTarget}
+              onChange={(e) => setActiveSectionTarget(e.target.value)}
+              className="bg-transparent font-bold text-slate-900 focus:outline-hidden cursor-pointer"
+            >
+              <option value="All">All Sections (Universal Scan)</option>
+              {availableTargetSections.map((sec: any) => (
+                <option key={sec.id} value={sec.name}>
+                  Section {sec.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Late Cutoff setting */}

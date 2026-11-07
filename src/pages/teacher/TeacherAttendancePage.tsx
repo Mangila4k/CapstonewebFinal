@@ -18,7 +18,13 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
-import { parseLrnFromInput, playAttendanceSound } from '../../lib/attendanceParser';
+import {
+  parseLrnFromInput,
+  playAttendanceSound,
+  validateStudentSectionAndGrade,
+  normalizeSectionName,
+  normalizeGradeLevel,
+} from '../../lib/attendanceParser';
 import type { Student, Section } from '../../types';
 
 interface AttendanceClassCard {
@@ -145,6 +151,7 @@ export const TeacherAttendancePage: React.FC = () => {
   const [facingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const lastScannedRef = useRef<{ code: string; timestamp: number } | null>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -174,7 +181,7 @@ export const TeacherAttendancePage: React.FC = () => {
           return {
             ...s,
             grade_level: matchedSec?.grade_level || s.grade_level || 'Grade 10',
-            section: matchedSec?.name || s.section || 'Generosity',
+            section: matchedSec?.name || s.section || 'Unassigned',
           };
         });
 
@@ -305,11 +312,14 @@ export const TeacherAttendancePage: React.FC = () => {
 
   // Filtered students for the selected Year Level & Section
   const displayedStudents = useMemo(() => {
-    let list = allStudents.filter((s) => {
-      const matchesGrade = gradeFilter === 'All' || s.grade_level === gradeFilter;
+    const list = allStudents.filter((s) => {
+      const matchesGrade =
+        gradeFilter === 'All' ||
+        normalizeGradeLevel(s.grade_level) === normalizeGradeLevel(gradeFilter);
       const matchesSec =
         selectedSection === 'All' ||
-        String(s.section || '').toLowerCase() === selectedSection.toLowerCase();
+        normalizeSectionName(s.section).toLowerCase() ===
+          normalizeSectionName(selectedSection).toLowerCase();
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -317,26 +327,6 @@ export const TeacherAttendancePage: React.FC = () => {
         String(s.lrn || '').toLowerCase().includes(q);
       return matchesGrade && matchesSec && matchesSearch;
     });
-
-    // Fallback if a selected section has 0 matched rows in DB so the roster is never empty
-    if (list.length === 0 && allStudents.length > 0 && !searchQuery.trim()) {
-      const targetCard = classCards.find(
-        (c) => c.name.toLowerCase() === selectedSection.toLowerCase()
-      );
-      const targetSec = sections.find(
-        (s) => s.name.toLowerCase() === selectedSection.toLowerCase()
-      );
-      const resolvedGrade =
-        targetCard?.grade_level ||
-        targetSec?.grade_level ||
-        (gradeFilter !== 'All' ? gradeFilter : 'Grade 10');
-
-      list = allStudents.slice(0, 35).map((s) => ({
-        ...s,
-        grade_level: resolvedGrade,
-        section: selectedSection === 'All' ? s.section || 'Generosity' : selectedSection,
-      }));
-    }
 
     return list.sort((a, b) => {
       const gA = parseInt(String(a.grade_level || '10').replace(/\D/g, ''), 10) || 10;
@@ -347,7 +337,7 @@ export const TeacherAttendancePage: React.FC = () => {
       if (secA !== secB) return secA.localeCompare(secB);
       return String(a.last_name || '').localeCompare(String(b.last_name || ''));
     });
-  }, [allStudents, gradeFilter, selectedSection, searchQuery, classCards, sections]);
+  }, [allStudents, gradeFilter, selectedSection, searchQuery]);
 
   // Group displayedStudents by Year Level & Section
   const groupedBySection = useMemo(() => {
@@ -429,6 +419,112 @@ export const TeacherAttendancePage: React.FC = () => {
     }
   };
 
+  // Centralized function to validate and record attendance for a scanned LRN / QR
+  const recordAttendanceForLrn = async (rawInput: string, scanMode: 'QR' | 'LRN') => {
+    const lrn = parseLrnFromInput(rawInput);
+    if (!lrn) {
+      playAttendanceSound('error');
+      setNotice({
+        type: 'error',
+        message: 'Could not detect a valid 10–12 digit LRN from the QR / barcode scan.',
+      });
+      return false;
+    }
+
+    if (selectedSection === 'All') {
+      playAttendanceSound('warning');
+      setNotice({
+        type: 'warning',
+        message: 'Please select a specific Section above before scanning attendance.',
+      });
+      return false;
+    }
+
+    // 1. Find the student in the masterlist
+    const student = allStudents.find((s) => s.lrn === lrn);
+    if (!student) {
+      playAttendanceSound('warning');
+      setNotice({
+        type: 'warning',
+        message: `Student with LRN "${lrn}" was not found in the student registry.`,
+      });
+      return false;
+    }
+
+    // 2. Strict Section and Year Level Validation Check
+    const validation = validateStudentSectionAndGrade(
+      student.section,
+      student.grade_level,
+      selectedSection,
+      gradeFilter !== 'All' ? gradeFilter : undefined
+    );
+
+    if (!validation.isValid) {
+      playAttendanceSound('error');
+      setNotice({
+        type: 'error',
+        message:
+          validation.errorMessage ||
+          `❌ Attendance Denied: ${student.first_name} ${student.last_name} belongs to ${student.grade_level} · Section ${student.section}. You cannot record attendance for Section ${selectedSection}.`,
+      });
+      return false;
+    }
+
+    // 3. Validation passed! Student belongs to this section & year level!
+    setAttendanceMap((prev) => ({ ...prev, [student.id]: 'Present' as const }));
+    setAttendanceModes((prev) => ({ ...prev, [student.id]: scanMode }));
+    setRecentlyScannedId(student.id);
+
+    playAttendanceSound('success');
+    setNotice({
+      type: 'success',
+      message: `✓ Attendance Verified: ${student.first_name} ${student.last_name} (${student.grade_level} · Section ${student.section}) recorded Present via ${scanMode}!`,
+    });
+
+    // 4. Live sync to Supabase database so student portal updates in real time
+    try {
+      const currentTime = new Date().toTimeString().split(' ')[0];
+      const matchedSection = sections.find(
+        (s) => s.name.toLowerCase() === selectedSection.toLowerCase()
+      );
+
+      await supabase.from('attendance').upsert(
+        {
+          student_id: student.id,
+          section_id: (student as any).section_id || matchedSection?.id || null,
+          date: todayStr,
+          time_in: currentTime,
+          status: 'present',
+          qr_code: rawInput,
+        },
+        { onConflict: 'student_id,date' }
+      );
+
+      await supabase.from('attendance_records').insert({
+        student_id: student.id,
+        section_id: (student as any).section_id || matchedSection?.id || null,
+        date: todayStr,
+        mode: 'time_in',
+        status: 'present',
+        time_in: currentTime,
+        qr_code: lrn,
+        raw_payload: rawInput,
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('plsnhs_attendance_updated'));
+      }
+    } catch (dbErr) {
+      console.warn('Realtime QR attendance sync notice:', dbErr);
+    }
+
+    setTimeout(() => {
+      setRecentlyScannedId(null);
+    }, 3000);
+
+    return true;
+  };
+
   // Real-time Barcode / QR detector loop
   useEffect(() => {
     let animId: number;
@@ -450,19 +546,18 @@ export const TeacherAttendancePage: React.FC = () => {
           try {
             const codes = await detector.detect(videoRef.current);
             if (codes.length > 0 && codes[0].rawValue) {
-              const lrn = parseLrnFromInput(codes[0].rawValue);
+              const raw = codes[0].rawValue;
+              const lrn = parseLrnFromInput(raw);
               if (lrn) {
-                const student = displayedStudents.find((s) => s.lrn === lrn);
-                if (student) {
-                  setAttendanceMap((prev) => ({ ...prev, [student.id]: 'Present' as const }));
-                  setAttendanceModes((prev) => ({ ...prev, [student.id]: 'QR' as const }));
-                  setRecentlyScannedId(student.id);
-                  playAttendanceSound('success');
-                  setNotice({
-                    type: 'success',
-                    message: `✓ ${student.first_name} ${student.last_name} (LRN: ${lrn}) marked Present via QR!`,
-                  });
-                  setTimeout(() => setRecentlyScannedId(null), 3000);
+                const now = Date.now();
+                if (
+                  lastScannedRef.current?.code === lrn &&
+                  now - lastScannedRef.current.timestamp < 3500
+                ) {
+                  // In cooldown debounce window, avoid re-triggering
+                } else {
+                  lastScannedRef.current = { code: lrn, timestamp: now };
+                  await recordAttendanceForLrn(raw, 'QR');
                 }
               }
             }
@@ -483,7 +578,7 @@ export const TeacherAttendancePage: React.FC = () => {
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [cameraActive, displayedStudents]);
+  }, [cameraActive, allStudents, selectedSection, gradeFilter]);
 
   useEffect(() => {
     return () => {
@@ -504,46 +599,13 @@ export const TeacherAttendancePage: React.FC = () => {
     if (!quickScanInput.trim()) return;
 
     const raw = quickScanInput.trim();
-    const lrn = parseLrnFromInput(raw);
-
-    if (!lrn) {
-      playAttendanceSound('error');
-      setNotice({
-        type: 'error',
-        message: 'Could not detect a valid 10-12 digit LRN from the input.',
-      });
-      return;
-    }
-
     const isQr = raw.includes('http') || raw.includes('verify-id') || raw.length > 20;
     const scanMode: 'QR' | 'LRN' = isQr ? 'QR' : 'LRN';
-    const student = displayedStudents.find((s) => s.lrn === lrn);
 
-    if (student) {
-      setAttendanceMap((prev) => ({ ...prev, [student.id]: 'Present' as const }));
-      setAttendanceModes((prev) => ({ ...prev, [student.id]: scanMode }));
-      setRecentlyScannedId(student.id);
-
-      playAttendanceSound('success');
-      setNotice({
-        type: 'success',
-        message: `✓ ${student.first_name} ${student.last_name} (LRN: ${lrn}) marked Present via ${scanMode}!`,
-      });
-
-      setQuickScanInput('');
-      if (quickInputRef.current) {
-        quickInputRef.current.focus();
-      }
-
-      setTimeout(() => {
-        setRecentlyScannedId(null);
-      }, 3000);
-    } else {
-      playAttendanceSound('warning');
-      setNotice({
-        type: 'warning',
-        message: `Student with LRN "${lrn}" is not in the currently displayed section roster. Try switching section or check LRN.`,
-      });
+    recordAttendanceForLrn(raw, scanMode);
+    setQuickScanInput('');
+    if (quickInputRef.current) {
+      quickInputRef.current.focus();
     }
   };
 
