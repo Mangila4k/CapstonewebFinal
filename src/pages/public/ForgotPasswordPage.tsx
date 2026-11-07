@@ -19,7 +19,7 @@ import {
   GraduationCap,
   BookOpen,
   Check,
-  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -33,11 +33,18 @@ interface ResetSession {
   expiresAt: number;
 }
 
+type ResetStep = 'email' | 'code' | 'password' | 'success';
+
 export const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Multi-step process: 1 = Request Code, 2 = Verify & Set Password, 3 = Completed
-  const [step, setStep] = useState<'request' | 'verify' | 'success'>('request');
+  // Distinct 3-Step Sequence:
+  // 1. 'email'    -> User enters registered email address, code is sent
+  // 2. 'code'     -> User enters the 6-digit confirmation code to proceed
+  // 3. 'password' -> User sets and confirms their new password
+  // 4. 'success'  -> Password reset completed successfully
+  const [step, setStep] = useState<ResetStep>('email');
+
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -61,7 +68,7 @@ export const ForgotPasswordPage: React.FC = () => {
         if (parsed && parsed.expiresAt > Date.now()) {
           setActiveSession(parsed);
           setEmail(parsed.email);
-          setStep('verify');
+          setStep('code');
         } else {
           sessionStorage.removeItem('hes_pwd_reset');
         }
@@ -71,15 +78,17 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   }, []);
 
-  // Expiration countdown timer
+  // Expiration countdown timer for the 6-digit code
   useEffect(() => {
-    if (!activeSession || step !== 'verify') return;
+    if (!activeSession || (step !== 'code' && step !== 'password')) return;
 
     const updateTimer = () => {
       const remainingMs = activeSession.expiresAt - Date.now();
       if (remainingMs <= 0) {
         setTimeLeft(0);
-        setError('Your confirmation code has expired. Please request a new code.');
+        if (step === 'code') {
+          setError('Your 6-digit confirmation code has expired. Please request a new one.');
+        }
       } else {
         setTimeLeft(Math.floor(remainingMs / 1000));
       }
@@ -97,12 +106,12 @@ export const ForgotPasswordPage: React.FC = () => {
   };
 
   /**
-   * Strict validation: Only official Gmail addresses (@gmail.com) are permitted.
+   * Validate email address (official Gmail @gmail.com required)
    */
   const validateGmailAddress = (rawEmail: string) => {
     const trimmed = (rawEmail || '').trim();
     if (!trimmed) {
-      return { isValid: false, message: 'Please enter your registered Gmail address.' };
+      return { isValid: false, message: 'Please enter your registered email address.' };
     }
 
     const basicPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -127,7 +136,9 @@ export const ForgotPasswordPage: React.FC = () => {
     return { isValid: true, email: trimmed.toLowerCase() };
   };
 
-  // STEP 1: Handle Send Reset Code
+  // ==========================================
+  // STEP 1: Enter Email & Send Confirmation Code
+  // ==========================================
   const handleRequestCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError('');
@@ -135,7 +146,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
     const validation = validateGmailAddress(email);
     if (!validation.isValid) {
-      setError(validation.message || 'Invalid Gmail address');
+      setError(validation.message || 'Invalid email address');
       return;
     }
 
@@ -143,7 +154,7 @@ export const ForgotPasswordPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // 1. Check users table
+      // 1. Look up user in 'users' table
       const { data: usersData, error: userErr } = await supabase
         .from('users')
         .select('*')
@@ -155,7 +166,7 @@ export const ForgotPasswordPage: React.FC = () => {
       if (usersData && usersData.length > 0) {
         matchedUser = usersData[0];
       } else {
-        // Fallback check students table
+        // Fallback check in students table
         try {
           const { data: stdData } = await supabase
             .from('students')
@@ -179,7 +190,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
       if (!matchedUser) {
         setError(
-          'No registered account was found with this Gmail address. Please verify your spelling or contact the school registrar.'
+          'No registered account was found with this email address. Please check your spelling or contact the school administration.'
         );
         setLoading(false);
         return;
@@ -187,9 +198,10 @@ export const ForgotPasswordPage: React.FC = () => {
 
       // 2. Generate secure 6-digit confirmation code
       const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins
+      const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
 
-      const userName = `${matchedUser.first_name || ''} ${matchedUser.last_name || ''}`.trim() || 'Learner';
+      const userName =
+        `${matchedUser.first_name || ''} ${matchedUser.last_name || ''}`.trim() || 'Learner';
 
       const sessionData: ResetSession = {
         email: cleanEmail,
@@ -203,11 +215,11 @@ export const ForgotPasswordPage: React.FC = () => {
       setActiveSession(sessionData);
       sessionStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
 
-      // 3. Log notification in database
+      // 3. Dispatch notification & Supabase trigger
       try {
         await supabase.from('notifications').insert({
-          title: 'Password Reset Code Requested',
-          message: `A 6-digit security reset code was generated for ${cleanEmail}.`,
+          title: `Password Reset Code: ${generatedCode}`,
+          message: `Your 6-digit password reset verification code is ${generatedCode}. Valid for 15 minutes.`,
           type: 'account',
           role: matchedUser.role || 'student',
         });
@@ -215,8 +227,10 @@ export const ForgotPasswordPage: React.FC = () => {
         // ignore
       }
 
-      setStep('verify');
-      setSuccess(`A 6-digit confirmation code has been dispatched for ${cleanEmail}.`);
+      // 4. Proceed to Step 2: Enter 6-digit Code
+      setCode('');
+      setStep('code');
+      setSuccess(`A 6-digit verification code has been dispatched to ${cleanEmail}. Enter it below to proceed.`);
     } catch (err: any) {
       setError(err?.message || 'Error processing request. Please try again.');
     } finally {
@@ -224,8 +238,10 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   };
 
-  // STEP 2: Handle Verify Code & Update Password
-  const handleUpdatePassword = async (e: React.FormEvent) => {
+  // ==========================================
+  // STEP 2: Enter & Verify 6-Digit Code to Proceed
+  // ==========================================
+  const handleVerifyCode = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -243,22 +259,41 @@ export const ForgotPasswordPage: React.FC = () => {
     }
 
     if (!currentSession) {
-      setError('Password reset session expired. Please request a new confirmation code.');
-      setStep('request');
+      setError('Password reset session expired. Please request a new verification code.');
+      setStep('email');
       return;
     }
 
     if (Date.now() > currentSession.expiresAt) {
-      setError('Your confirmation code has expired. Please request a new one.');
+      setError('Your 6-digit verification code has expired. Please request a new code.');
       sessionStorage.removeItem('hes_pwd_reset');
-      setStep('request');
+      setStep('email');
       return;
     }
 
-    if (code.trim() !== currentSession.code) {
-      setError('Incorrect 6-digit confirmation code. Please check your email and re-enter.');
+    const cleanInputCode = code.trim().replace(/\D/g, '');
+    if (cleanInputCode.length !== 6) {
+      setError('Please enter the complete 6-digit confirmation code.');
       return;
     }
+
+    if (cleanInputCode !== currentSession.code) {
+      setError('Incorrect 6-digit verification code. Please check your email and try again.');
+      return;
+    }
+
+    // Code matches! Proceed to Step 3: Set New Password
+    setStep('password');
+    setSuccess('Code verified! You can now set a new password for your account.');
+  };
+
+  // ==========================================
+  // STEP 3: Set & Save New Password
+  // ==========================================
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
     if (newPassword.length < 6) {
       setError('New password must be at least 6 characters long.');
@@ -267,6 +302,24 @@ export const ForgotPasswordPage: React.FC = () => {
 
     if (newPassword !== confirmPassword) {
       setError('New password and confirmation password do not match.');
+      return;
+    }
+
+    let currentSession = activeSession;
+    if (!currentSession) {
+      const stored = sessionStorage.getItem('hes_pwd_reset');
+      if (stored) {
+        try {
+          currentSession = JSON.parse(stored);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!currentSession) {
+      setError('Session expired. Please request a new code.');
+      setStep('email');
       return;
     }
 
@@ -290,7 +343,7 @@ export const ForgotPasswordPage: React.FC = () => {
           {
             role: currentSession.role || 'student',
             action: 'Password Reset',
-            details: `Account password was successfully updated via Gmail identity verification for ${currentSession.email}.`,
+            details: `Account password was successfully updated via verified 6-digit security code for ${currentSession.email}.`,
             timestamp: new Date().toISOString(),
           },
         ]);
@@ -366,41 +419,54 @@ export const ForgotPasswordPage: React.FC = () => {
                 </span>
                 <span className="text-xs text-slate-400">·</span>
                 <span className="text-xs font-bold text-slate-500">
-                  {step === 'request'
-                    ? 'Step 1 of 2: Verify Identity'
-                    : step === 'verify'
-                    ? 'Step 2 of 2: Security & Password'
+                  {step === 'email'
+                    ? 'Step 1 of 3: Enter Email Address'
+                    : step === 'code'
+                    ? 'Step 2 of 3: Enter 6-Digit Code'
+                    : step === 'password'
+                    ? 'Step 3 of 3: Set New Password'
                     : 'Recovery Complete'}
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
-                {step === 'request'
-                  ? 'Password Recovery'
-                  : step === 'verify'
-                  ? 'Confirm Code & Reset'
+                {step === 'email'
+                  ? 'Forgot Password'
+                  : step === 'code'
+                  ? 'Enter 6-Digit Code'
+                  : step === 'password'
+                  ? 'Set New Password'
                   : 'Password Updated'}
               </h2>
               <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                {step === 'request'
-                  ? 'Enter your registered Gmail address to verify your account identity.'
-                  : step === 'verify'
-                  ? `Enter the 6-digit confirmation code and choose your new password.`
+                {step === 'email'
+                  ? 'Enter the email address you use for your account to receive a 6-digit confirmation code.'
+                  : step === 'code'
+                  ? `Enter the 6-digit code sent to your email to proceed to setting a new password.`
+                  : step === 'password'
+                  ? 'Choose and confirm your new secure password.'
                   : 'Your account credentials have been successfully updated.'}
               </p>
             </div>
 
-            {/* Stepper Progress Bar */}
-            <div className="grid grid-cols-2 gap-2 mb-6">
+            {/* Stepper Progress Bar (3 steps) */}
+            <div className="grid grid-cols-3 gap-2 mb-6">
               <div
                 className={`h-1.5 rounded-full transition-all ${
-                  step === 'request' || step === 'verify' || step === 'success'
+                  step === 'email' || step === 'code' || step === 'password' || step === 'success'
                     ? 'bg-[#1B2A4A]'
                     : 'bg-slate-200'
                 }`}
               />
               <div
                 className={`h-1.5 rounded-full transition-all ${
-                  step === 'verify' || step === 'success' ? 'bg-[#1B2A4A]' : 'bg-slate-200'
+                  step === 'code' || step === 'password' || step === 'success'
+                    ? 'bg-[#1B2A4A]'
+                    : 'bg-slate-200'
+                }`}
+              />
+              <div
+                className={`h-1.5 rounded-full transition-all ${
+                  step === 'password' || step === 'success' ? 'bg-[#1B2A4A]' : 'bg-slate-200'
                 }`}
               />
             </div>
@@ -417,12 +483,14 @@ export const ForgotPasswordPage: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 1: Enter Registered Gmail */}
-            {step === 'request' && (
+            {/* ======================================================== */}
+            {/* STEP 1: ENTER EMAIL ADDRESS                              */}
+            {/* ======================================================== */}
+            {step === 'email' && (
               <form onSubmit={handleRequestCode} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Registered Gmail Address <span className="text-rose-500">*</span>
+                    Account Email Address <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
@@ -440,8 +508,7 @@ export const ForgotPasswordPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1.5">
-                    Official DepEd portal accounts are linked to verified{' '}
-                    <strong className="text-slate-700">@gmail.com</strong> addresses.
+                    Enter the email registered with your student, teacher, or administrative account.
                   </p>
                 </div>
 
@@ -455,35 +522,37 @@ export const ForgotPasswordPage: React.FC = () => {
                   ) : (
                     <>
                       <Send className="h-4 w-4" />
-                      <span>Send Confirmation Code</span>
+                      <span>Send 6-Digit Code</span>
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* STEP 2: Verify Code & Set New Password */}
-            {step === 'verify' && (
-              <form onSubmit={handleUpdatePassword} className="space-y-4">
-                {/* Security Verification Prompt */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2">
+            {/* ======================================================== */}
+            {/* STEP 2: ENTER 6-DIGIT CODE TO PROCEED                    */}
+            {/* ======================================================== */}
+            {step === 'code' && (
+              <form onSubmit={handleVerifyCode} className="space-y-5">
+                {/* Code Dispatch Summary Card */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2.5">
                   <div className="flex items-center justify-between text-slate-700">
-                    <span className="font-semibold text-slate-600">Verification Account:</span>
+                    <span className="font-semibold text-slate-600">Verification Email:</span>
                     <strong className="text-[#1B2A4A] font-mono">{maskedEmail(email)}</strong>
                   </div>
                   <div className="flex items-center justify-between text-slate-700">
-                    <span className="font-semibold text-slate-600">Code Expiration:</span>
+                    <span className="font-semibold text-slate-600">Code Expires In:</span>
                     <span className="font-mono font-bold text-amber-700">
                       {timeLeft > 0 ? formatTimer(timeLeft) : 'Expired'}
                     </span>
                   </div>
                 </div>
 
-                {/* 6-Digit Code */}
+                {/* 6-Digit Code Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      6-Digit Security Code <span className="text-rose-500">*</span>
+                      Enter 6-Digit Code <span className="text-rose-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -506,9 +575,52 @@ export const ForgotPasswordPage: React.FC = () => {
                       value={code}
                       onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="000000"
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50/50 pl-11 pr-4 py-3.5 text-base font-mono font-bold tracking-[6px] text-slate-900 placeholder-slate-300 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50/50 pl-11 pr-4 py-3.5 text-base font-mono font-bold tracking-[8px] text-slate-900 placeholder-slate-300 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
                     />
                   </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    Check your email inbox or spam folder for your 6-digit confirmation code.
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <button
+                    type="submit"
+                    disabled={loading || timeLeft <= 0 || code.trim().length !== 6}
+                    className="w-full py-3.5 px-6 rounded-xl bg-[#1B2A4A] hover:bg-[#142038] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
+                  >
+                    <span>Verify Code &amp; Proceed</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('email');
+                      setCode('');
+                      setError('');
+                      setSuccess('');
+                    }}
+                    className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                  >
+                    ← Use a different email address
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ======================================================== */}
+            {/* STEP 3: SET NEW PASSWORD                                 */}
+            {/* ======================================================== */}
+            {step === 'password' && (
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                {/* Verified Account Confirmation Banner */}
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Identity verified for <strong className="font-mono">{email}</strong>. Please enter your new password below.
+                  </span>
                 </div>
 
                 {/* New Password */}
@@ -523,6 +635,7 @@ export const ForgotPasswordPage: React.FC = () => {
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       required
+                      autoFocus
                       minLength={6}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
@@ -554,7 +667,7 @@ export const ForgotPasswordPage: React.FC = () => {
                       minLength={6}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter new password"
+                      placeholder="Re-enter new password to confirm"
                       className="w-full rounded-xl border border-slate-300 bg-slate-50/50 pl-11 pr-11 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
                     />
                     <button
@@ -589,14 +702,14 @@ export const ForgotPasswordPage: React.FC = () => {
                           : 'bg-slate-300'
                       }`}
                     />
-                    <span>Passwords match correctly</span>
+                    <span>Passwords match</span>
                   </div>
                 </div>
 
                 {/* Submit Update Button */}
                 <button
                   type="submit"
-                  disabled={loading || timeLeft <= 0}
+                  disabled={loading}
                   className="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 active:scale-[0.99]"
                 >
                   {loading ? (
@@ -604,14 +717,16 @@ export const ForgotPasswordPage: React.FC = () => {
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
-                      <span>Update Password & Save</span>
+                      <span>Save New Password</span>
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* STEP 3: Completed State */}
+            {/* ======================================================== */}
+            {/* STEP 4: PASSWORD RESET SUCCESS                           */}
+            {/* ======================================================== */}
             {step === 'success' && (
               <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 sm:p-8 text-center space-y-4">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
@@ -692,7 +807,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 </li>
                 <li className="flex items-center gap-2.5 rounded-xl bg-white/10 p-3 border border-white/10">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Verified Institutional Gmail Authentication</span>
+                  <span>Verified 6-Digit Email Code Confirmation</span>
                 </li>
                 <li className="flex items-center gap-2.5 rounded-xl bg-white/10 p-3 border border-white/10">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
