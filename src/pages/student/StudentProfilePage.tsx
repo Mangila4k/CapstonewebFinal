@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   User,
@@ -20,6 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
 import { supabase } from '../../lib/supabase';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
+import { uploadAndSaveAvatar, fetchUserAvatarFromDatabase } from '../../lib/avatarService';
 
 export const StudentProfilePage: React.FC = () => {
   const { user, updateCurrentUser } = useAuth();
@@ -44,6 +45,18 @@ export const StudentProfilePage: React.FC = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load avatar from Supabase database if not in memory
+  useEffect(() => {
+    if (user?.email || user?.id || user?.student_lrn) {
+      fetchUserAvatarFromDatabase({ id: user.id, email: user.email, role: 'student' }).then((photo) => {
+        if (photo) {
+          setAvatarUrl(photo);
+          updateCurrentUser({ avatar_url: photo });
+        }
+      });
+    }
+  }, [user?.email, user?.id, user?.student_lrn]);
 
   const fullNameDisplay = `${firstName} ${lastName}`.trim() || user?.full_name || 'Student Name';
   const studentLrn = user?.student_lrn || '109823456789';
@@ -92,6 +105,17 @@ export const StudentProfilePage: React.FC = () => {
         ctx?.drawImage(img, 0, 0, w, h);
         const compressed = canvas.toDataURL('image/jpeg', 0.85);
         setAvatarUrl(compressed);
+
+        // Upload and save directly to Supabase cloud storage & database
+        if (user) {
+          uploadAndSaveAvatar({ id: user.id, email: user.email, role: 'student' }, compressed).then((permanentUrl) => {
+            if (permanentUrl) {
+              setAvatarUrl(permanentUrl);
+              updateCurrentUser({ avatar_url: permanentUrl });
+            }
+          });
+        }
+
         if (user?.email) {
           const cleanEmail = user.email.trim().toLowerCase();
           localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, compressed);
@@ -100,7 +124,7 @@ export const StudentProfilePage: React.FC = () => {
         localStorage.setItem('plsnhs_avatar_default', compressed);
         updateCurrentUser({ avatar_url: compressed });
         window.dispatchEvent(new Event('plsnhs-avatar-updated'));
-        setNotice({ type: 'success', message: 'Student 2x2 profile photo updated.' });
+        setNotice({ type: 'success', message: 'Student 2x2 profile photo saved to database.' });
       };
       img.src = String(ev.target?.result || '');
     };
@@ -160,6 +184,9 @@ export const StudentProfilePage: React.FC = () => {
       });
 
       if (avatarUrl) {
+        if (user) {
+          uploadAndSaveAvatar({ id: user.id, email: user.email, role: 'student' }, avatarUrl).catch(() => {});
+        }
         if (user?.email) {
           const cleanEmail = user.email.trim().toLowerCase();
           localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, avatarUrl);

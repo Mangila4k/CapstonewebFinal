@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { fetchUserAvatarFromDatabase } from '../lib/avatarService';
 import type { User, UserRole } from '../types';
 
 interface AuthContextType {
@@ -200,6 +201,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               } catch (err) {
                 console.warn('Failed to hydrate parent linked student:', err);
               }
+            }
+
+            // Universal avatar hydration from Supabase cloud database
+            if (cleanEmail) {
+              fetchUserAvatarFromDatabase({ id: parsed.id, email: cleanEmail, role: parsed.role }).then((photo) => {
+                if (photo && active) {
+                  setUser((prev) => (prev ? { ...prev, avatar_url: photo } : prev));
+                  localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, photo);
+                  window.dispatchEvent(new Event('plsnhs-avatar-updated'));
+                }
+              }).catch(() => {});
             }
           }
         }
@@ -448,6 +460,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(fullUser);
       localStorage.setItem('currentUser', JSON.stringify(fullUser));
+
+      // Asynchronously fetch latest cloud avatar from Supabase database to ensure sync
+      fetchUserAvatarFromDatabase({ id: matchedUser.id, email: cleanEmail, role: userRole }).then((photo) => {
+        if (photo) {
+          setUser((prev) => (prev ? { ...prev, avatar_url: photo } : prev));
+          localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, photo);
+          window.dispatchEvent(new Event('plsnhs-avatar-updated'));
+        }
+      }).catch(() => {});
 
       if (remember) {
         localStorage.setItem('hes_remembered_email', cleanEmail);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { fetchUserAvatarFromDatabase } from '../../lib/avatarService';
 import {
   Gauge,
   Users,
@@ -317,27 +318,17 @@ export const DashboardLayout: React.FC = () => {
 
     handleSync();
 
-    // For students without avatar in user state, query students table for 2x2 picture
-    if (user?.role === 'student' && !user?.avatar_url && (user?.email || user?.student_lrn || user?.id)) {
-      const cleanEmail = (user.email || '').trim().toLowerCase();
-      supabase
-        .from('students')
-        .select('two_by_two_picture_url, avatar_url')
-        .or(`email.ilike.${cleanEmail},id.eq.${user.id}`)
-        .maybeSingle()
-        .then(
-          (res: any) => {
-            const data = res?.data;
-            const photo = data?.two_by_two_picture_url || data?.avatar_url;
-            if (photo) {
-              setSidebarAvatar(photo);
-              if (cleanEmail) {
-                localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, photo);
-              }
-            }
-          },
-          () => {}
-        );
+    // Fetch profile avatar from Supabase database for all user roles to ensure cross-device consistency
+    if (user && (user.email || user.id)) {
+      fetchUserAvatarFromDatabase({ id: user.id, email: user.email, role: user.role }).then((photo) => {
+        if (photo) {
+          setSidebarAvatar(photo);
+          if (user.email) {
+            const cleanEmail = user.email.trim().toLowerCase();
+            localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, photo);
+          }
+        }
+      }).catch(() => {});
     }
 
     window.addEventListener('plsnhs-avatar-updated', handleSync);
