@@ -54,7 +54,16 @@ export async function uploadAndSaveAvatar(
   // Fallback to compressed Data URL if storage didn't return publicUrl
   const finalAvatar = publicUrl || (typeof dataUrlOrBlob === 'string' ? dataUrlOrBlob : '');
 
-  // 3. Persist in Supabase app_settings table for universal cross-device access
+  // 3. Try updating users table directly if avatar_url column exists
+  if (finalAvatar && cleanEmail) {
+    try {
+      await supabase.from('users').update({ avatar_url: finalAvatar }).ilike('email', cleanEmail);
+    } catch {
+      // ignore if avatar_url column is not yet added to users table
+    }
+  }
+
+  // 4. Persist in Supabase app_settings table for universal cross-device access
   if (finalAvatar && cleanEmail) {
     try {
       await supabase.from('app_settings').upsert({
@@ -67,7 +76,7 @@ export async function uploadAndSaveAvatar(
     }
   }
 
-  // 4. If student, also update students and enrollments table in Supabase
+  // 5. If student, also update students and enrollments table in Supabase
   if (user.role === 'student' && finalAvatar) {
     try {
       const studentUpdates: Record<string, any> = {
@@ -114,7 +123,21 @@ export async function fetchUserAvatarFromDatabase(user: {
   const cleanEmail = (user.email || '').trim().toLowerCase();
   if (!cleanEmail) return null;
 
-  // 1. If student, check students table by email
+  // 1. Check users table directly if avatar_url column exists
+  try {
+    const { data: uData } = await supabase
+      .from('users')
+      .select('avatar_url')
+      .ilike('email', cleanEmail)
+      .maybeSingle();
+    if (uData?.avatar_url && uData.avatar_url.trim().length > 0) {
+      return uData.avatar_url;
+    }
+  } catch {
+    // ignore if avatar_url column not yet added to users
+  }
+
+  // 2. If student, check students table by email
   if (user.role === 'student' || !user.role) {
     try {
       const { data } = await supabase

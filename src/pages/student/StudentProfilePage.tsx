@@ -155,7 +155,15 @@ export const StudentProfilePage: React.FC = () => {
       }
 
       if (user?.id) {
-        await supabase.from('users').update(updates).eq('id', user.id);
+        try {
+          const withAvatar = avatarUrl ? { ...updates, avatar_url: avatarUrl } : updates;
+          const { error } = await supabase.from('users').update(withAvatar).eq('id', user.id);
+          if (error) {
+            await supabase.from('users').update(updates).eq('id', user.id);
+          }
+        } catch {
+          await supabase.from('users').update(updates).eq('id', user.id);
+        }
       }
 
       // Sync changes to students table in Supabase

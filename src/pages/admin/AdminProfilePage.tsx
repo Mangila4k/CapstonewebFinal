@@ -201,9 +201,14 @@ export const AdminProfilePage: React.FC = () => {
       }
 
       if (user?.id) {
-        const { error } = await supabase.from('users').update(updates).eq('id', user.id);
-        if (error) {
-          console.warn('Supabase users update fallback:', error.message);
+        try {
+          const withAvatar = avatarUrl ? { ...updates, avatar_url: avatarUrl } : updates;
+          const { error } = await supabase.from('users').update(withAvatar).eq('id', user.id);
+          if (error) {
+            await supabase.from('users').update(updates).eq('id', user.id);
+          }
+        } catch {
+          await supabase.from('users').update(updates).eq('id', user.id);
         }
       }
 
