@@ -1,5 +1,11 @@
 import { supabase } from './supabase';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isUuid(val?: any): boolean {
+  return typeof val === 'string' && UUID_REGEX.test(val.trim());
+}
+
 export interface UnifiedAttendanceRecord {
   id: string | number;
   student_id: string;
@@ -48,11 +54,35 @@ export async function logAttendanceRecord(payload: {
   const cleanStatus = (payload.status || 'present').toLowerCase();
   const cleanMode = (payload.mode || 'qr').toLowerCase();
 
+  let resolvedStudentId = payload.student_id;
+  if (!isUuid(resolvedStudentId)) {
+    try {
+      const searchKey = payload.qr_code || payload.raw_payload || '';
+      const cleanLrn = searchKey.match(/\d{10,12}/)?.[0];
+      if (cleanLrn) {
+        const { data: st } = await supabase
+          .from('students')
+          .select('id')
+          .eq('lrn', cleanLrn)
+          .maybeSingle();
+        if (st?.id && isUuid(st.id)) {
+          resolvedStudentId = st.id;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const cleanSectionId = isUuid(payload.section_id) ? payload.section_id : null;
+  const cleanTeacherId = isUuid(payload.teacher_id) ? payload.teacher_id : null;
+  const cleanSubjectId = isUuid(payload.subject_id) ? payload.subject_id : null;
+
   const recordPayload = {
-    student_id: payload.student_id,
-    section_id: payload.section_id || null,
-    teacher_id: payload.teacher_id || null,
-    subject_id: payload.subject_id || null,
+    student_id: resolvedStudentId,
+    section_id: cleanSectionId,
+    teacher_id: cleanTeacherId,
+    subject_id: cleanSubjectId,
     date: todayStr,
     mode: cleanMode,
     status: cleanStatus,
@@ -66,41 +96,45 @@ export async function logAttendanceRecord(payload: {
 
   let recordSaved = false;
 
-  // 1. Primary write to attendance_records
-  try {
-    const { data, error } = await supabase
-      .from('attendance_records')
-      .insert(recordPayload)
-      .select()
-      .maybeSingle();
+  // 1. Primary write to attendance_records (if student_id is a valid UUID)
+  if (isUuid(resolvedStudentId)) {
+    try {
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .insert(recordPayload)
+        .select()
+        .maybeSingle();
 
-    if (!error && data) {
-      recordSaved = true;
-    } else if (error) {
-      console.warn('Notice inserting to attendance_records:', error.message);
+      if (!error && data) {
+        recordSaved = true;
+      } else if (error) {
+        console.warn('Notice inserting to attendance_records:', error.message);
+      }
+    } catch (err) {
+      console.warn('Exception writing to attendance_records:', err);
     }
-  } catch (err) {
-    console.warn('Exception writing to attendance_records:', err);
   }
 
   // 2. Dual-write backup to attendance table
-  try {
-    const legacyPayload = {
-      student_id: payload.student_id,
-      section_id: payload.section_id || null,
-      date: todayStr,
-      time_in: currentTime,
-      time_out: payload.time_out || null,
-      status: cleanStatus,
-      qr_code: payload.qr_code || payload.raw_payload || null,
-      remarks: payload.remarks || null,
-    };
+  if (isUuid(resolvedStudentId)) {
+    try {
+      const legacyPayload = {
+        student_id: resolvedStudentId,
+        section_id: cleanSectionId,
+        date: todayStr,
+        time_in: currentTime,
+        time_out: payload.time_out || null,
+        status: cleanStatus,
+        qr_code: payload.qr_code || payload.raw_payload || null,
+        remarks: payload.remarks || null,
+      };
 
-    await supabase.from('attendance').upsert(legacyPayload, {
-      onConflict: 'student_id,date',
-    });
-  } catch (err) {
-    // ignore legacy trigger warning
+      await supabase.from('attendance').upsert(legacyPayload, {
+        onConflict: 'student_id,date',
+      });
+    } catch (err) {
+      // ignore legacy trigger warning
+    }
   }
 
   // 3. Dispatch client-side real-time event for zero-latency screen updates
@@ -138,8 +172,10 @@ export async function fetchAttendanceRecords(filter?: {
       .limit(maxLimit);
 
     if (filter?.date) q = q.eq('date', filter.date);
-    if (filter?.section_id) q = q.eq('section_id', filter.section_id);
-    if (filter?.student_id) {
+    if (filter?.section_id && isUuid(filter.section_id)) {
+      q = q.eq('section_id', filter.section_id);
+    }
+    if (filter?.student_id && isUuid(filter.student_id)) {
       if (filter.lrn) {
         q = q.or(`student_id.eq.${filter.student_id},qr_code.ilike.%${filter.lrn}%`);
       } else {
@@ -147,6 +183,8 @@ export async function fetchAttendanceRecords(filter?: {
       }
     } else if (filter?.lrn) {
       q = q.ilike('qr_code', `%${filter.lrn}%`);
+    } else if (filter?.student_id) {
+      q = q.ilike('qr_code', `%${filter.student_id}%`);
     }
 
     const { data: recordsData, error: recordsErr } = await q;
@@ -159,8 +197,10 @@ export async function fetchAttendanceRecords(filter?: {
       .limit(maxLimit);
 
     if (filter?.date) lq = lq.eq('date', filter.date);
-    if (filter?.section_id) lq = lq.eq('section_id', filter.section_id);
-    if (filter?.student_id) {
+    if (filter?.section_id && isUuid(filter.section_id)) {
+      lq = lq.eq('section_id', filter.section_id);
+    }
+    if (filter?.student_id && isUuid(filter.student_id)) {
       if (filter.lrn) {
         lq = lq.or(`student_id.eq.${filter.student_id},qr_code.ilike.%${filter.lrn}%`);
       } else {
@@ -168,6 +208,8 @@ export async function fetchAttendanceRecords(filter?: {
       }
     } else if (filter?.lrn) {
       lq = lq.ilike('qr_code', `%${filter.lrn}%`);
+    } else if (filter?.student_id) {
+      lq = lq.ilike('qr_code', `%${filter.student_id}%`);
     }
 
     const { data: legacyData } = await lq;
@@ -224,3 +266,4 @@ export async function fetchAttendanceRecords(filter?: {
     return [];
   }
 }
+
