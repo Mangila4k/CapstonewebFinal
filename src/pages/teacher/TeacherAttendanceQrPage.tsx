@@ -21,6 +21,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { logAttendanceRecord, fetchAttendanceRecords } from '../../lib/attendanceService';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
@@ -96,13 +97,10 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   useEffect(() => {
     async function initData() {
       try {
-        const [{ data: secData }, { data: attData }, { data: stData }] = await Promise.all([
+        const todayStr = new Date().toISOString().split('T')[0];
+        const [{ data: secData }, attRecords, { data: stData }] = await Promise.all([
           supabase.from('sections').select('id, name, grade_level').order('name'),
-          supabase
-            .from('attendance')
-            .select('*')
-            .eq('date', new Date().toISOString().split('T')[0])
-            .order('created_at', { ascending: false }),
+          fetchAttendanceRecords({ date: todayStr }),
           supabase.from('students').select('id, first_name, last_name, lrn, grade_level, avatar_url, section_id'),
         ]);
 
@@ -119,10 +117,8 @@ export const TeacherAttendanceQrPage: React.FC = () => {
           });
         }
 
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        if (attData && attData.length > 0) {
-          const mapped: ScannedEntry[] = attData.map((a: any) => {
+        if (attRecords && attRecords.length > 0) {
+          const mapped: ScannedEntry[] = attRecords.map((a: any) => {
             const st = a.student_id ? stMap.get(String(a.student_id)) : null;
             const secName =
               (st?.section_id && secMap.get(String(st.section_id))) ||
@@ -139,7 +135,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
               time: a.time_in ? a.time_in.slice(0, 5) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               date: a.date,
               status: rawStatus === 'late' ? 'Late' : 'Present',
-              mode: 'QR',
+              mode: a.mode === 'LRN' ? 'LRN' : 'QR',
               avatar_url: st?.avatar_url,
             };
           });
@@ -254,16 +250,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       try {
         if (student?.id) {
           const lowerStatus = computedStatus.toLowerCase(); // 'present' or 'late'
-          await supabase.from('attendance').insert({
-            student_id: student.id,
-            section_id: student.section_id || null,
-            date: todayStr,
-            time_in: new Date().toTimeString().split(' ')[0],
-            status: lowerStatus,
-            qr_code: rawScannedText,
-          });
-
-          await supabase.from('attendance_records').insert({
+          await logAttendanceRecord({
             student_id: student.id,
             section_id: student.section_id || null,
             date: todayStr,

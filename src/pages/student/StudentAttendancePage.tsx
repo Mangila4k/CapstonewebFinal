@@ -28,6 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import { supabase } from '../../lib/supabase';
+import { fetchAttendanceRecords } from '../../lib/attendanceService';
 
 interface AttendanceEntry {
   id: string | number;
@@ -333,15 +334,14 @@ export const StudentAttendancePage: React.FC = () => {
         }
       }
 
-      // Query the official Supabase attendance table
-      const { data: attRows, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .or(`student_id.eq.${resolvedStudentId},qr_code.ilike.%${resolvedLrn}%`)
-        .order('date', { ascending: false })
-        .limit(100);
+      // Query the official Supabase attendance_records table
+      const attRows = await fetchAttendanceRecords({
+        student_id: resolvedStudentId,
+        lrn: resolvedLrn,
+        limit: 100,
+      });
 
-      if (!error && attRows && attRows.length > 0) {
+      if (attRows && attRows.length > 0) {
         const mappedLogs: AttendanceEntry[] = attRows.map((d: any, idx: number) => {
           const rawStatus = (d.status || 'present').toLowerCase();
           let capStatus: 'Present' | 'Late' | 'Excused' | 'Absent' = 'Present';
@@ -359,7 +359,7 @@ export const StudentAttendancePage: React.FC = () => {
 
           const timeInFormatted = formatAttendanceTime(d.time_in);
           const timeOutFormatted = formatAttendanceTime(d.time_out);
-          const isQr = Boolean(d.qr_code && d.qr_code.length > 0);
+          const isQr = Boolean((d.qr_code && d.qr_code.length > 0) || d.mode === 'qr');
 
           return {
             id: d.id || `live-${idx}`,
@@ -397,9 +397,16 @@ export const StudentAttendancePage: React.FC = () => {
     };
     window.addEventListener('plsnhs_attendance_updated', handleUpdate);
 
-    // Supabase Realtime channel subscription for attendance table
+    // Supabase Realtime channel subscription for attendance_records table
     const channel = supabase
       .channel('public_attendance_student_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'attendance_records' },
+        () => {
+          fetchLiveAttendance();
+        }
+      )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'attendance' },

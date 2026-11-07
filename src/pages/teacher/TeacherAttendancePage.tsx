@@ -15,6 +15,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { logAttendanceRecord, fetchAttendanceRecords } from '../../lib/attendanceService';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
@@ -160,11 +161,13 @@ export const TeacherAttendancePage: React.FC = () => {
     async function loadSectionsAndStudents() {
       setLoading(true);
       try {
-        const [{ data: secData }, { data: stData }, { data: attData }] = await Promise.all([
+        const [{ data: secData }, { data: stData }, attRecords] = await Promise.all([
           supabase.from('sections').select('*').order('grade_level', { ascending: true }),
           supabase.from('students').select('*').order('last_name', { ascending: true }),
-          supabase.from('attendance').select('*').eq('date', todayStr),
+          fetchAttendanceRecords({ date: todayStr }),
         ]);
+
+        const attData = attRecords || [];
 
         const dbSections: Section[] = secData || [];
         if (dbSections.length > 0) {
@@ -643,6 +646,23 @@ export const TeacherAttendancePage: React.FC = () => {
         .eq('date', todayStr);
 
       const { error } = await supabase.from('attendance').insert(recordsToInsert);
+
+      // Also persist to attendance_records table
+      try {
+        const recordsForAttendanceRecords = displayedStudents.map((s) => ({
+          student_id: s.id,
+          section_id: matchedSection?.id || null,
+          teacher_id: user?.id || null,
+          date: todayStr,
+          status: (attendanceMap[s.id] || 'present').toLowerCase(),
+          mode: (attendanceModes[s.id] === 'QR' ? 'time_in' : 'manual'),
+          time_in: currentTime,
+          remarks: attendanceModes[s.id] || 'Manual',
+        }));
+        await supabase.from('attendance_records').insert(recordsForAttendanceRecords);
+      } catch (attRecErr) {
+        console.warn('attendance_records table sync note:', attRecErr);
+      }
 
       // Broadcast real-time update event so student attendance syncs immediately
       if (typeof window !== 'undefined') {

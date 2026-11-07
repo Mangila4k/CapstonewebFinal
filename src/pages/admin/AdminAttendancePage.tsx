@@ -26,6 +26,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { fetchAttendanceRecords } from '../../lib/attendanceService';
 import { StatCard } from '../../components/common/StatCard';
 import { Modal } from '../../components/common/Modal';
 import { formatDate } from '../../lib/utils';
@@ -100,12 +101,12 @@ export const AdminAttendancePage: React.FC = () => {
     }
   };
 
-  // Fetch Student Attendance from Supabase
+  // Fetch Student Attendance from Supabase attendance_records
   const fetchStudentAttendance = async () => {
     setLoading(true);
     try {
-      const [{ data: attData, error }, { data: stData }, { data: secData }] = await Promise.all([
-        supabase.from('attendance').select('*').order('date', { ascending: false }).limit(200),
+      const [attData, { data: stData }, { data: secData }] = await Promise.all([
+        fetchAttendanceRecords({ limit: 300 }),
         supabase.from('students').select('id, first_name, last_name, lrn, grade_level, strand, section_id'),
         supabase.from('sections').select('id, name'),
       ]);
@@ -125,10 +126,10 @@ export const AdminAttendancePage: React.FC = () => {
         });
       }
 
-      if (!error && attData && attData.length > 0) {
+      if (attData && attData.length > 0) {
         const mapped = attData.map((item: any) => {
           const st = item.student_id ? studentMap.get(String(item.student_id)) : null;
-          const isQr = item.qr_code && (item.qr_code.includes('http') || item.qr_code.length > 15);
+          const isQr = (item.qr_code && (item.qr_code.includes('http') || item.qr_code.length > 10)) || item.mode === 'qr';
           const sectionName =
             (st?.section_id && secMap.get(String(st.section_id))) ||
             (item.section_id && secMap.get(String(item.section_id))) ||
@@ -147,7 +148,7 @@ export const AdminAttendancePage: React.FC = () => {
             date: item.date,
             time_in: item.time_in ? item.time_in.slice(0, 5) : '07:15',
             status: displayStatus,
-            mode: isQr ? 'QR' : 'LRN',
+            mode: item.mode === 'face' ? 'Face' : isQr ? 'QR' : 'LRN',
           };
         });
         setStudentAttendance(mapped);
@@ -176,9 +177,23 @@ export const AdminAttendancePage: React.FC = () => {
     const handleSync = () => {
       fetchTeacherAttendance();
     };
+    const handleStudentSync = () => {
+      fetchStudentAttendance();
+    };
     window.addEventListener('plsnhs_teacher_attendance_updated', handleSync);
+    window.addEventListener('plsnhs_attendance_updated', handleStudentSync);
+
+    const channel = supabase
+      .channel('admin_attendance_records_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        fetchStudentAttendance();
+      })
+      .subscribe();
+
     return () => {
       window.removeEventListener('plsnhs_teacher_attendance_updated', handleSync);
+      window.removeEventListener('plsnhs_attendance_updated', handleStudentSync);
+      supabase.removeChannel(channel);
     };
   }, []);
 
