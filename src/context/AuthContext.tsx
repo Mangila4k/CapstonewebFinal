@@ -46,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               let updatedGrade = parsed.student_grade || '';
               let updatedStrand = parsed.student_strand || '';
               let updatedSection = parsed.student_section || '';
+              let updatedSectionId = parsed.section_id || '';
               let updatedLrn = parsed.student_lrn || '';
               let updatedStatus = parsed.student_status || 'Enrolled';
               let updatedAvatar = parsed.avatar_url || '';
@@ -83,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   if (s.two_by_two_picture_url || s.avatar_url) {
                     updatedAvatar = s.two_by_two_picture_url || s.avatar_url;
                   }
+                  if (s.section_id) updatedSectionId = s.section_id;
                   if (s.section) {
                     updatedSection = s.section;
                   } else if (s.section_id) {
@@ -147,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   student_grade: updatedGrade,
                   student_strand: updatedStrand,
                   student_section: updatedSection,
+                  section_id: updatedSectionId || parsed.section_id,
                   student_lrn: updatedLrn,
                   student_status: updatedStatus,
                   avatar_url: updatedAvatar || parsed.avatar_url,

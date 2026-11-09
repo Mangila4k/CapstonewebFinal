@@ -511,7 +511,7 @@ export const StudentDashboardPage: React.FC = () => {
                 to="/student/attendance"
                 className="flex items-center gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 sm:p-3.5 hover:border-[#1B2A4A] hover:bg-white hover:shadow-xs transition-all group"
               >
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-purple-100 text-purple-700 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-blue-100 text-[#152e69] shrink-0 group-hover:scale-105 transition-transform">
                   <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="min-w-0">

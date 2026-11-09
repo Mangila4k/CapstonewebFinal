@@ -1389,7 +1389,7 @@ export const StudentGradesPage: React.FC = () => {
               {[
                 { qNum: 'Quarter 1', avg: q1GeneralAverage, label: '1st Grading Period', icon: Award, color: 'text-blue-700 bg-blue-50 border-blue-200' },
                 { qNum: 'Quarter 2', avg: q2GeneralAverage, label: '2nd Grading Period', icon: TrendingUp, color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
-                { qNum: 'Quarter 3', avg: q3GeneralAverage, label: '3rd Grading Period', icon: Sparkles, color: 'text-purple-700 bg-purple-50 border-purple-200' },
+                { qNum: 'Quarter 3', avg: q3GeneralAverage, label: '3rd Grading Period', icon: Sparkles, color: 'text-amber-700 bg-amber-50 border-amber-200' },
                 { qNum: 'Quarter 4', avg: q4GeneralAverage, label: '4th Grading Period', icon: GraduationCap, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
               ].map((q, idx) => (
                 <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">

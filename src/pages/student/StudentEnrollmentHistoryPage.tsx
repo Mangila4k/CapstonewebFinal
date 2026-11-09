@@ -472,13 +472,13 @@ export const StudentEnrollmentHistoryPage: React.FC = () => {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Tuition &amp; Subsidy
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#152e69]">
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2">
             <p className="text-xl font-black text-slate-900 font-display">100% Funded</p>
-            <span className="text-xs font-bold text-purple-700">DepEd Public Subsidy</span>
+            <span className="text-xs font-bold text-[#152e69]">DepEd Public Subsidy</span>
           </div>
           <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
             <span>Republic Act 10533 Compliant</span>
@@ -650,7 +650,7 @@ export const StudentEnrollmentHistoryPage: React.FC = () => {
                                     s.classification === 'Core'
                                       ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                       : s.classification === 'Applied'
-                                      ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                      ? 'bg-amber-50 text-amber-800 border border-amber-200'
                                       : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                   }`}>
                                     {s.classification}

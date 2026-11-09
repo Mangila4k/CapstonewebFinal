@@ -21,6 +21,7 @@ export interface User {
   student_grade?: string;
   student_strand?: string;
   student_section?: string;
+  section_id?: string;
   student_status?: string;
   school_year?: string;
   avatar_url?: string;

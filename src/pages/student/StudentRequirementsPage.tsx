@@ -379,13 +379,13 @@ export const StudentRequirementsPage: React.FC = () => {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Academic Clearance
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#152e69]">
               <Award className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2">
             <p className="text-xl font-black text-slate-900 font-display">Regular Student</p>
-            <span className="text-xs font-bold text-purple-700">Zero Academic Holds</span>
+            <span className="text-xs font-bold text-[#152e69]">Zero Academic Holds</span>
           </div>
           <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
             <span>Eligible for all academic honors</span>

@@ -562,6 +562,39 @@ export const TeacherClassesPage: React.FC = () => {
           ? [`All ${activeClassForSchedule.grade_level} - Section ${activeClassForSchedule.name} Students`]
           : chosenStudents.map((s) => `${s.last_name}, ${s.first_name}`);
 
+      const slots = buildSectionScheduleSlots(
+        activeClassForSchedule.grade_level,
+        activeClassForSchedule.name,
+        activeClassForSchedule.room,
+        teacherName
+      );
+
+      let resolvedDocUrl = uploadedFileDataUrl;
+      const targetFileName =
+        uploadedFileName ||
+        `PLSNHS_${activeClassForSchedule.grade_level.replace(/\s+/g, '')}_Section_${activeClassForSchedule.name}_Schedule.csv`;
+      const fileNameLower = targetFileName.toLowerCase();
+
+      let resolvedDocType = 'csv';
+      if (fileNameLower.endsWith('.pdf') || (resolvedDocUrl && resolvedDocUrl.startsWith('data:application/pdf'))) {
+        resolvedDocType = 'application/pdf';
+      } else if (fileNameLower.match(/\.(jpe?g|png|webp|gif)$/) || (resolvedDocUrl && resolvedDocUrl.startsWith('data:image/'))) {
+        resolvedDocType = 'image';
+      } else {
+        resolvedDocType = 'csv';
+      }
+
+      if (!resolvedDocUrl) {
+        // Build downloadable CSV data url as default document attachment
+        const rowsCsv = [
+          ['Time Period', 'Subject Code', 'Learning Area / Subject', 'Schedule Days', 'Room Assignment', 'Subject Teacher'],
+          ...slots.map((s) => [s.time, s.code, s.subject, s.day, s.room, s.teacher]),
+        ]
+          .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+          .join('\n');
+        resolvedDocUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(rowsCsv)}`;
+      }
+
       const newRecord: SentScheduleRecord = {
         id: `sched-${Date.now()}`,
         grade_level: activeClassForSchedule.grade_level,
@@ -572,10 +605,8 @@ export const TeacherClassesPage: React.FC = () => {
           scheduleTitle.trim() ||
           `Official Class Schedule — ${activeClassForSchedule.grade_level} Section ${activeClassForSchedule.name}`,
         note: scheduleNote.trim(),
-        file_name:
-          uploadedFileName ||
-          `PLSNHS_${activeClassForSchedule.grade_level.replace(/\s+/g, '')}_Section_${activeClassForSchedule.name}_Schedule.csv`,
-        file_data_url: uploadedFileDataUrl,
+        file_name: targetFileName,
+        file_data_url: resolvedDocUrl,
         file_size: uploadedFileSize || '24 KB',
         recipient_mode: recipientMode,
         recipient_count:
@@ -583,12 +614,7 @@ export const TeacherClassesPage: React.FC = () => {
         recipient_names: recipientNames,
         recipient_ids: Array.from(selectedStudentIds),
         sent_at: new Date().toISOString(),
-        slots: buildSectionScheduleSlots(
-          activeClassForSchedule.grade_level,
-          activeClassForSchedule.name,
-          activeClassForSchedule.room,
-          teacherName
-        ),
+        slots,
       };
 
       const updatedList = [newRecord, ...sentSchedules];
@@ -627,11 +653,13 @@ export const TeacherClassesPage: React.FC = () => {
       try {
         if (activeClassForSchedule.id) {
           await supabase.from('sections').update({
-            schedule_doc_url: uploadedFileDataUrl || null,
+            schedule_doc_url: resolvedDocUrl,
             schedule_doc_name: newRecord.file_name,
-            schedule_doc_type: 'csv',
+            schedule_doc_type: resolvedDocType,
             schedule_doc_uploaded_by: teacherName,
             schedule_doc_updated_at: new Date().toISOString(),
+            shared_at: new Date().toISOString(),
+            shared_by: teacherName,
           }).eq('id', activeClassForSchedule.id);
         }
       } catch (secErr) {
