@@ -386,7 +386,7 @@ export const RegistrarReportsPage: React.FC = () => {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Senior High School (SHS)
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
               <Layers className="h-4 w-4" />
             </div>
           </div>
@@ -394,7 +394,7 @@ export const RegistrarReportsPage: React.FC = () => {
             <p className="text-2xl sm:text-3xl font-black text-slate-900 font-display">
               {shsCount}
             </p>
-            <span className="text-xs font-bold text-purple-700">
+            <span className="text-xs font-bold text-slate-700">
               {totalStudentsCount > 0 ? Math.round((shsCount / totalStudentsCount) * 100) : 0}% of Total
             </span>
           </div>
@@ -448,7 +448,7 @@ export const RegistrarReportsPage: React.FC = () => {
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
           }`}
         >
-          <Layers className="h-3.5 w-3.5 text-purple-700" />
+          <Layers className="h-3.5 w-3.5 text-slate-700" />
           <span>Enrolment Demographics Matrix</span>
         </button>
 
@@ -903,3 +903,4 @@ export const RegistrarReportsPage: React.FC = () => {
     </div>
   );
 };
+

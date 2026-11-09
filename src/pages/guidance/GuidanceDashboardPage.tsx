@@ -593,7 +593,7 @@ export const GuidanceDashboardPage: React.FC = () => {
           value={stats.cleanRate}
           subtitle="471 of 473 learners with clean record"
           icon={CheckCircle2}
-          color="purple"
+          color="blue"
         />
       </div>
 

@@ -917,7 +917,7 @@ export const GuidanceViolationsPage: React.FC = () => {
                                   : v.status === 'Counseling Scheduled'
                                   ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                   : v.status === 'Parent Conference'
-                                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                  ? 'bg-slate-100 text-slate-800 border border-slate-200'
                                   : 'bg-amber-100 text-amber-800 border border-amber-200'
                               }`}
                             >

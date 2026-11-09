@@ -533,13 +533,13 @@ export const StudentViolationsPage: React.FC = () => {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Guidance Services
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <Users className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2">
             <p className="text-xl font-black text-slate-900 font-display">{guidanceSessions.length} Session{guidanceSessions.length !== 1 ? 's' : ''}</p>
-            <span className="text-xs font-bold text-purple-700">Pathway Consultation &amp; Guidance</span>
+            <span className="text-xs font-bold text-blue-700">Pathway Consultation &amp; Guidance</span>
           </div>
           <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
             <span>Guidance Office Rm 102 · Active</span>
@@ -844,8 +844,8 @@ export const StudentViolationsPage: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-2">
-              <div className="flex items-center gap-2 text-purple-900 font-extrabold text-sm">
-                <HeartHandshake className="h-4.5 w-4.5 text-purple-700" />
+              <div className="flex items-center gap-2 text-blue-900 font-extrabold text-sm">
+                <HeartHandshake className="h-4.5 w-4.5 text-blue-700" />
                 <h4>Guidance Counseling Confidentiality</h4>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -853,7 +853,7 @@ export const StudentViolationsPage: React.FC = () => {
               </p>
               <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex items-center justify-between">
                 <span>RA 9258 Standard: Certified</span>
-                <span className="text-purple-700 font-bold">Confidential</span>
+                <span className="text-blue-700 font-bold">Confidential</span>
               </div>
             </div>
           </div>

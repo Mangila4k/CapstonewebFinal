@@ -403,8 +403,8 @@ export const GuidanceReportsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 print:hidden">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shadow-sm">
-              <Scale className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-[#152e69]/10 text-[#152e69] border border-[#152e69]/20 flex items-center justify-center font-bold shadow-2xs">
+              <Scale className="w-5 h-5 text-[#152e69]" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display">
@@ -422,13 +422,13 @@ export const GuidanceReportsPage: React.FC = () => {
           <PageHeaderNotificationSlot />
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
           </button>
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-purple-700 to-indigo-800 rounded-xl hover:from-purple-800 hover:to-indigo-900 shadow-md shadow-purple-900/20 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#152e69] hover:bg-[#0f1f4b] rounded-xl shadow-xs border border-[#152e69] transition-all cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" /> Print Official Report
           </button>
@@ -436,10 +436,10 @@ export const GuidanceReportsPage: React.FC = () => {
       </div>
 
       {/* Filter Toolbar - Screen Only */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
-            <Filter className="w-3.5 h-3.5 text-purple-600" /> Filter View:
+            <Filter className="w-3.5 h-3.5 text-slate-600" /> Filter View:
           </div>
 
           {/* School Year */}
@@ -502,10 +502,10 @@ export const GuidanceReportsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-white text-purple-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               {tab.label}
@@ -541,11 +541,11 @@ export const GuidanceReportsPage: React.FC = () => {
       {/* EXECUTIVE GUIDANCE KPI METRIC CARDS */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Consultations</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
-              <HeartHandshake className="w-4 h-4" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Consultations</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60 flex items-center justify-center">
+              <HeartHandshake className="w-4 h-4 text-blue-700" />
             </div>
           </div>
           <p className="text-2xl font-black text-slate-900 font-display mt-2">{stats.totalSessions}</p>
@@ -580,15 +580,15 @@ export const GuidanceReportsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Good Moral Clearances</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-              <Award className="w-4 h-4" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Good Moral Clearances</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center">
+              <Award className="w-4 h-4 text-slate-700" />
             </div>
           </div>
           <p className="text-2xl font-black text-slate-900 font-display mt-2">{stats.goodMoralCount}</p>
-          <p className="text-[11px] font-semibold text-indigo-600 mt-1">
+          <p className="text-[11px] font-semibold text-slate-600 mt-1">
             Certificates endorsed &amp; authenticated
           </p>
         </div>
@@ -600,21 +600,21 @@ export const GuidanceReportsPage: React.FC = () => {
       {(activeTab === 'overview' || activeTab === 'compliance') && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Counseling Breakdown */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <HeartHandshake className="w-4 h-4 text-purple-700" />
+                <HeartHandshake className="w-4 h-4 text-[#152e69]" />
                 <h3 className="text-sm font-extrabold text-slate-900">Guidance Services Distribution</h3>
               </div>
-              <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
                 S.Y. {schoolYear}
               </span>
             </div>
 
             <div className="space-y-3">
               {[
-                { label: 'Individual Counseling', count: filteredCounseling.filter((c) => c.session_type.includes('Individual')).length, color: 'bg-purple-600' },
-                { label: 'Career & SHS Pathway Guidance', count: filteredCounseling.filter((c) => c.session_type.includes('Career') || c.purpose.includes('Pathway')).length, color: 'bg-indigo-600' },
+                { label: 'Individual Counseling', count: filteredCounseling.filter((c) => c.session_type.includes('Individual')).length, color: 'bg-[#152e69]' },
+                { label: 'Career & SHS Pathway Guidance', count: filteredCounseling.filter((c) => c.session_type.includes('Career') || c.purpose.includes('Pathway')).length, color: 'bg-sky-600' },
                 { label: 'Academic & Remedial Intervention', count: filteredCounseling.filter((c) => c.session_type.includes('Academic') || c.purpose.includes('Academic')).length, color: 'bg-blue-600' },
                 { label: 'Parent-Teacher-Counselor Conference', count: filteredCounseling.filter((c) => c.session_type.includes('Parent')).length, color: 'bg-emerald-600' },
               ].map((item, idx) => {
@@ -636,7 +636,7 @@ export const GuidanceReportsPage: React.FC = () => {
           </div>
 
           {/* Child Protection & Safety Standing */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-700" />
@@ -658,8 +658,8 @@ export const GuidanceReportsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-purple-50/50 border border-purple-100">
-                <HeartHandshake className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <Scale className="w-4 h-4 text-slate-700 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-slate-900">Restorative Justice &amp; Counseling Priority</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
@@ -686,11 +686,11 @@ export const GuidanceReportsPage: React.FC = () => {
       {/* TAB 2: DETAILED COUNSELING CONSULTATION LOGS */}
       {/* ========================================================================= */}
       {(activeTab === 'overview' || activeTab === 'counseling') && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
           <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <HeartHandshake className="w-4 h-4 text-purple-700" />
+                <HeartHandshake className="w-4 h-4 text-[#152e69]" />
                 Official Counseling &amp; Guidance Sessions Log
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -731,7 +731,7 @@ export const GuidanceReportsPage: React.FC = () => {
                       <p className="text-[10px] text-slate-400">{c.session_time || '09:00 AM'}</p>
                     </td>
                     <td className="py-3 px-3">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
                         {c.session_type}
                       </span>
                     </td>
@@ -860,7 +860,7 @@ export const GuidanceReportsPage: React.FC = () => {
           <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <Award className="w-4 h-4 text-indigo-700" />
+                <Award className="w-4 h-4 text-emerald-700" />
                 Certificate of Good Moral Character Issuance Register
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">

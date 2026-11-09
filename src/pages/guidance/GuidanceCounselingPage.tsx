@@ -436,7 +436,7 @@ export const GuidanceCounselingPage: React.FC = () => {
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-semibold text-[10px]">
               {stats.individual} Individual
             </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-semibold text-[10px]">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-semibold text-[10px]">
               {stats.conferences} Conferences
             </span>
           </div>
@@ -490,7 +490,7 @@ export const GuidanceCounselingPage: React.FC = () => {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Counseling Ethics Standard
             </span>
-            <div className="h-9 w-9 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700">
+            <div className="h-9 w-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
               <ShieldCheck className="h-4.5 w-4.5" />
             </div>
           </div>
@@ -859,10 +859,10 @@ export const GuidanceCounselingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-3 space-y-1">
-                <div className="flex items-center justify-between text-xs font-bold text-purple-900">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-1">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-900">
                   <span>3. Restorative Peer Mediation</span>
-                  <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded font-semibold">
+                  <span className="text-[10px] bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded font-semibold">
                     DO 40, s. 2012
                   </span>
                 </div>
@@ -907,7 +907,7 @@ export const GuidanceCounselingPage: React.FC = () => {
                   <span className="font-bold text-slate-900">50%</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div className="h-full bg-purple-500 rounded-full" style={{ width: '50%' }} />
+                  <div className="h-full bg-[#152e69] rounded-full" style={{ width: '50%' }} />
                 </div>
               </div>
 
