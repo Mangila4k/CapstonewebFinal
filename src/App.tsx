@@ -65,6 +65,7 @@ import { ParentsAnnouncementsPage } from './pages/parents/ParentsAnnouncementsPa
 import { GuidanceDashboardPage } from './pages/guidance/GuidanceDashboardPage';
 import { GuidanceCounselingPage } from './pages/guidance/GuidanceCounselingPage';
 import { GuidanceViolationsPage } from './pages/guidance/GuidanceViolationsPage';
+import { GuidanceReportsPage } from './pages/guidance/GuidanceReportsPage';
 
 // 404
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -602,7 +603,7 @@ export const App: React.FC = () => {
             path="/guidance/reports"
             element={
               <ProtectedRoute allowedRoles={['guidance', 'admin']}>
-                <AdminReportsPage />
+                <GuidanceReportsPage />
               </ProtectedRoute>
             }
           />
