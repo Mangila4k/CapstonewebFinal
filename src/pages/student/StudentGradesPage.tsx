@@ -76,94 +76,124 @@ export const StudentGradesPage: React.FC = () => {
   const [submittedGradesList, setSubmittedGradesList] = useState<SubmittedGradeItem[]>([]);
 
   const isParent = user?.role === 'parent';
-  const [parentChild, setParentChild] = useState<any>(null);
+  const [resolvedStudent, setResolvedStudent] = useState<any>(null);
 
-  // Dynamic parent-child linkage resolver
+  // Dynamic student and parent-child linkage resolver
   useEffect(() => {
-    async function resolveParentChild() {
-      if (!isParent || !user) return;
+    async function resolveCurrentStudent() {
+      if (!user) return;
       try {
-        let child: any = null;
-        if (user.id) {
-          const { data } = await supabase
-            .from('students')
-            .select('*')
-            .eq('parent_id', user.id)
-            .maybeSingle();
-          if (data) child = data;
-        }
-        if (!child && user.student_id) {
-          const { data } = await supabase
-            .from('students')
-            .select('*')
-            .eq('id', user.student_id)
-            .maybeSingle();
-          if (data) child = data;
-        }
-        if (!child) {
-          const pName = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
-          if (pName) {
+        let student: any = null;
+        if (isParent) {
+          if (user.id) {
             const { data } = await supabase
               .from('students')
               .select('*')
-              .ilike('parent_name', `%${pName}%`)
-              .limit(1);
-            if (data && data.length > 0) child = data[0];
+              .eq('parent_id', user.id)
+              .maybeSingle();
+            if (data) student = data;
+          }
+          if (!student && user.student_id) {
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .eq('id', user.student_id)
+              .maybeSingle();
+            if (data) student = data;
+          }
+          if (!student) {
+            const pName = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+            if (pName) {
+              const { data } = await supabase
+                .from('students')
+                .select('*')
+                .ilike('parent_name', `%${pName}%`)
+                .limit(1);
+              if (data && data.length > 0) student = data[0];
+            }
+          }
+        } else {
+          // Direct student account: look up by student_id, lrn, email, or id
+          if (user.student_id) {
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .eq('id', user.student_id)
+              .maybeSingle();
+            if (data) student = data;
+          }
+          if (!student && user.student_lrn) {
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .eq('lrn', user.student_lrn)
+              .maybeSingle();
+            if (data) student = data;
+          }
+          if (!student && user.email) {
+            const cleanEmail = user.email.trim().toLowerCase();
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .ilike('email', cleanEmail)
+              .maybeSingle();
+            if (data) student = data;
+          }
+          if (!student && user.id) {
+            const { data } = await supabase
+              .from('students')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+            if (data) student = data;
+          }
+          if (!student && (user.first_name || user.last_name)) {
+            let nameQuery = supabase.from('students').select('*');
+            if (user.first_name) nameQuery = nameQuery.ilike('first_name', `%${user.first_name}%`);
+            if (user.last_name) nameQuery = nameQuery.ilike('last_name', `%${user.last_name}%`);
+            const { data: nameRows } = await nameQuery.limit(1);
+            if (nameRows && nameRows.length > 0) student = nameRows[0];
           }
         }
-        if (child) {
-          let secName = child.section || '';
-          if (child.section_id && !secName) {
+
+        if (student) {
+          let secName = student.section || '';
+          if (student.section_id && !secName) {
             const { data: sec } = await supabase
               .from('sections')
               .select('name')
-              .eq('id', child.section_id)
+              .eq('id', student.section_id)
               .maybeSingle();
             if (sec?.name) secName = sec.name;
           }
-          setParentChild({ ...child, resolvedSection: secName });
+          setResolvedStudent({ ...student, resolvedSection: secName });
         }
       } catch (err) {
-        console.warn('Resolve child error in grades:', err);
+        console.warn('Resolve student error in grades:', err);
       }
     }
-    resolveParentChild();
+    resolveCurrentStudent();
   }, [isParent, user]);
 
-  // Dynamic student demographic values with institutional fallbacks
-  const isSasumanParent = isParent && (
-    (user?.last_name || '').toLowerCase().includes('sasuman') ||
-    (user?.email || '').toLowerCase().includes('sasuman') ||
-    (user?.full_name || '').toLowerCase().includes('sasuman')
-  );
-
   const learnerName = isParent
-    ? (parentChild
-        ? `${parentChild.first_name || ''} ${parentChild.last_name || ''}`.trim()
-        : user?.student_name || 'Jorvin Pengoc')
-    : user?.full_name || 'Jorvin Pengoc';
-  const learnerLrn = isParent
-    ? parentChild?.lrn || user?.student_lrn || '11951680082'
-    : user?.student_lrn || '11951680082';
-  const rawGrade = isParent
-    ? parentChild?.grade_level || user?.student_grade || (isSasumanParent ? 'Grade 11' : 'Grade 11')
-    : user?.student_grade || 'Grade 11';
+    ? (resolvedStudent
+        ? `${resolvedStudent.first_name || ''} ${resolvedStudent.last_name || ''}`.trim()
+        : user?.student_name || 'Enrolled Student')
+    : (resolvedStudent
+        ? `${resolvedStudent.first_name || ''} ${resolvedStudent.last_name || ''}`.trim()
+        : user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Enrolled Student');
+
+  const learnerLrn = resolvedStudent?.lrn || user?.student_lrn || '—';
+  const rawGrade = resolvedStudent?.grade_level || user?.student_grade || 'Grade 10';
   const learnerGrade = rawGrade.toLowerCase().startsWith('grade') ? rawGrade : `Grade ${rawGrade}`;
   const isSeniorHigh =
     learnerGrade.includes('11') ||
     learnerGrade.includes('12') ||
-    learnerGrade.toLowerCase().includes('senior') ||
-    isSasumanParent;
-  const learnerStrand = isParent
-    ? parentChild?.strand || user?.student_strand || (isSeniorHigh ? 'TVL-ICT' : 'Junior High School')
-    : user?.student_strand || (isSeniorHigh ? 'TVL-ICT' : 'Junior High School');
+    learnerGrade.toLowerCase().includes('senior');
+  const learnerStrand = resolvedStudent?.strand || user?.student_strand || (isSeniorHigh ? 'TVL-ICT' : 'Junior High School');
   const defaultSection = isSeniorHigh ? 'Section Almario' : 'Section Rizal';
-  const learnerSection = isParent
-    ? parentChild?.resolvedSection
-      ? `Section ${parentChild.resolvedSection.replace(/^section\s+/i, '')}`
-      : user?.student_section
-      ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
-      : defaultSection
+  const learnerSection = resolvedStudent?.resolvedSection
+    ? `Section ${resolvedStudent.resolvedSection.replace(/^section\s+/i, '')}`
     : user?.student_section
     ? `Section ${user.student_section.replace(/^section\s+/i, '')}`
     : defaultSection;
@@ -187,41 +217,41 @@ export const StudentGradesPage: React.FC = () => {
     return 'K to 12 Basic Education Curriculum · Junior High School';
   }, [isSeniorHigh]);
 
-  // Default Subject sets for JHS and SHS TVL-ICT
-  const DEFAULT_JHS_SUBJECTS: JhsSubjectGrade[] = [
-    { code: 'FIL-10', title: 'Filipino', q1: 92, q2: 93, q3: 94, q4: 93, final: 93, remarks: 'Passed' },
-    { code: 'ENG-10', title: 'English', q1: 93, q2: 94, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
-    { code: 'MATH-10', title: 'Mathematics', q1: 91, q2: 92, q3: 93, q4: 92, final: 92, remarks: 'Passed' },
-    { code: 'SCI-10', title: 'Science', q1: 94, q2: 95, q3: 94, q4: 95, final: 95, remarks: 'Passed' },
-    { code: 'AP-10', title: 'Araling Panlipunan (AP)', q1: 95, q2: 95, q3: 96, q4: 96, final: 96, remarks: 'Passed' },
-    { code: 'ESP-10', title: 'Edukasyon sa Pagpapakatao (EsP)', q1: 96, q2: 97, q3: 96, q4: 97, final: 97, remarks: 'Passed' },
-    { code: 'TLE-10', title: 'Technology and Livelihood Education (TLE)', q1: 94, q2: 95, q3: 94, q4: 95, final: 95, remarks: 'Passed' },
-    { code: 'MAPEH-10', title: 'Music, Arts, Physical Education & Health (MAPEH)', isMapehParent: true, q1: 95, q2: 96, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
-    { code: 'MUSIC-10', title: 'Music', isMapehChild: true, q1: 94, q2: 95, q3: 95, q4: 96, final: 95, remarks: 'Passed' },
-    { code: 'ARTS-10', title: 'Arts', isMapehChild: true, q1: 93, q2: 94, q3: 95, q4: 95, final: 94, remarks: 'Passed' },
-    { code: 'PE-10', title: 'Physical Education (P.E.)', isMapehChild: true, q1: 96, q2: 97, q3: 96, q4: 97, final: 97, remarks: 'Passed' },
-    { code: 'HEALTH-10', title: 'Health', isMapehChild: true, q1: 95, q2: 96, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
+  // Base Subject templates for JHS and SHS TVL-ICT (with unrated default state)
+  const BASE_JHS_SUBJECTS: JhsSubjectGrade[] = [
+    { code: 'FIL', title: 'Filipino', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'ENG', title: 'English', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'MATH', title: 'Mathematics', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'SCI', title: 'Science', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'AP', title: 'Araling Panlipunan (AP)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'ESP', title: 'Edukasyon sa Pagpapakatao (EsP)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'TLE', title: 'Technology and Livelihood Education (TLE)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'MAPEH', title: 'Music, Arts, Physical Education & Health (MAPEH)', isMapehParent: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'MUSIC', title: 'Music', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'ARTS', title: 'Arts', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'PE', title: 'Physical Education (P.E.)', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'HEALTH', title: 'Health', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
   ];
 
-  const DEFAULT_SHS_SUBJECTS: JhsSubjectGrade[] = [
-    { code: 'CORE-1', title: 'Oral Communication in Context', q1: 99, q2: 93, q3: 95, q4: 96, final: 96, remarks: 'Passed' },
-    { code: 'CORE-3', title: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', q1: 95, q2: 93, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
-    { code: 'CORE-8', title: 'General Mathematics', q1: 89, q2: 91, q3: 90, q4: 91, final: 90, remarks: 'Passed' },
-    { code: 'CORE-10', title: 'Earth and Life Science', q1: 92, q2: 94, q3: 93, q4: 95, final: 94, remarks: 'Passed' },
-    { code: 'CORE-12', title: 'Introduction to the Philosophy of the Human Person', q1: 91, q2: 93, q3: 92, q4: 93, final: 92, remarks: 'Passed' },
-    { code: 'CORE-13-1', title: 'Physical Education and Health 1', q1: 95, q2: 97, q3: 96, q4: 97, final: 96, remarks: 'Passed' },
-    { code: 'APP-3', title: 'English for Academic and Professional Purposes', q1: 90, q2: 92, q3: 91, q4: 92, final: 91, remarks: 'Passed' },
-    { code: 'APP-5', title: 'Empowerment Technologies: ICT for Professional Tracks', q1: 93, q2: 95, q3: 94, q4: 95, final: 94, remarks: 'Passed' },
-    { code: 'APP-1', title: 'Computer Systems Servicing NC II (CSS 1)', q1: 92, q2: 94, q3: 93, q4: 95, final: 93, remarks: 'Passed' },
+  const BASE_SHS_SUBJECTS: JhsSubjectGrade[] = [
+    { code: 'CORE-1', title: 'Oral Communication in Context', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'CORE-3', title: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'CORE-8', title: 'General Mathematics', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'CORE-10', title: 'Earth and Life Science', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'CORE-12', title: 'Introduction to the Philosophy of the Human Person', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'CORE-13-1', title: 'Physical Education and Health 1', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'APP-3', title: 'English for Academic and Professional Purposes', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'APP-5', title: 'Empowerment Technologies: ICT for Professional Tracks', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'APP-1', title: 'Computer Systems Servicing NC II (CSS 1)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
   ];
 
   const [jhsSubjects, setJhsSubjects] = useState<JhsSubjectGrade[]>(() =>
-    isSeniorHigh ? DEFAULT_SHS_SUBJECTS : DEFAULT_JHS_SUBJECTS
+    isSeniorHigh ? BASE_SHS_SUBJECTS : BASE_JHS_SUBJECTS
   );
 
   // When grade level changes, reset default subjects
   useEffect(() => {
-    setJhsSubjects(isSeniorHigh ? DEFAULT_SHS_SUBJECTS : DEFAULT_JHS_SUBJECTS);
+    setJhsSubjects(isSeniorHigh ? BASE_SHS_SUBJECTS : BASE_JHS_SUBJECTS);
   }, [isSeniorHigh]);
 
   // Load live grades from Supabase if recorded
@@ -229,19 +259,24 @@ export const StudentGradesPage: React.FC = () => {
     async function loadLiveGrades() {
       try {
         let studentId = isParent
-          ? parentChild?.id || user?.student_id
-          : user?.student_id || user?.id;
-        const cleanEmail = (user?.email || '').trim().toLowerCase();
+          ? resolvedStudent?.id || user?.student_id
+          : resolvedStudent?.id || user?.student_id || user?.id;
+        const cleanEmail = (resolvedStudent?.email || user?.email || '').trim().toLowerCase();
         const cleanLrn = isParent
-          ? parentChild?.lrn || user?.student_lrn || ''
-          : (user?.student_lrn || '').trim();
+          ? resolvedStudent?.lrn || user?.student_lrn || ''
+          : (resolvedStudent?.lrn || user?.student_lrn || '').trim();
 
-        if (cleanEmail || cleanLrn) {
+        if (!studentId && (cleanEmail || cleanLrn)) {
           try {
-            const { data: sRows } = await supabase
-              .from('students')
-              .select('id, grade_level, strand')
-              .or(`email.ilike.${cleanEmail},lrn.eq.${cleanLrn}`);
+            let sQuery = supabase.from('students').select('id, grade_level, strand');
+            if (cleanEmail && cleanLrn) {
+              sQuery = sQuery.or(`email.ilike.${cleanEmail},lrn.eq.${cleanLrn}`);
+            } else if (cleanLrn) {
+              sQuery = sQuery.eq('lrn', cleanLrn);
+            } else if (cleanEmail) {
+              sQuery = sQuery.ilike('email', cleanEmail);
+            }
+            const { data: sRows } = await sQuery.limit(1);
             if (sRows && sRows.length > 0 && sRows[0].id) {
               studentId = sRows[0].id;
             }
@@ -313,7 +348,7 @@ export const StudentGradesPage: React.FC = () => {
             }
           });
 
-          // Match live recorded grades against JHS subjects
+          // Match live recorded grades against base subjects
           setJhsSubjects((prev) =>
             prev.map((sub) => {
               const matchedDbSub = dbSubjects.find((s: any) => {
@@ -353,47 +388,6 @@ export const StudentGradesPage: React.FC = () => {
           );
         }
 
-        // If no teacher entries yet in DB, populate baseline from current active subjects so table is rich
-        if (rawGradeItems.length === 0) {
-          const baselineSubjects = isSeniorHigh ? DEFAULT_SHS_SUBJECTS : DEFAULT_JHS_SUBJECTS;
-          baselineSubjects.forEach((sub) => {
-            if (sub.isMapehChild) return;
-            const qMarks = [
-              { q: 1, val: sub.q1, term: isSeniorHigh ? '1st Semester · Quarter 1' : 'Quarter 1' },
-              { q: 2, val: sub.q2, term: isSeniorHigh ? '1st Semester · Quarter 2' : 'Quarter 2' },
-              { q: 3, val: sub.q3, term: isSeniorHigh ? '2nd Semester · Quarter 3' : 'Quarter 3' },
-              { q: 4, val: sub.q4, term: isSeniorHigh ? '2nd Semester · Quarter 4' : 'Quarter 4' },
-            ];
-            qMarks.forEach(({ q, val, term }) => {
-              if (val > 0) {
-                const descriptor =
-                  val >= 90
-                    ? 'Outstanding'
-                    : val >= 85
-                    ? 'Very Satisfactory'
-                    : val >= 80
-                    ? 'Satisfactory'
-                    : val >= 75
-                    ? 'Fairly Satisfactory'
-                    : 'Did Not Meet Expectations';
-
-                rawGradeItems.push({
-                  id: `${sub.code}-${q}`,
-                  subjectTitle: sub.title,
-                  subjectCode: sub.code,
-                  grade: val,
-                  term,
-                  quarter: q,
-                  schoolYear,
-                  teacherName: 'Class Subject Teacher',
-                  remarks: val >= 75 ? 'Passed' : 'Failed',
-                  descriptor,
-                });
-              }
-            });
-          });
-        }
-
         setSubmittedGradesList(rawGradeItems);
       } catch (err) {
         console.warn('Live grades query error:', err);
@@ -405,7 +399,7 @@ export const StudentGradesPage: React.FC = () => {
     return () => {
       window.removeEventListener('plshs_grades_updated', loadLiveGrades);
     };
-  }, [user, isParent, parentChild]);
+  }, [user, isParent, resolvedStudent]);
 
   // Filtered Submitted Grade items by term and subject query
   const filteredSubmittedGrades = useMemo(() => {
@@ -439,34 +433,39 @@ export const StudentGradesPage: React.FC = () => {
 
   // Quarterly General Averages
   const q1GeneralAverage = useMemo(() => {
-    if (mainLearningAreas.length === 0) return '0.00';
-    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q1, 0);
-    return (sum / mainLearningAreas.length).toFixed(2);
+    const valid = mainLearningAreas.filter((s) => typeof s.q1 === 'number' && s.q1 > 0);
+    if (valid.length === 0) return '—';
+    const sum = valid.reduce((acc, s) => acc + s.q1, 0);
+    return (sum / valid.length).toFixed(2);
   }, [mainLearningAreas]);
 
   const q2GeneralAverage = useMemo(() => {
-    if (mainLearningAreas.length === 0) return '0.00';
-    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q2, 0);
-    return (sum / mainLearningAreas.length).toFixed(2);
+    const valid = mainLearningAreas.filter((s) => typeof s.q2 === 'number' && s.q2 > 0);
+    if (valid.length === 0) return '—';
+    const sum = valid.reduce((acc, s) => acc + s.q2, 0);
+    return (sum / valid.length).toFixed(2);
   }, [mainLearningAreas]);
 
   const q3GeneralAverage = useMemo(() => {
-    if (mainLearningAreas.length === 0) return '0.00';
-    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q3, 0);
-    return (sum / mainLearningAreas.length).toFixed(2);
+    const valid = mainLearningAreas.filter((s) => typeof s.q3 === 'number' && s.q3 > 0);
+    if (valid.length === 0) return '—';
+    const sum = valid.reduce((acc, s) => acc + s.q3, 0);
+    return (sum / valid.length).toFixed(2);
   }, [mainLearningAreas]);
 
   const q4GeneralAverage = useMemo(() => {
-    if (mainLearningAreas.length === 0) return '0.00';
-    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q4, 0);
-    return (sum / mainLearningAreas.length).toFixed(2);
+    const valid = mainLearningAreas.filter((s) => typeof s.q4 === 'number' && s.q4 > 0);
+    if (valid.length === 0) return '—';
+    const sum = valid.reduce((acc, s) => acc + s.q4, 0);
+    return (sum / valid.length).toFixed(2);
   }, [mainLearningAreas]);
 
-  // General Final Average (Sum of final ratings of 8 major learning areas / 8)
+  // General Final Average (Sum of final ratings of major learning areas)
   const generalFinalAverage = useMemo(() => {
-    if (mainLearningAreas.length === 0) return '0.00';
-    const sum = mainLearningAreas.reduce((acc, s) => acc + s.final, 0);
-    return (sum / mainLearningAreas.length).toFixed(2);
+    const valid = mainLearningAreas.filter((s) => typeof s.final === 'number' && s.final > 0);
+    if (valid.length === 0) return '—';
+    const sum = valid.reduce((acc, s) => acc + s.final, 0);
+    return (sum / valid.length).toFixed(2);
   }, [mainLearningAreas]);
 
   // DepEd Learner's Observed Values (DepEd Core Values)
@@ -797,10 +796,22 @@ export const StudentGradesPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 self-start md:self-auto">
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 shadow-2xs">
-                <Award className="h-4 w-4 text-amber-600" />
-                With High Honors
-              </span>
+              {generalFinalAverage !== '—' && Number(generalFinalAverage) >= 90 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 shadow-2xs">
+                  <Award className="h-4 w-4 text-amber-600" />
+                  {Number(generalFinalAverage) >= 95 ? 'With High Honors' : 'With Honors'}
+                </span>
+              ) : generalFinalAverage !== '—' ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-900 shadow-2xs">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  Passed (Promoted)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-900 shadow-2xs">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  Awaiting Teacher Submissions
+                </span>
+              )}
             </div>
           </div>
 
@@ -811,7 +822,13 @@ export const StudentGradesPage: React.FC = () => {
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-2xl sm:text-3xl font-black text-emerald-950 font-mono">{generalFinalAverage}</span>
               </div>
-              <span className="text-[11px] font-bold text-emerald-700 mt-0.5 block">Passed (Final)</span>
+              <span className="text-[11px] font-bold text-emerald-700 mt-0.5 block">
+                {generalFinalAverage !== '—'
+                  ? Number(generalFinalAverage) >= 75
+                    ? 'Passed (Final)'
+                    : 'Awaiting Makeup'
+                  : 'In Progress'}
+              </span>
             </div>
 
             <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
@@ -1133,15 +1150,15 @@ export const StudentGradesPage: React.FC = () => {
                             <td className="px-5 py-2.5 pl-10 text-slate-600">
                               <span className="text-[11px] font-medium">• {s.title}</span>
                             </td>
-                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q1}</td>
-                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q2}</td>
-                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q3}</td>
-                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q4}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q1 > 0 ? s.q1 : '—'}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q2 > 0 ? s.q2 : '—'}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q3 > 0 ? s.q3 : '—'}</td>
+                            <td className="px-3.5 py-2.5 text-center font-mono text-[11px] text-slate-500">{s.q4 > 0 ? s.q4 : '—'}</td>
                             <td className="px-4 py-2.5 text-center font-mono font-semibold text-slate-600 text-[11px] bg-slate-50/50">
-                              {s.final}
+                              {s.final > 0 ? s.final : '—'}
                             </td>
                             <td className="px-5 py-2.5 text-right text-[11px] font-medium text-emerald-700">
-                              {s.remarks}
+                              {s.final > 0 ? s.remarks : 'In Progress'}
                             </td>
                           </tr>
                         );
@@ -1162,15 +1179,19 @@ export const StudentGradesPage: React.FC = () => {
                               </span>
                             </div>
                           </td>
-                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q1}</td>
-                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q2}</td>
-                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q3}</td>
-                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q4}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q1 > 0 ? s.q1 : '—'}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q2 > 0 ? s.q2 : '—'}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q3 > 0 ? s.q3 : '—'}</td>
+                          <td className="px-3.5 py-3.5 text-center font-mono font-medium text-slate-700">{s.q4 > 0 ? s.q4 : '—'}</td>
                           <td className="px-4 py-3.5 text-center font-mono font-black text-slate-900 text-sm bg-slate-50/60">
-                            {s.final}
+                            {s.final > 0 ? s.final : '—'}
                           </td>
                           <td className="px-5 py-3.5 text-right">
-                            <Badge variant="success" size="sm">{s.remarks}</Badge>
+                            {s.final > 0 ? (
+                              <Badge variant={s.final >= 75 ? 'success' : 'danger'} size="sm">{s.remarks}</Badge>
+                            ) : (
+                              <span className="text-[11px] font-semibold text-slate-400">In Progress</span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1579,12 +1600,20 @@ export const StudentGradesPage: React.FC = () => {
                   {isSeniorHigh ? 'Curriculum Program:' : 'Academic Standing:'}
                 </span>
                 <span className="text-slate-900 font-semibold text-[6.8pt]">
-                  {isSeniorHigh ? 'K to 12 Senior High Curriculum' : 'Passed (With High Honors)'}
+                  {isSeniorHigh
+                    ? 'K to 12 Senior High Curriculum'
+                    : generalFinalAverage !== '—'
+                    ? Number(generalFinalAverage) >= 90
+                      ? 'Promoted (With Honors)'
+                      : 'Promoted (Passed)'
+                    : 'Awaiting Final Ratings'}
                 </span>
               </div>
               <div>
                 <span className="text-[6pt] font-bold uppercase text-slate-600 block">Age / Sex:</span>
-                <span className="text-slate-900 font-medium text-[6.8pt]">17 yrs. old · Male</span>
+                <span className="text-slate-900 font-medium text-[6.8pt]">
+                  {resolvedStudent?.age ? `${resolvedStudent.age} yrs. old` : '—'} · {resolvedStudent?.gender || 'Learner'}
+                </span>
               </div>
             </div>
           </div>
@@ -1618,15 +1647,15 @@ export const StudentGradesPage: React.FC = () => {
                         <td className="border border-black px-1.5 py-0.5 pl-4 truncate text-slate-700">
                           <span>{s.title}</span>
                         </td>
-                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q1}</td>
-                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q2}</td>
-                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q3}</td>
-                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q4}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q1 > 0 ? s.q1 : '—'}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q2 > 0 ? s.q2 : '—'}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q3 > 0 ? s.q3 : '—'}</td>
+                        <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-700">{s.q4 > 0 ? s.q4 : '—'}</td>
                         <td className="border border-black px-1 py-0.5 text-center font-mono font-medium text-slate-800 bg-slate-50/50">
-                          {s.final}
+                          {s.final > 0 ? s.final : '—'}
                         </td>
                         <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">
-                          {s.remarks}
+                          {s.final > 0 ? s.remarks : 'In Progress'}
                         </td>
                       </tr>
                     );
@@ -1637,15 +1666,15 @@ export const StudentGradesPage: React.FC = () => {
                       <td className="border border-black px-1.5 py-0.5 truncate">
                         <span className="font-semibold text-slate-900">{s.title}</span>
                       </td>
-                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q1}</td>
-                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q2}</td>
-                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q3}</td>
-                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q4}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q1 > 0 ? s.q1 : '—'}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q2 > 0 ? s.q2 : '—'}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q3 > 0 ? s.q3 : '—'}</td>
+                      <td className="border border-black px-1 py-0.5 text-center font-mono text-slate-900">{s.q4 > 0 ? s.q4 : '—'}</td>
                       <td className="border border-black px-1 py-0.5 text-center font-mono font-bold text-slate-950 bg-slate-50">
-                        {s.final}
+                        {s.final > 0 ? s.final : '—'}
                       </td>
                       <td className="border border-black px-1.5 py-0.5 text-center font-medium text-emerald-800">
-                        {s.remarks}
+                        {s.final > 0 ? s.remarks : 'In Progress'}
                       </td>
                     </tr>
                   );

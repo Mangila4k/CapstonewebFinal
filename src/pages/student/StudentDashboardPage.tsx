@@ -159,7 +159,7 @@ export const StudentDashboardPage: React.FC = () => {
     user?.full_name ||
     `${user?.first_name || ''} ${user?.last_name || ''}`.trim() ||
     'PLSNHS Learner';
-  const lrn = studentRecord?.lrn || user?.student_lrn || '11951680082';
+  const lrn = studentRecord?.lrn || user?.student_lrn || '';
   const gradeLevel = studentRecord?.grade_level || user?.student_grade || 'Grade 7';
   const gradeNumMatch = String(gradeLevel).match(/\d+/);
   const gradeNum = gradeNumMatch ? parseInt(gradeNumMatch[0], 10) : 7;

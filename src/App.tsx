@@ -34,6 +34,7 @@ import { AdminProfilePage } from './pages/admin/AdminProfilePage';
 // Registrar Pages
 import { RegistrarDashboardPage } from './pages/registrar/RegistrarDashboardPage';
 import { RegistrarRequirementsPage } from './pages/registrar/RegistrarRequirementsPage';
+import { RegistrarReportsPage } from './pages/registrar/RegistrarReportsPage';
 
 // Teacher Pages
 import { TeacherDashboardPage } from './pages/teacher/TeacherDashboardPage';
@@ -326,7 +327,7 @@ export const App: React.FC = () => {
             path="/registrar/reports"
             element={
               <ProtectedRoute allowedRoles={['registrar', 'admin']}>
-                <AdminReportsPage />
+                <RegistrarReportsPage />
               </ProtectedRoute>
             }
           />

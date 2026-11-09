@@ -188,14 +188,15 @@ export const StudentEnrollmentPage: React.FC = () => {
     studentRecord?.full_name ||
     (studentRecord ? `${studentRecord.first_name || ''} ${studentRecord.last_name || ''}`.trim() : '') ||
     user?.full_name ||
-    'Jorvin Pengoc';
-  const learnerLrn = studentRecord?.lrn || user?.student_lrn || '11951680082';
-  const learnerGrade = studentRecord?.grade_level || user?.student_grade || 'Grade 11';
+    `${user?.first_name || ''} ${user?.last_name || ''}`.trim() ||
+    'Enrolled Student';
+  const learnerLrn = studentRecord?.lrn || user?.student_lrn || '—';
+  const learnerGrade = studentRecord?.grade_level || user?.student_grade || 'Grade 10';
   const learnerSection =
-    sectionRecord?.name ? `Section ${sectionRecord.name}` : user?.student_section || 'Section Almario';
-  const learnerStrand = studentRecord?.strand || user?.student_strand || 'TVL - ICT';
-  const adviserName = sectionRecord?.adviser_name || 'Mr. J. Almario';
-  const roomName = sectionRecord?.room || 'SHS Bldg 2, Rm 204';
+    sectionRecord?.name ? `Section ${sectionRecord.name}` : user?.student_section || 'Section 1';
+  const learnerStrand = studentRecord?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School');
+  const adviserName = sectionRecord?.adviser_name || 'Class Adviser';
+  const roomName = sectionRecord?.room || 'Academic Building';
   const schoolYear = enrollmentRecord?.school_year || '2026–2027';
 
   useEffect(() => {

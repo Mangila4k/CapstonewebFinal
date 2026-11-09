@@ -51,18 +51,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               let updatedAvatar = parsed.avatar_url || '';
 
               try {
-                const { data: sRows } = await supabase
-                  .from('students')
-                  .select('*')
-                  .or(`email.ilike.${cleanEmail},id.eq.${parsed.id}`);
-                if (sRows && sRows.length > 0) {
-                  const s = sRows[0];
+                let s: any = null;
+                const orFilters: string[] = [];
+                if (parsed.student_id) orFilters.push(`id.eq.${parsed.student_id}`);
+                if (cleanEmail) orFilters.push(`email.ilike.${cleanEmail}`);
+                if (parsed.id) orFilters.push(`id.eq.${parsed.id}`);
+                if (parsed.student_lrn) orFilters.push(`lrn.eq.${parsed.student_lrn}`);
+
+                if (orFilters.length > 0) {
+                  const { data: sRows } = await supabase
+                    .from('students')
+                    .select('*')
+                    .or(orFilters.join(','));
+                  if (sRows && sRows.length > 0) s = sRows[0];
+                }
+
+                if (!s && (parsed.first_name || parsed.last_name)) {
+                  let nameQuery = supabase.from('students').select('*');
+                  if (parsed.first_name) nameQuery = nameQuery.ilike('first_name', `%${parsed.first_name}%`);
+                  if (parsed.last_name) nameQuery = nameQuery.ilike('last_name', `%${parsed.last_name}%`);
+                  const { data: nameRows } = await nameQuery.limit(1);
+                  if (nameRows && nameRows.length > 0) s = nameRows[0];
+                }
+
+                if (s) {
+                  if (s.id && !parsed.student_id) parsed.student_id = s.id;
                   if (s.grade_level) updatedGrade = s.grade_level;
                   if (s.strand !== undefined && s.strand !== null) updatedStrand = s.strand;
-                  if (s.section) updatedSection = s.section;
                   if (s.lrn) updatedLrn = s.lrn;
+                  if (s.academic_status) updatedStatus = s.academic_status;
                   if (s.two_by_two_picture_url || s.avatar_url) {
                     updatedAvatar = s.two_by_two_picture_url || s.avatar_url;
+                  }
+                  if (s.section) {
+                    updatedSection = s.section;
+                  } else if (s.section_id) {
+                    const { data: sec } = await supabase
+                      .from('sections')
+                      .select('name')
+                      .eq('id', s.section_id)
+                      .maybeSingle();
+                    if (sec?.name) updatedSection = sec.name;
                   }
                 }
               } catch {
@@ -114,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ) {
                 const refreshed = {
                   ...parsed,
+                  student_id: parsed.student_id,
                   student_grade: updatedGrade,
                   student_strand: updatedStrand,
                   student_section: updatedSection,
@@ -326,22 +356,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (userRole === 'student') {
         try {
-          const { data: sRows } = await supabase
-            .from('students')
-            .select('*')
-            .or(`email.ilike.${cleanEmail},id.eq.${matchedUser.id}`);
+          let s: any = null;
+          const orFilters: string[] = [];
+          if (matchedUser.student_id) orFilters.push(`id.eq.${matchedUser.student_id}`);
+          if (cleanEmail) orFilters.push(`email.ilike.${cleanEmail}`);
+          if (matchedUser.id) orFilters.push(`id.eq.${matchedUser.id}`);
 
-          if (sRows && sRows.length > 0) {
-            const s = sRows[0];
+          if (orFilters.length > 0) {
+            const { data: sRows } = await supabase
+              .from('students')
+              .select('*')
+              .or(orFilters.join(','));
+            if (sRows && sRows.length > 0) s = sRows[0];
+          }
+
+          if (!s && (matchedUser.first_name || matchedUser.last_name)) {
+            let nameQuery = supabase.from('students').select('*');
+            if (matchedUser.first_name) nameQuery = nameQuery.ilike('first_name', `%${matchedUser.first_name}%`);
+            if (matchedUser.last_name) nameQuery = nameQuery.ilike('last_name', `%${matchedUser.last_name}%`);
+            const { data: nameRows } = await nameQuery.limit(1);
+            if (nameRows && nameRows.length > 0) s = nameRows[0];
+          }
+
+          if (s) {
             if (s.id) studentID = s.id;
             if (s.first_name && !firstName) firstName = s.first_name;
             if (s.last_name && !lastName) lastName = s.last_name;
             if (s.lrn) studentLRN = s.lrn;
             if (s.grade_level) studentGrade = s.grade_level;
             if (s.strand) studentStrand = s.strand;
-            if (s.section) studentSection = s.section;
             if (s.avatar_url || s.two_by_two_picture_url) {
               userAvatar = s.avatar_url || s.two_by_two_picture_url;
+            }
+            if (s.section) {
+              studentSection = s.section;
+            } else if (s.section_id) {
+              const { data: sec } = await supabase
+                .from('sections')
+                .select('name')
+                .eq('id', s.section_id)
+                .maybeSingle();
+              if (sec?.name) studentSection = sec.name;
             }
           }
         } catch {

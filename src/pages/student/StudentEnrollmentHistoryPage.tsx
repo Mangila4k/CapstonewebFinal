@@ -164,12 +164,13 @@ export const StudentEnrollmentHistoryPage: React.FC = () => {
     studentRecord?.full_name ||
     (studentRecord ? `${studentRecord.first_name || ''} ${studentRecord.last_name || ''}`.trim() : '') ||
     user?.full_name ||
-    'Jorvin Pengoc';
-  const learnerLrn = studentRecord?.lrn || user?.student_lrn || '11951680082';
-  const learnerGrade = studentRecord?.grade_level || user?.student_grade || 'Grade 11';
+    `${user?.first_name || ''} ${user?.last_name || ''}`.trim() ||
+    'Enrolled Student';
+  const learnerLrn = studentRecord?.lrn || user?.student_lrn || '—';
+  const learnerGrade = studentRecord?.grade_level || user?.student_grade || 'Grade 10';
   const learnerSection =
-    sectionRecord?.name ? `Section ${sectionRecord.name}` : user?.student_section || 'Section Almario';
-  const learnerStrand = studentRecord?.strand || user?.student_strand || 'TVL - ICT';
+    sectionRecord?.name ? `Section ${sectionRecord.name}` : user?.student_section || 'Section 1';
+  const learnerStrand = studentRecord?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School');
   const schoolYear = enrollmentRecord?.school_year || '2026–2027';
 
   useEffect(() => {

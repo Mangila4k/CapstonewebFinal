@@ -122,11 +122,11 @@ export const StudentRequirementsPage: React.FC = () => {
   const [selectedDoc, setSelectedDoc] = useState<DocumentRequirement | null>(null);
   const [documentRequirements, setDocumentRequirements] = useState<DocumentRequirement[]>(DOCUMENT_REQUIREMENTS);
 
-  const learnerName = user?.full_name || 'Jorvin Pengoc';
-  const learnerLrn = user?.student_lrn || '11951680082';
-  const learnerGrade = user?.student_grade || 'Grade 11';
-  const learnerSection = user?.student_section || 'Section Almario';
-  const learnerStrand = user?.student_strand || 'TVL - ICT';
+  const learnerName = user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Enrolled Student';
+  const learnerLrn = user?.student_lrn || '—';
+  const learnerGrade = user?.student_grade || 'Grade 10';
+  const learnerSection = user?.student_section || 'Section 1';
+  const learnerStrand = user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School');
   const schoolYear = '2026–2027';
 
   useEffect(() => {

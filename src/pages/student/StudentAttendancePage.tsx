@@ -309,8 +309,8 @@ export const StudentAttendancePage: React.FC = () => {
           q = q.eq('lrn', user.student_lrn);
         } else if (user?.email) {
           q = q.ilike('email', user.email);
-        } else {
-          q = q.eq('lrn', '11951680082');
+        } else if (user?.id) {
+          q = q.eq('id', user.id);
         }
         const { data: stRows } = await q.limit(1);
         if (stRows && stRows.length > 0) {
@@ -319,8 +319,8 @@ export const StudentAttendancePage: React.FC = () => {
         }
       }
 
-      const resolvedStudentId = student?.id || user?.student_id || user?.id || '4a2e12e1-16a1-454a-815f-5c2309e683ff';
-      const resolvedLrn = student?.lrn || user?.student_lrn || '11951680082';
+      const resolvedStudentId = student?.id || user?.student_id || user?.id;
+      const resolvedLrn = student?.lrn || user?.student_lrn || '';
 
       // Resolve section name if needed
       if (student?.section_id) {
@@ -334,9 +334,14 @@ export const StudentAttendancePage: React.FC = () => {
         }
       }
 
+      if (!resolvedStudentId && !resolvedLrn) {
+        setLogs([]);
+        return;
+      }
+
       // Query the official Supabase attendance_records table
       const attRows = await fetchAttendanceRecords({
-        student_id: resolvedStudentId,
+        student_id: resolvedStudentId || '',
         lrn: resolvedLrn,
         limit: 100,
       });
@@ -376,12 +381,11 @@ export const StudentAttendancePage: React.FC = () => {
 
         setLogs(mappedLogs);
       } else {
-        // Fallback default baseline logs if no database rows exist yet
-        setLogs(INITIAL_LOGS);
+        setLogs([]);
       }
     } catch (err) {
       console.warn('Attendance live database fetch note:', err);
-      setLogs(INITIAL_LOGS);
+      setLogs([]);
     } finally {
       setIsLoading(false);
       setTimeout(() => setIsRefreshing(false), 400);
@@ -425,22 +429,22 @@ export const StudentAttendancePage: React.FC = () => {
   const learnerName = isParent
     ? (parentChild
         ? `${parentChild.first_name || ''} ${parentChild.last_name || ''}`.trim()
-        : user?.student_name || 'Jorvin Pengoc')
+        : user?.student_name || 'Enrolled Student')
     : studentRecord
       ? `${studentRecord.first_name || ''} ${studentRecord.last_name || ''}`.trim()
-      : user?.full_name || 'Jorvin Pengoc';
+      : user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Enrolled Student';
   const learnerLrn = isParent
-    ? parentChild?.lrn || user?.student_lrn || '11951680082'
-    : studentRecord?.lrn || user?.student_lrn || '11951680082';
+    ? parentChild?.lrn || user?.student_lrn || '—'
+    : studentRecord?.lrn || user?.student_lrn || '—';
   const learnerGrade = isParent
-    ? parentChild?.grade_level || user?.student_grade || 'Grade 11'
-    : studentRecord?.grade_level || user?.student_grade || 'Grade 11';
+    ? parentChild?.grade_level || user?.student_grade || 'Grade 10'
+    : studentRecord?.grade_level || user?.student_grade || 'Grade 10';
   const learnerSection = isParent
-    ? parentChild?.resolvedSection || user?.student_section || 'Almario'
-    : resolvedSectionName || studentRecord?.section || user?.student_section || 'Almario';
+    ? parentChild?.resolvedSection || user?.student_section || 'Section 1'
+    : resolvedSectionName || studentRecord?.section || user?.student_section || 'Section 1';
   const learnerStrand = isParent
-    ? parentChild?.strand || user?.student_strand || 'TVL - ICT'
-    : studentRecord?.strand || user?.student_strand || 'TVL - ICT';
+    ? parentChild?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School')
+    : studentRecord?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School');
   const schoolYear = '2026–2027';
 
   // Quick counts for filter pills (dynamically calculated from logs)
