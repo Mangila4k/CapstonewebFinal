@@ -339,6 +339,36 @@ export const EnrollmentWizardPage: React.FC = () => {
         created_at: new Date().toISOString(),
       };
 
+      // 3. Save all submitted documents to Supabase student_documents table
+      const docTypeLabels: Record<string, string> = {
+        two_by_two_picture: '2x2 ID Photo',
+        form_137: 'Form 137 / SF10',
+        report_card: 'Form 138 / SF9 (Report Card)',
+        certificate_of_completion: 'Certificate of Junior High Completion',
+        psa_birth_cert: 'PSA Birth Certificate',
+        good_moral_cert: 'Certificate of Good Moral Character',
+      };
+
+      for (const [key, file] of Object.entries(documents)) {
+        const fileUrl = uploadedDocUrls[`${key}_url`];
+        if (file && fileUrl) {
+          try {
+            await supabase.from('student_documents').insert({
+              student_id: data?.student_id || null,
+              document_type: docTypeLabels[key] || key,
+              file_url: fileUrl,
+              file_name: file.name,
+              file_size: file.size,
+              uploaded_at: new Date().toISOString(),
+              verified: false,
+              remarks: `Submitted during online enrollment for ${formData.gradeLevel} (Applicant: ${formData.firstName.trim()} ${formData.lastName.trim()})`,
+            });
+          } catch (docSaveErr) {
+            console.warn(`Notice: student_documents record for ${key}:`, docSaveErr);
+          }
+        }
+      }
+
       // Notify Admin and Registrar in real time via notifications table
       try {
         await supabase.from('notifications').insert({

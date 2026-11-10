@@ -94,6 +94,27 @@ export async function uploadAndSaveAvatar(
       if (user.id) {
         await supabase.from('students').update(studentUpdates).eq('id', user.id);
       }
+
+      // Also register in student_documents table in Supabase
+      try {
+        let studentDbId: string | null = null;
+        if (cleanEmail) {
+          const { data: sRow } = await supabase.from('students').select('id').ilike('email', cleanEmail).maybeSingle();
+          if (sRow?.id) studentDbId = sRow.id;
+        }
+        await supabase.from('student_documents').insert({
+          student_id: studentDbId || (typeof user.id === 'string' && user.id.includes('-') ? user.id : null),
+          document_type: '2x2 ID Photo',
+          file_url: finalAvatar,
+          file_name: `avatar_${safeId}.jpg`,
+          file_size: null,
+          uploaded_at: new Date().toISOString(),
+          verified: false,
+          remarks: 'Updated student profile picture / 2x2 ID photo',
+        });
+      } catch (docErr) {
+        console.warn('Notice registering avatar in student_documents:', docErr);
+      }
     } catch (err) {
       console.warn('Notice updating student avatar in database:', err);
     }
