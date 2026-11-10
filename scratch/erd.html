@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Placido L. Señor NHS - Entity Relationship Diagram (ERD)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #1e293b;
+            width: 3280px;
+            height: 3480px;
+            position: relative;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        .canvas {
+            width: 3280px;
+            height: 3480px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #ffffff;
+        }
+        .diagram-header {
+            position: absolute;
+            left: 100px;
+            top: 24px;
+            z-index: 5;
+        }
+        .diagram-header h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+        .diagram-header p {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        svg.connectors {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3280px;
+            height: 3480px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .entity-card {
+            position: absolute;
+            background: #ffffff;
+            border: 1.5px solid #334155;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            z-index: 20;
+            overflow: hidden;
+        }
+        .entity-header {
+            background: #f8fafc;
+            border-bottom: 1.5px solid #334155;
+            padding: 6px 14px;
+            text-align: center;
+        }
+        .entity-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+        }
+        .entity-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        .table-row {
+            height: 25px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .table-row:last-child {
+            border-bottom: none;
+        }
+        .col-key {
+            width: 60px;
+            padding-left: 10px;
+            font-weight: 700;
+            font-size: 10.5px;
+            color: #475569;
+            white-space: nowrap;
+        }
+        .col-name {
+            padding: 0 10px;
+            font-weight: 600;
+            color: #0f172a;
+            white-space: nowrap;
+            font-family: Consolas, "SF Mono", "Courier New", monospace;
+        }
+        .col-type {
+            padding: 0 12px;
+            text-align: right;
+            color: #64748b;
+            white-space: nowrap;
+            font-family: Consolas, "SF Mono", "Courier New", monospace;
+            font-size: 11px;
+        }
+        .key-badge {
+            display: inline-block;
+            font-weight: 700;
+            font-size: 10.5px;
+        }
+        .key-badge.pk {
+            color: #0f172a;
+        }
+        .key-badge.fk {
+            color: #475569;
+        }
+        .key-badge.ak {
+            color: #047857;
+        }
+        .key-badge.pk-fk {
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <svg class="connectors" width="3280" height="3480">
+            <path d="M 930 418 L 930 1560 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 920 1544 L 930 1560 L 940 1544" fill="none" stroke="#334155" stroke-width="2"/><circle cx="930" cy="1538" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="922" y1="426" x2="938" y2="426" stroke="#334155" stroke-width="2"/><line x1="922" y1="432" x2="938" y2="432" stroke="#334155" stroke-width="2"/><path d="M 620 130.5 L 720 130.5 L 720 280.5 L 780 280.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="772" y1="272.5" x2="772" y2="288.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="272.5" x2="766" y2="288.5" stroke="#334155" stroke-width="2"/><line x1="628" y1="122.5" x2="628" y2="138.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="122.5" x2="634" y2="138.5" stroke="#334155" stroke-width="2"/><path d="M 780 305.5 L 740 305.5 L 740 480.5 L 620 480.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 636 470.5 L 620 480.5 L 636 490.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="642" cy="480.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="772" y1="297.5" x2="772" y2="313.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="297.5" x2="766" y2="313.5" stroke="#334155" stroke-width="2"/><path d="M 100 1610.5 L 50 1610.5 L 50 505.5 L 100 505.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 495.5 L 100 505.5 L 84 515.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="78" cy="505.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="92" y1="1602.5" x2="92" y2="1618.5" stroke="#334155" stroke-width="2"/><line x1="86" y1="1602.5" x2="86" y2="1618.5" stroke="#334155" stroke-width="2"/><path d="M 620 145.5 L 760 145.5 L 760 50 L 1320 50 L 1320 995.5 L 1360 995.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1344 985.5 L 1360 995.5 L 1344 1005.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="1338" cy="995.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="628" y1="137.5" x2="628" y2="153.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="137.5" x2="634" y2="153.5" stroke="#334155" stroke-width="2"/><path d="M 1360 970.5 L 1300 970.5 L 1300 780.5 L 620 780.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="628" y1="772.5" x2="628" y2="788.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="772.5" x2="634" y2="788.5" stroke="#334155" stroke-width="2"/><line x1="1352" y1="962.5" x2="1352" y2="978.5" stroke="#334155" stroke-width="2"/><line x1="1346" y1="962.5" x2="1346" y2="978.5" stroke="#334155" stroke-width="2"/><path d="M 1560 1883 L 1560 2780 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="1552" y1="2772" x2="1568" y2="2772" stroke="#334155" stroke-width="2"/><line x1="1552" y1="2766" x2="1568" y2="2766" stroke="#334155" stroke-width="2"/><line x1="1552" y1="1891" x2="1568" y2="1891" stroke="#334155" stroke-width="2"/><line x1="1552" y1="1897" x2="1568" y2="1897" stroke="#334155" stroke-width="2"/><path d="M 1710 920 L 1710 570.5 L 2220 570.5 L 2220 568 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2210 584 L 2220 568 L 2230 584" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2220" cy="590" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1702" y1="912" x2="1718" y2="912" stroke="#334155" stroke-width="2"/><line x1="1702" y1="906" x2="1718" y2="906" stroke="#334155" stroke-width="2"/><path d="M 1220 130.5 L 1950 130.5 L 1950 355.5 L 2070 355.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 345.5 L 2070 355.5 L 2054 365.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="355.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="122.5" x2="1228" y2="138.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="122.5" x2="1234" y2="138.5" stroke="#334155" stroke-width="2"/><path d="M 1220 145.5 L 1260 145.5 L 1260 2255.5 L 1220 2255.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1236 2245.5 L 1220 2255.5 L 1236 2265.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="1242" cy="2255.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="137.5" x2="1228" y2="153.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="137.5" x2="1234" y2="153.5" stroke="#334155" stroke-width="2"/><path d="M 1220 1610.5 L 1300 1610.5 L 1300 215.5 L 1420 215.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1404 205.5 L 1420 215.5 L 1404 225.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="1398" cy="215.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="1602.5" x2="1228" y2="1618.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="1602.5" x2="1234" y2="1618.5" stroke="#334155" stroke-width="2"/><path d="M 780 1610.5 L 750 1610.5 L 750 3195.5 L 780 3195.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="772" y1="3187.5" x2="772" y2="3203.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="3187.5" x2="766" y2="3203.5" stroke="#334155" stroke-width="2"/><line x1="772" y1="1602.5" x2="772" y2="1618.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="1602.5" x2="766" y2="1618.5" stroke="#334155" stroke-width="2"/><path d="M 780 1625.5 L 650 1625.5 L 650 1710.5 L 550 1710.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 566 1700.5 L 550 1710.5 L 566 1720.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="572" cy="1710.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="772" y1="1617.5" x2="772" y2="1633.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="1617.5" x2="766" y2="1633.5" stroke="#334155" stroke-width="2"/><path d="M 550 1610.5 L 680 1610.5 L 680 850 L 1970 850 L 1970 955.5 L 2070 955.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 945.5 L 2070 955.5 L 2054 965.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="955.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="558" y1="1602.5" x2="558" y2="1618.5" stroke="#334155" stroke-width="2"/><line x1="564" y1="1602.5" x2="564" y2="1618.5" stroke="#334155" stroke-width="2"/><path d="M 1220 1625.5 L 1950 1625.5 L 1950 980.5 L 2070 980.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 970.5 L 2070 980.5 L 2054 990.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="980.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="1617.5" x2="1228" y2="1633.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="1617.5" x2="1234" y2="1633.5" stroke="#334155" stroke-width="2"/><path d="M 2700 2950.5 L 2580 2950.5 L 2580 1130.5 L 2510 1130.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2526 1120.5 L 2510 1130.5 L 2526 1140.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2532" cy="1130.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="2692" y1="2942.5" x2="2692" y2="2958.5" stroke="#334155" stroke-width="2"/><line x1="2686" y1="2942.5" x2="2686" y2="2958.5" stroke="#334155" stroke-width="2"/><path d="M 620 160.5 L 1310 160.5 L 1310 880 L 1930 880 L 1930 1615.5 L 2070 1615.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 1605.5 L 2070 1615.5 L 2054 1625.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="1615.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="628" y1="152.5" x2="628" y2="168.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="152.5" x2="634" y2="168.5" stroke="#334155" stroke-width="2"/><path d="M 1220 1640.5 L 1970 1640.5 L 1970 1640.5 L 2070 1640.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 1630.5 L 2070 1640.5 L 2054 1650.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="1640.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="1632.5" x2="1228" y2="1648.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="1632.5" x2="1234" y2="1648.5" stroke="#334155" stroke-width="2"/><path d="M 2700 2965.5 L 2560 2965.5 L 2560 1790.5 L 2510 1790.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2526 1780.5 L 2510 1790.5 L 2526 1800.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2532" cy="1790.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="2692" y1="2957.5" x2="2692" y2="2973.5" stroke="#334155" stroke-width="2"/><line x1="2686" y1="2957.5" x2="2686" y2="2973.5" stroke="#334155" stroke-width="2"/><path d="M 300 868 L 300 2600 L 740 2600 L 740 2655.5 L 780 2655.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 764 2645.5 L 780 2655.5 L 764 2665.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="758" cy="2655.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="292" y1="876" x2="308" y2="876" stroke="#334155" stroke-width="2"/><line x1="292" y1="882" x2="308" y2="882" stroke="#334155" stroke-width="2"/><path d="M 620 175.5 L 1330 175.5 L 1330 2700 L 1970 2700 L 1970 3055.5 L 2070 3055.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 3045.5 L 2070 3055.5 L 2054 3065.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="3055.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="628" y1="167.5" x2="628" y2="183.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="167.5" x2="634" y2="183.5" stroke="#334155" stroke-width="2"/><path d="M 100 130.5 L 40 130.5 L 40 2795.5 L 100 2795.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 2785.5 L 100 2795.5 L 84 2805.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="78" cy="2795.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="92" y1="122.5" x2="92" y2="138.5" stroke="#334155" stroke-width="2"/><line x1="86" y1="122.5" x2="86" y2="138.5" stroke="#334155" stroke-width="2"/><path d="M 100 1625.5 L 60 1625.5 L 60 2845.5 L 100 2845.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 2835.5 L 100 2845.5 L 84 2855.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="78" cy="2845.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="92" y1="1617.5" x2="92" y2="1633.5" stroke="#334155" stroke-width="2"/><line x1="86" y1="1617.5" x2="86" y2="1633.5" stroke="#334155" stroke-width="2"/><path d="M 2850 3238 L 2850 3600 L 400 3600 L 400 3058 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 390 3074 L 400 3058 L 410 3074" fill="none" stroke="#334155" stroke-width="2"/><circle cx="400" cy="3080" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="2842" y1="3246" x2="2858" y2="3246" stroke="#334155" stroke-width="2"/><line x1="2842" y1="3252" x2="2858" y2="3252" stroke="#334155" stroke-width="2"/><path d="M 780 1640.5 L 620 1640.5 L 620 2870.5 L 550 2870.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 566 2860.5 L 550 2870.5 L 566 2880.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="572" cy="2870.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="772" y1="1632.5" x2="772" y2="1648.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="1632.5" x2="766" y2="1648.5" stroke="#334155" stroke-width="2"/>
+        </svg>
+        
+        <div class="entity-card" style="left: 100px; top: 80px; width: 520px;">
+            <div class="entity-header">
+                <span class="entity-title">students</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge ak">AK</span></td>
+                <td class="col-name">lrn</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">last_name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">first_name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">middle_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">suffix</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">date_of_birth</td>
+                <td class="col-type">date NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">age</td>
+                <td class="col-type">int4</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">gender</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">civil_status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">nationality</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">religion</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">contact_number</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">email</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">parent_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">section_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">form_138_url</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">psa_birth_url</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">good_moral_url</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">documents_status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">address</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">parent_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">parent_contact</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">birth_date</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">enrollment_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade_level</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">strand</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">student_type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 780px; top: 80px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">users</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">last_name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">first_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge ak">AK</span></td>
+                <td class="col-name">email</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">password</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">role</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">parent_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">contact_number</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">address</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 1420px; top: 140px; width: 450px;">
+            <div class="entity-header">
+                <span class="entity-title">teacher_attendance</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">date</td>
+                <td class="col-type">date NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">time_in</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">time_out</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">in_status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">out_status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">in_latitude</td>
+                <td class="col-type">float8</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">in_longitude</td>
+                <td class="col-type">float8</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">in_distance_m</td>
+                <td class="col-type">float8</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">out_latitude</td>
+                <td class="col-type">float8</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">out_longitude</td>
+                <td class="col-type">float8</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">out_distance_m</td>
+                <td class="col-type">float8</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 2070px; top: 280px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">notifications</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">user_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">role</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">title</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">message</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">read</td>
+                <td class="col-type">bool</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">enrollment_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">is_read</td>
+                <td class="col-type">bool</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 1360px; top: 920px; width: 530px;">
+            <div class="entity-header">
+                <span class="entity-title">enrollments</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade_level</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">strand</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">previous_school</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">previous_grade</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">last_school_year</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">general_average</td>
+                <td class="col-type">numeric</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">email</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">first_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">last_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">middle_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">dob</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">date_of_birth</td>
+                <td class="col-type">date</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">age</td>
+                <td class="col-type">int4</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">birthplace</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">gender</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">nationality</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">religion</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">address</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">contact_number</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">mother_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">mother_occupation</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">father_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">father_occupation</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">guardian_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">guardian_relationship</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">guardian_contact</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">guardian_email</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">guardian_address</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">student_type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">applicant_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">school_year</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">enrolled_date</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 2070px; top: 880px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">schedules</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">section_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">day</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">start_time</td>
+                <td class="col-type">time NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">end_time</td>
+                <td class="col-type">time NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">room</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">subject_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 2070px; top: 1540px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">attendance</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">date</td>
+                <td class="col-type">date NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">time_in</td>
+                <td class="col-type">time</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">time_out</td>
+                <td class="col-type">time</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">subject_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">remarks</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 100px; top: 1560px; width: 450px;">
+            <div class="entity-header">
+                <span class="entity-title">sections</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade_level</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">strand</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">adviser_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">room</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">adviser_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 780px; top: 1560px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">teachers</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">user_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge ak">AK</span></td>
+                <td class="col-name">employee_id</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">specialization</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">phone</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">address</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 100px; top: 2180px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">compliance_reports</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">report_type</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">period</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">due_date</td>
+                <td class="col-type">date</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">submitted_date</td>
+                <td class="col-type">date</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">notes</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 780px; top: 2180px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">activity_logs</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">user_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">role</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">action</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">details</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">timestamp</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 780px; top: 2580px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">transferees</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">from_school</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">to_school</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">reason</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">requested_date</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 780px; top: 3120px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">teacher_faces</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">face_fingerprint</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">face_preview</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">registered_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 100px; top: 2720px; width: 450px;">
+            <div class="entity-header">
+                <span class="entity-title">grades</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">subject_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">section_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">school_year</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">semester</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">quarter</td>
+                <td class="col-type">int4</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade</td>
+                <td class="col-type">numeric</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">remarks</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 1420px; top: 2780px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">documents</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">enrollment_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">birth_certificate</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">report_card</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">good_moral</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">photo</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 2070px; top: 2980px; width: 450px;">
+            <div class="entity-header">
+                <span class="entity-title">student_documents</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">document_type</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">file_url</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">file_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">file_size</td>
+                <td class="col-type">int4</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">uploaded_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">verified</td>
+                <td class="col-type">bool</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">verified_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">remarks</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 2700px; top: 2420px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">attendance_locations</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">latitude</td>
+                <td class="col-type">float8 NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">longitude</td>
+                <td class="col-type">float8 NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">radius_meters</td>
+                <td class="col-type">int4 NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">is_active</td>
+                <td class="col-type">bool NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz NOT NULL</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 2700px; top: 2900px; width: 440px;">
+            <div class="entity-header">
+                <span class="entity-title">subjects</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">code</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade_level</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">strand</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">semester</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">quarter</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">subject_type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">description</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">hours</td>
+                <td class="col-type">int4</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</body>
+</html>
