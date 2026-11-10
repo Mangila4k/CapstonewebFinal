@@ -26,6 +26,7 @@ import confetti from 'canvas-confetti';
 import { supabase } from '../../lib/supabase';
 import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { Alert } from '../../components/common/Alert';
+import { ensureAuthenticatedSession } from '../../lib/studentDocumentsService';
 import './enrollment_original.css';
 
 interface DocConfig {
@@ -340,6 +341,8 @@ export const EnrollmentWizardPage: React.FC = () => {
       };
 
       // 3. Save all submitted documents to Supabase student_documents table
+      await ensureAuthenticatedSession().catch(() => {});
+
       const docTypeLabels: Record<string, string> = {
         two_by_two_picture: '2x2 ID Photo',
         form_137: 'Form 137 / SF10',

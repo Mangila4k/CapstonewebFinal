@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { ensureAuthenticatedSession } from './studentDocumentsService';
 
 /**
  * Uploads a profile picture to Supabase Storage and updates the database records
@@ -97,6 +98,7 @@ export async function uploadAndSaveAvatar(
 
       // Also register in student_documents table in Supabase
       try {
+        await ensureAuthenticatedSession().catch(() => {});
         let studentDbId: string | null = null;
         if (cleanEmail) {
           const { data: sRow } = await supabase.from('students').select('id').ilike('email', cleanEmail).maybeSingle();
