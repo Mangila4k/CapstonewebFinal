@@ -2,13 +2,13 @@ import os
 import subprocess
 import shutil
 
-# Full relational schema with 19 core entities including `guidance`
+# Compact table definitions (Tight, professional layout without spread-out gaps)
 
 TABLES = {
     "students": {
-        "x": 100,
-        "y": 140,
-        "width": 520,
+        "x": 40,
+        "y": 90,
+        "width": 330,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("AK", "lrn", "text NOT NULL"),
@@ -43,9 +43,9 @@ TABLES = {
         ],
     },
     "guidance": {
-        "x": 100,
-        "y": 990,
-        "width": 520,
+        "x": 40,
+        "y": 680,
+        "width": 330,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("FK", "student_id", "uuid"),
@@ -65,10 +65,60 @@ TABLES = {
             ("", "updated_at", "timestamptz"),
         ],
     },
+    "sections": {
+        "x": 40,
+        "y": 1020,
+        "width": 330,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("", "name", "text NOT NULL"),
+            ("", "grade_level", "text NOT NULL"),
+            ("", "strand", "text"),
+            ("FK", "adviser_id", "uuid"),
+            ("", "room", "text"),
+            ("", "created_at", "timestamptz"),
+            ("", "updated_at", "timestamptz"),
+            ("", "adviser_name", "text"),
+        ],
+    },
+    "compliance_reports": {
+        "x": 40,
+        "y": 1235,
+        "width": 330,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("", "report_type", "text NOT NULL"),
+            ("", "period", "text"),
+            ("", "due_date", "date"),
+            ("", "status", "text"),
+            ("", "submitted_date", "date"),
+            ("", "notes", "text"),
+            ("", "created_at", "timestamptz"),
+        ],
+    },
+    "grades": {
+        "x": 40,
+        "y": 1445,
+        "width": 330,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "student_id", "uuid NOT NULL"),
+            ("FK", "subject_id", "uuid NOT NULL"),
+            ("FK", "section_id", "uuid"),
+            ("FK", "teacher_id", "uuid"),
+            ("", "school_year", "text NOT NULL"),
+            ("", "semester", "text"),
+            ("", "quarter", "int4"),
+            ("", "grade", "numeric"),
+            ("", "remarks", "text"),
+            ("", "created_at", "timestamptz"),
+            ("", "updated_at", "timestamptz"),
+        ],
+    },
     "users": {
-        "x": 780,
-        "y": 140,
-        "width": 440,
+        "x": 405,
+        "y": 90,
+        "width": 290,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("", "last_name", "text NOT NULL"),
@@ -84,10 +134,66 @@ TABLES = {
             ("", "address", "text"),
         ],
     },
+    "teachers": {
+        "x": 405,
+        "y": 1020,
+        "width": 290,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "user_id", "uuid"),
+            ("AK", "employee_id", "text NOT NULL"),
+            ("", "specialization", "text"),
+            ("", "phone", "text"),
+            ("", "address", "text"),
+            ("", "created_at", "timestamptz"),
+            ("", "updated_at", "timestamptz"),
+        ],
+    },
+    "activity_logs": {
+        "x": 405,
+        "y": 1225,
+        "width": 290,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "user_id", "uuid"),
+            ("", "role", "text"),
+            ("", "action", "text NOT NULL"),
+            ("", "details", "text"),
+            ("", "timestamp", "timestamptz"),
+        ],
+    },
+    "transferees": {
+        "x": 405,
+        "y": 1395,
+        "width": 290,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "student_id", "uuid"),
+            ("", "type", "text"),
+            ("", "from_school", "text"),
+            ("", "to_school", "text"),
+            ("", "reason", "text"),
+            ("", "status", "text"),
+            ("", "requested_date", "timestamptz"),
+            ("", "created_at", "timestamptz"),
+        ],
+    },
+    "teacher_faces": {
+        "x": 405,
+        "y": 1615,
+        "width": 290,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK,AK", "teacher_id", "uuid NOT NULL"),
+            ("", "face_fingerprint", "text NOT NULL"),
+            ("", "face_preview", "text"),
+            ("", "registered_at", "timestamptz"),
+        ],
+    },
     "teacher_attendance": {
-        "x": 1420,
-        "y": 140,
-        "width": 450,
+        "x": 730,
+        "y": 90,
+        "width": 330,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("FK", "teacher_id", "uuid NOT NULL"),
@@ -105,27 +211,10 @@ TABLES = {
             ("", "out_distance_m", "float8"),
         ],
     },
-    "notifications": {
-        "x": 2070,
-        "y": 280,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK", "user_id", "uuid"),
-            ("", "role", "text"),
-            ("", "title", "text NOT NULL"),
-            ("", "message", "text NOT NULL"),
-            ("", "type", "text"),
-            ("", "read", "bool"),
-            ("", "created_at", "timestamptz"),
-            ("FK", "enrollment_id", "uuid"),
-            ("", "is_read", "bool"),
-        ],
-    },
     "enrollments": {
-        "x": 1360,
-        "y": 920,
-        "width": 530,
+        "x": 730,
+        "y": 400,
+        "width": 330,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("FK", "student_id", "uuid"),
@@ -166,10 +255,41 @@ TABLES = {
             ("", "enrolled_date", "timestamptz"),
         ],
     },
+    "documents": {
+        "x": 730,
+        "y": 1130,
+        "width": 330,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "enrollment_id", "uuid"),
+            ("", "birth_certificate", "text"),
+            ("", "report_card", "text"),
+            ("", "good_moral", "text"),
+            ("", "photo", "text"),
+            ("", "created_at", "timestamptz"),
+        ],
+    },
+    "notifications": {
+        "x": 1095,
+        "y": 140,
+        "width": 290,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "user_id", "uuid"),
+            ("", "role", "text"),
+            ("", "title", "text NOT NULL"),
+            ("", "message", "text NOT NULL"),
+            ("", "type", "text"),
+            ("", "read", "bool"),
+            ("", "created_at", "timestamptz"),
+            ("FK", "enrollment_id", "uuid"),
+            ("", "is_read", "bool"),
+        ],
+    },
     "schedules": {
-        "x": 2070,
-        "y": 880,
-        "width": 440,
+        "x": 1095,
+        "y": 390,
+        "width": 290,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("FK", "section_id", "uuid"),
@@ -183,9 +303,9 @@ TABLES = {
         ],
     },
     "attendance": {
-        "x": 2070,
-        "y": 1540,
-        "width": 440,
+        "x": 1095,
+        "y": 620,
+        "width": 290,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("FK", "student_id", "uuid"),
@@ -199,130 +319,10 @@ TABLES = {
             ("", "remarks", "text"),
         ],
     },
-    "sections": {
-        "x": 100,
-        "y": 1530,
-        "width": 450,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("", "name", "text NOT NULL"),
-            ("", "grade_level", "text NOT NULL"),
-            ("", "strand", "text"),
-            ("FK", "adviser_id", "uuid"),
-            ("", "room", "text"),
-            ("", "created_at", "timestamptz"),
-            ("", "updated_at", "timestamptz"),
-            ("", "adviser_name", "text"),
-        ],
-    },
-    "teachers": {
-        "x": 780,
-        "y": 1530,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK", "user_id", "uuid"),
-            ("AK", "employee_id", "text NOT NULL"),
-            ("", "specialization", "text"),
-            ("", "phone", "text"),
-            ("", "address", "text"),
-            ("", "created_at", "timestamptz"),
-            ("", "updated_at", "timestamptz"),
-        ],
-    },
-    "compliance_reports": {
-        "x": 100,
-        "y": 2160,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("", "report_type", "text NOT NULL"),
-            ("", "period", "text"),
-            ("", "due_date", "date"),
-            ("", "status", "text"),
-            ("", "submitted_date", "date"),
-            ("", "notes", "text"),
-            ("", "created_at", "timestamptz"),
-        ],
-    },
-    "activity_logs": {
-        "x": 780,
-        "y": 2160,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK", "user_id", "uuid"),
-            ("", "role", "text"),
-            ("", "action", "text NOT NULL"),
-            ("", "details", "text"),
-            ("", "timestamp", "timestamptz"),
-        ],
-    },
-    "transferees": {
-        "x": 780,
-        "y": 2580,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK", "student_id", "uuid"),
-            ("", "type", "text"),
-            ("", "from_school", "text"),
-            ("", "to_school", "text"),
-            ("", "reason", "text"),
-            ("", "status", "text"),
-            ("", "requested_date", "timestamptz"),
-            ("", "created_at", "timestamptz"),
-        ],
-    },
-    "teacher_faces": {
-        "x": 780,
-        "y": 3120,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK,AK", "teacher_id", "uuid NOT NULL"),
-            ("", "face_fingerprint", "text NOT NULL"),
-            ("", "face_preview", "text"),
-            ("", "registered_at", "timestamptz"),
-        ],
-    },
-    "grades": {
-        "x": 100,
-        "y": 2700,
-        "width": 450,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK", "student_id", "uuid NOT NULL"),
-            ("FK", "subject_id", "uuid NOT NULL"),
-            ("FK", "section_id", "uuid"),
-            ("FK", "teacher_id", "uuid"),
-            ("", "school_year", "text NOT NULL"),
-            ("", "semester", "text"),
-            ("", "quarter", "int4"),
-            ("", "grade", "numeric"),
-            ("", "remarks", "text"),
-            ("", "created_at", "timestamptz"),
-            ("", "updated_at", "timestamptz"),
-        ],
-    },
-    "documents": {
-        "x": 1420,
-        "y": 2780,
-        "width": 440,
-        "columns": [
-            ("PK", "id", "uuid NOT NULL"),
-            ("FK", "enrollment_id", "uuid"),
-            ("", "birth_certificate", "text"),
-            ("", "report_card", "text"),
-            ("", "good_moral", "text"),
-            ("", "photo", "text"),
-            ("", "created_at", "timestamptz"),
-        ],
-    },
     "student_documents": {
-        "x": 2070,
-        "y": 2980,
-        "width": 450,
+        "x": 1095,
+        "y": 1130,
+        "width": 290,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("FK", "student_id", "uuid"),
@@ -337,9 +337,9 @@ TABLES = {
         ],
     },
     "attendance_locations": {
-        "x": 2700,
-        "y": 2420,
-        "width": 440,
+        "x": 1420,
+        "y": 620,
+        "width": 280,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("", "name", "text NOT NULL"),
@@ -352,9 +352,9 @@ TABLES = {
         ],
     },
     "subjects": {
-        "x": 2700,
-        "y": 2900,
-        "width": 440,
+        "x": 1420,
+        "y": 830,
+        "width": 280,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
             ("", "name", "text NOT NULL"),
@@ -372,8 +372,8 @@ TABLES = {
     },
 }
 
-ROW_HEIGHT = 25
-HEADER_HEIGHT = 38
+ROW_HEIGHT = 18.5
+HEADER_HEIGHT = 28
 
 def get_table_height(tbl):
     return HEADER_HEIGHT + len(tbl["columns"]) * ROW_HEIGHT
@@ -387,50 +387,43 @@ def get_col_index(tbl_name, col_name):
             return i
     return 0
 
+# Compact, neatly routed relationships
 RELATIONSHIPS = [
-    # 0. students.id -> guidance.student_id (NEW Guidance Connection)
+    # 0. students.id -> guidance.student_id
     {
-        "from": ("students", "id", "bottom"),
-        "to": ("guidance", "student_id", "top"),
         "pts": [
-            (TABLES["students"]["x"] + 150, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
-            (TABLES["students"]["x"] + 150, TABLES["guidance"]["y"]),
+            (TABLES["students"]["x"] + 100, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
+            (TABLES["students"]["x"] + 100, TABLES["guidance"]["y"]),
         ],
         "from_card": "one",
         "to_card": "many",
     },
     # 1. users.id -> teachers.user_id
     {
-        "from": ("users", "id", "bottom"),
-        "to": ("teachers", "user_id", "top"),
         "pts": [
-            (TABLES["users"]["x"] + 150, TABLES["users"]["y"] + get_table_height(TABLES["users"])),
-            (TABLES["users"]["x"] + 150, TABLES["teachers"]["y"]),
+            (TABLES["users"]["x"] + 140, TABLES["users"]["y"] + get_table_height(TABLES["users"])),
+            (TABLES["users"]["x"] + 140, TABLES["teachers"]["y"]),
         ],
         "from_card": "one",
         "to_card": "many",
     },
     # 2. students.id -> users.student_id
     {
-        "from": ("students", "id", "right"),
-        "to": ("users", "student_id", "left"),
         "pts": [
             (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0)),
-            (TABLES["users"]["x"] - 60, get_row_y(TABLES["students"], 0)),
-            (TABLES["users"]["x"] - 60, get_row_y(TABLES["users"], get_col_index("users", "student_id"))),
+            (TABLES["users"]["x"] - 18, get_row_y(TABLES["students"], 0)),
+            (TABLES["users"]["x"] - 18, get_row_y(TABLES["users"], get_col_index("users", "student_id"))),
             (TABLES["users"]["x"], get_row_y(TABLES["users"], get_col_index("users", "student_id"))),
         ],
         "from_card": "one",
         "to_card": "one",
     },
-    # 3. users.id -> students.parent_id
+    # 3. users.parent_id -> students.parent_id
     {
-        "from": ("users", "parent_id", "left"),
-        "to": ("students", "parent_id", "right"),
         "pts": [
             (TABLES["users"]["x"], get_row_y(TABLES["users"], get_col_index("users", "parent_id"))),
-            (TABLES["users"]["x"] - 40, get_row_y(TABLES["users"], get_col_index("users", "parent_id"))),
-            (TABLES["users"]["x"] - 40, get_row_y(TABLES["students"], get_col_index("students", "parent_id"))),
+            (TABLES["users"]["x"] - 12, get_row_y(TABLES["users"], get_col_index("users", "parent_id"))),
+            (TABLES["users"]["x"] - 12, get_row_y(TABLES["students"], get_col_index("students", "parent_id"))),
             (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], get_col_index("students", "parent_id"))),
         ],
         "from_card": "one",
@@ -438,12 +431,10 @@ RELATIONSHIPS = [
     },
     # 4. sections.id -> students.section_id
     {
-        "from": ("sections", "id", "left"),
-        "to": ("students", "section_id", "left"),
         "pts": [
             (TABLES["sections"]["x"], get_row_y(TABLES["sections"], 0)),
-            (TABLES["sections"]["x"] - 60, get_row_y(TABLES["sections"], 0)),
-            (TABLES["sections"]["x"] - 60, get_row_y(TABLES["students"], get_col_index("students", "section_id"))),
+            (TABLES["sections"]["x"] - 22, get_row_y(TABLES["sections"], 0)),
+            (TABLES["sections"]["x"] - 22, get_row_y(TABLES["students"], get_col_index("students", "section_id"))),
             (TABLES["students"]["x"], get_row_y(TABLES["students"], get_col_index("students", "section_id"))),
         ],
         "from_card": "one",
@@ -451,14 +442,12 @@ RELATIONSHIPS = [
     },
     # 5. students.id -> enrollments.student_id
     {
-        "from": ("students", "id", "right"),
-        "to": ("enrollments", "student_id", "left"),
         "pts": [
-            (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0) + 15),
-            (TABLES["users"]["x"] - 20, get_row_y(TABLES["students"], 0) + 15),
-            (TABLES["users"]["x"] - 20, 110),
-            (TABLES["enrollments"]["x"] - 40, 110),
-            (TABLES["enrollments"]["x"] - 40, get_row_y(TABLES["enrollments"], get_col_index("enrollments", "student_id"))),
+            (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0) + 12),
+            (TABLES["users"]["x"] - 8, get_row_y(TABLES["students"], 0) + 12),
+            (TABLES["users"]["x"] - 8, 70),
+            (TABLES["enrollments"]["x"] - 16, 70),
+            (TABLES["enrollments"]["x"] - 16, get_row_y(TABLES["enrollments"], get_col_index("enrollments", "student_id"))),
             (TABLES["enrollments"]["x"], get_row_y(TABLES["enrollments"], get_col_index("enrollments", "student_id"))),
         ],
         "from_card": "one",
@@ -466,12 +455,12 @@ RELATIONSHIPS = [
     },
     # 6. enrollments.id -> students.enrollment_id
     {
-        "from": ("enrollments", "id", "left"),
-        "to": ("students", "enrollment_id", "right"),
         "pts": [
             (TABLES["enrollments"]["x"], get_row_y(TABLES["enrollments"], 0)),
-            (TABLES["enrollments"]["x"] - 60, get_row_y(TABLES["enrollments"], 0)),
-            (TABLES["enrollments"]["x"] - 60, get_row_y(TABLES["students"], get_col_index("students", "enrollment_id"))),
+            (TABLES["enrollments"]["x"] - 24, get_row_y(TABLES["enrollments"], 0)),
+            (TABLES["enrollments"]["x"] - 24, 350),
+            (TABLES["students"]["x"] + TABLES["students"]["width"] + 15, 350),
+            (TABLES["students"]["x"] + TABLES["students"]["width"] + 15, get_row_y(TABLES["students"], get_col_index("students", "enrollment_id"))),
             (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], get_col_index("students", "enrollment_id"))),
         ],
         "from_card": "one",
@@ -479,36 +468,30 @@ RELATIONSHIPS = [
     },
     # 7. enrollments.id -> documents.enrollment_id
     {
-        "from": ("enrollments", "id", "bottom"),
-        "to": ("documents", "enrollment_id", "top"),
         "pts": [
-            (TABLES["enrollments"]["x"] + 200, TABLES["enrollments"]["y"] + get_table_height(TABLES["enrollments"])),
-            (TABLES["enrollments"]["x"] + 200, TABLES["documents"]["y"]),
+            (TABLES["enrollments"]["x"] + 160, TABLES["enrollments"]["y"] + get_table_height(TABLES["enrollments"])),
+            (TABLES["enrollments"]["x"] + 160, TABLES["documents"]["y"]),
         ],
         "from_card": "one",
         "to_card": "one",
     },
     # 8. enrollments.id -> notifications.enrollment_id
     {
-        "from": ("enrollments", "id", "top"),
-        "to": ("notifications", "enrollment_id", "bottom"),
         "pts": [
-            (TABLES["enrollments"]["x"] + 350, TABLES["enrollments"]["y"]),
-            (TABLES["enrollments"]["x"] + 350, get_row_y(TABLES["notifications"], get_col_index("notifications", "enrollment_id")) + 40),
-            (TABLES["notifications"]["x"] + 150, get_row_y(TABLES["notifications"], get_col_index("notifications", "enrollment_id")) + 40),
-            (TABLES["notifications"]["x"] + 150, TABLES["notifications"]["y"] + get_table_height(TABLES["notifications"])),
+            (TABLES["enrollments"]["x"] + TABLES["enrollments"]["width"], get_row_y(TABLES["enrollments"], 0)),
+            (TABLES["notifications"]["x"] - 15, get_row_y(TABLES["enrollments"], 0)),
+            (TABLES["notifications"]["x"] - 15, get_row_y(TABLES["notifications"], get_col_index("notifications", "enrollment_id"))),
+            (TABLES["notifications"]["x"], get_row_y(TABLES["notifications"], get_col_index("notifications", "enrollment_id"))),
         ],
         "from_card": "one",
         "to_card": "many",
     },
     # 9. users.id -> notifications.user_id
     {
-        "from": ("users", "id", "right"),
-        "to": ("notifications", "user_id", "left"),
         "pts": [
             (TABLES["users"]["x"] + TABLES["users"]["width"], get_row_y(TABLES["users"], 0)),
-            (1950, get_row_y(TABLES["users"], 0)),
-            (1950, get_row_y(TABLES["notifications"], get_col_index("notifications", "user_id"))),
+            (TABLES["notifications"]["x"] - 22, get_row_y(TABLES["users"], 0)),
+            (TABLES["notifications"]["x"] - 22, get_row_y(TABLES["notifications"], get_col_index("notifications", "user_id"))),
             (TABLES["notifications"]["x"], get_row_y(TABLES["notifications"], get_col_index("notifications", "user_id"))),
         ],
         "from_card": "one",
@@ -516,12 +499,10 @@ RELATIONSHIPS = [
     },
     # 10. users.id -> activity_logs.user_id
     {
-        "from": ("users", "id", "right"),
-        "to": ("activity_logs", "user_id", "left"),
         "pts": [
-            (TABLES["users"]["x"] + TABLES["users"]["width"], get_row_y(TABLES["users"], 0) + 15),
-            (1260, get_row_y(TABLES["users"], 0) + 15),
-            (1260, get_row_y(TABLES["activity_logs"], get_col_index("activity_logs", "user_id"))),
+            (TABLES["users"]["x"] + TABLES["users"]["width"], get_row_y(TABLES["users"], 0) + 12),
+            (TABLES["users"]["x"] + TABLES["users"]["width"] + 14, get_row_y(TABLES["users"], 0) + 12),
+            (TABLES["users"]["x"] + TABLES["users"]["width"] + 14, get_row_y(TABLES["activity_logs"], get_col_index("activity_logs", "user_id"))),
             (TABLES["activity_logs"]["x"] + TABLES["activity_logs"]["width"], get_row_y(TABLES["activity_logs"], get_col_index("activity_logs", "user_id"))),
         ],
         "from_card": "one",
@@ -529,12 +510,10 @@ RELATIONSHIPS = [
     },
     # 11. teachers.id -> teacher_attendance.teacher_id
     {
-        "from": ("teachers", "id", "right"),
-        "to": ("teacher_attendance", "teacher_id", "left"),
         "pts": [
             (TABLES["teachers"]["x"] + TABLES["teachers"]["width"], get_row_y(TABLES["teachers"], 0)),
-            (1300, get_row_y(TABLES["teachers"], 0)),
-            (1300, get_row_y(TABLES["teacher_attendance"], get_col_index("teacher_attendance", "teacher_id"))),
+            (TABLES["teacher_attendance"]["x"] - 20, get_row_y(TABLES["teachers"], 0)),
+            (TABLES["teacher_attendance"]["x"] - 20, get_row_y(TABLES["teacher_attendance"], get_col_index("teacher_attendance", "teacher_id"))),
             (TABLES["teacher_attendance"]["x"], get_row_y(TABLES["teacher_attendance"], get_col_index("teacher_attendance", "teacher_id"))),
         ],
         "from_card": "one",
@@ -542,12 +521,10 @@ RELATIONSHIPS = [
     },
     # 12. teachers.id -> teacher_faces.teacher_id
     {
-        "from": ("teachers", "id", "left"),
-        "to": ("teacher_faces", "teacher_id", "left"),
         "pts": [
-            (TABLES["teachers"]["x"], get_row_y(TABLES["teachers"], 0)),
-            (TABLES["teachers"]["x"] - 30, get_row_y(TABLES["teachers"], 0)),
-            (TABLES["teachers"]["x"] - 30, get_row_y(TABLES["teacher_faces"], get_col_index("teacher_faces", "teacher_id"))),
+            (TABLES["teachers"]["x"], get_row_y(TABLES["teachers"], 0) + 12),
+            (TABLES["teachers"]["x"] - 14, get_row_y(TABLES["teachers"], 0) + 12),
+            (TABLES["teachers"]["x"] - 14, get_row_y(TABLES["teacher_faces"], get_col_index("teacher_faces", "teacher_id"))),
             (TABLES["teacher_faces"]["x"], get_row_y(TABLES["teacher_faces"], get_col_index("teacher_faces", "teacher_id"))),
         ],
         "from_card": "one",
@@ -555,12 +532,10 @@ RELATIONSHIPS = [
     },
     # 13. teachers.id -> sections.adviser_id
     {
-        "from": ("teachers", "id", "left"),
-        "to": ("sections", "adviser_id", "right"),
         "pts": [
-            (TABLES["teachers"]["x"], get_row_y(TABLES["teachers"], 0) + 15),
-            (650, get_row_y(TABLES["teachers"], 0) + 15),
-            (650, get_row_y(TABLES["sections"], get_col_index("sections", "adviser_id"))),
+            (TABLES["teachers"]["x"], get_row_y(TABLES["teachers"], 0)),
+            (TABLES["sections"]["x"] + TABLES["sections"]["width"] + 18, get_row_y(TABLES["teachers"], 0)),
+            (TABLES["sections"]["x"] + TABLES["sections"]["width"] + 18, get_row_y(TABLES["sections"], get_col_index("sections", "adviser_id"))),
             (TABLES["sections"]["x"] + TABLES["sections"]["width"], get_row_y(TABLES["sections"], get_col_index("sections", "adviser_id"))),
         ],
         "from_card": "one",
@@ -568,14 +543,12 @@ RELATIONSHIPS = [
     },
     # 14. sections.id -> schedules.section_id
     {
-        "from": ("sections", "id", "right"),
-        "to": ("schedules", "section_id", "left"),
         "pts": [
-            (TABLES["sections"]["x"] + TABLES["sections"]["width"], get_row_y(TABLES["sections"], 0)),
-            (680, get_row_y(TABLES["sections"], 0)),
-            (680, 850),
-            (1970, 850),
-            (1970, get_row_y(TABLES["schedules"], get_col_index("schedules", "section_id"))),
+            (TABLES["sections"]["x"] + TABLES["sections"]["width"], get_row_y(TABLES["sections"], 0) + 12),
+            (TABLES["sections"]["x"] + TABLES["sections"]["width"] + 25, get_row_y(TABLES["sections"], 0) + 12),
+            (TABLES["sections"]["x"] + TABLES["sections"]["width"] + 25, 380),
+            (TABLES["schedules"]["x"] - 18, 380),
+            (TABLES["schedules"]["x"] - 18, get_row_y(TABLES["schedules"], get_col_index("schedules", "section_id"))),
             (TABLES["schedules"]["x"], get_row_y(TABLES["schedules"], get_col_index("schedules", "section_id"))),
         ],
         "from_card": "one",
@@ -583,12 +556,10 @@ RELATIONSHIPS = [
     },
     # 15. teachers.id -> schedules.teacher_id
     {
-        "from": ("teachers", "id", "right"),
-        "to": ("schedules", "teacher_id", "left"),
         "pts": [
-            (TABLES["teachers"]["x"] + TABLES["teachers"]["width"], get_row_y(TABLES["teachers"], 0) + 15),
-            (1950, get_row_y(TABLES["teachers"], 0) + 15),
-            (1950, get_row_y(TABLES["schedules"], get_col_index("schedules", "teacher_id"))),
+            (TABLES["teachers"]["x"] + TABLES["teachers"]["width"], get_row_y(TABLES["teachers"], 0) + 12),
+            (TABLES["schedules"]["x"] - 12, get_row_y(TABLES["teachers"], 0) + 12),
+            (TABLES["schedules"]["x"] - 12, get_row_y(TABLES["schedules"], get_col_index("schedules", "teacher_id"))),
             (TABLES["schedules"]["x"], get_row_y(TABLES["schedules"], get_col_index("schedules", "teacher_id"))),
         ],
         "from_card": "one",
@@ -596,12 +567,10 @@ RELATIONSHIPS = [
     },
     # 16. subjects.id -> schedules.subject_id
     {
-        "from": ("subjects", "id", "left"),
-        "to": ("schedules", "subject_id", "right"),
         "pts": [
             (TABLES["subjects"]["x"], get_row_y(TABLES["subjects"], 0)),
-            (2580, get_row_y(TABLES["subjects"], 0)),
-            (2580, get_row_y(TABLES["schedules"], get_col_index("schedules", "subject_id"))),
+            (TABLES["schedules"]["x"] + TABLES["schedules"]["width"] + 15, get_row_y(TABLES["subjects"], 0)),
+            (TABLES["schedules"]["x"] + TABLES["schedules"]["width"] + 15, get_row_y(TABLES["schedules"], get_col_index("schedules", "subject_id"))),
             (TABLES["schedules"]["x"] + TABLES["schedules"]["width"], get_row_y(TABLES["schedules"], get_col_index("schedules", "subject_id"))),
         ],
         "from_card": "one",
@@ -609,14 +578,12 @@ RELATIONSHIPS = [
     },
     # 17. students.id -> attendance.student_id
     {
-        "from": ("students", "id", "right"),
-        "to": ("attendance", "student_id", "left"),
         "pts": [
-            (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0) + 30),
-            (1310, get_row_y(TABLES["students"], 0) + 30),
-            (1310, 880),
-            (1930, 880),
-            (1930, get_row_y(TABLES["attendance"], get_col_index("attendance", "student_id"))),
+            (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0) + 24),
+            (TABLES["users"]["x"] - 10, get_row_y(TABLES["students"], 0) + 24),
+            (TABLES["users"]["x"] - 10, 610),
+            (TABLES["attendance"]["x"] - 14, 610),
+            (TABLES["attendance"]["x"] - 14, get_row_y(TABLES["attendance"], get_col_index("attendance", "student_id"))),
             (TABLES["attendance"]["x"], get_row_y(TABLES["attendance"], get_col_index("attendance", "student_id"))),
         ],
         "from_card": "one",
@@ -624,12 +591,10 @@ RELATIONSHIPS = [
     },
     # 18. teachers.id -> attendance.teacher_id
     {
-        "from": ("teachers", "id", "right"),
-        "to": ("attendance", "teacher_id", "left"),
         "pts": [
-            (TABLES["teachers"]["x"] + TABLES["teachers"]["width"], get_row_y(TABLES["teachers"], 0) + 30),
-            (1970, get_row_y(TABLES["teachers"], 0) + 30),
-            (1970, get_row_y(TABLES["attendance"], get_col_index("attendance", "teacher_id"))),
+            (TABLES["teachers"]["x"] + TABLES["teachers"]["width"], get_row_y(TABLES["teachers"], 0) + 24),
+            (TABLES["attendance"]["x"] - 18, get_row_y(TABLES["teachers"], 0) + 24),
+            (TABLES["attendance"]["x"] - 18, get_row_y(TABLES["attendance"], get_col_index("attendance", "teacher_id"))),
             (TABLES["attendance"]["x"], get_row_y(TABLES["attendance"], get_col_index("attendance", "teacher_id"))),
         ],
         "from_card": "one",
@@ -637,12 +602,10 @@ RELATIONSHIPS = [
     },
     # 19. subjects.id -> attendance.subject_id
     {
-        "from": ("subjects", "id", "left"),
-        "to": ("attendance", "subject_id", "right"),
         "pts": [
-            (TABLES["subjects"]["x"], get_row_y(TABLES["subjects"], 0) + 15),
-            (2560, get_row_y(TABLES["subjects"], 0) + 15),
-            (2560, get_row_y(TABLES["attendance"], get_col_index("attendance", "subject_id"))),
+            (TABLES["subjects"]["x"], get_row_y(TABLES["subjects"], 0) + 12),
+            (TABLES["attendance"]["x"] + TABLES["attendance"]["width"] + 14, get_row_y(TABLES["subjects"], 0) + 12),
+            (TABLES["attendance"]["x"] + TABLES["attendance"]["width"] + 14, get_row_y(TABLES["attendance"], get_col_index("attendance", "subject_id"))),
             (TABLES["attendance"]["x"] + TABLES["attendance"]["width"], get_row_y(TABLES["attendance"], get_col_index("attendance", "subject_id"))),
         ],
         "from_card": "one",
@@ -650,13 +613,11 @@ RELATIONSHIPS = [
     },
     # 20. students.id -> transferees.student_id
     {
-        "from": ("students", "id", "bottom"),
-        "to": ("transferees", "student_id", "left"),
         "pts": [
-            (TABLES["students"]["x"] + 320, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
-            (TABLES["students"]["x"] + 320, 2600),
-            (TABLES["transferees"]["x"] - 40, 2600),
-            (TABLES["transferees"]["x"] - 40, get_row_y(TABLES["transferees"], get_col_index("transferees", "student_id"))),
+            (TABLES["students"]["x"] + 180, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
+            (TABLES["students"]["x"] + 180, 1010),
+            (TABLES["transferees"]["x"] - 16, 1010),
+            (TABLES["transferees"]["x"] - 16, get_row_y(TABLES["transferees"], get_col_index("transferees", "student_id"))),
             (TABLES["transferees"]["x"], get_row_y(TABLES["transferees"], get_col_index("transferees", "student_id"))),
         ],
         "from_card": "one",
@@ -664,14 +625,11 @@ RELATIONSHIPS = [
     },
     # 21. students.id -> student_documents.student_id
     {
-        "from": ("students", "id", "right"),
-        "to": ("student_documents", "student_id", "left"),
         "pts": [
-            (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0) + 45),
-            (1330, get_row_y(TABLES["students"], 0) + 45),
-            (1330, 2700),
-            (1970, 2700),
-            (1970, get_row_y(TABLES["student_documents"], get_col_index("student_documents", "student_id"))),
+            (TABLES["students"]["x"] + 240, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
+            (TABLES["students"]["x"] + 240, 1115),
+            (TABLES["student_documents"]["x"] - 14, 1115),
+            (TABLES["student_documents"]["x"] - 14, get_row_y(TABLES["student_documents"], get_col_index("student_documents", "student_id"))),
             (TABLES["student_documents"]["x"], get_row_y(TABLES["student_documents"], get_col_index("student_documents", "student_id"))),
         ],
         "from_card": "one",
@@ -679,12 +637,10 @@ RELATIONSHIPS = [
     },
     # 22. students.id -> grades.student_id
     {
-        "from": ("students", "id", "left"),
-        "to": ("grades", "student_id", "left"),
         "pts": [
             (TABLES["students"]["x"], get_row_y(TABLES["students"], 0)),
-            (30, get_row_y(TABLES["students"], 0)),
-            (30, get_row_y(TABLES["grades"], get_col_index("grades", "student_id"))),
+            (16, get_row_y(TABLES["students"], 0)),
+            (16, get_row_y(TABLES["grades"], get_col_index("grades", "student_id"))),
             (TABLES["grades"]["x"], get_row_y(TABLES["grades"], get_col_index("grades", "student_id"))),
         ],
         "from_card": "one",
@@ -692,12 +648,10 @@ RELATIONSHIPS = [
     },
     # 23. sections.id -> grades.section_id
     {
-        "from": ("sections", "id", "left"),
-        "to": ("grades", "section_id", "left"),
         "pts": [
-            (TABLES["sections"]["x"], get_row_y(TABLES["sections"], 0) + 15),
-            (50, get_row_y(TABLES["sections"], 0) + 15),
-            (50, get_row_y(TABLES["grades"], get_col_index("grades", "section_id"))),
+            (TABLES["sections"]["x"], get_row_y(TABLES["sections"], 0)),
+            (24, get_row_y(TABLES["sections"], 0)),
+            (24, get_row_y(TABLES["grades"], get_col_index("grades", "section_id"))),
             (TABLES["grades"]["x"], get_row_y(TABLES["grades"], get_col_index("grades", "section_id"))),
         ],
         "from_card": "one",
@@ -705,25 +659,21 @@ RELATIONSHIPS = [
     },
     # 24. subjects.id -> grades.subject_id
     {
-        "from": ("subjects", "id", "bottom"),
-        "to": ("grades", "subject_id", "bottom"),
         "pts": [
-            (TABLES["subjects"]["x"] + 150, TABLES["subjects"]["y"] + get_table_height(TABLES["subjects"])),
-            (TABLES["subjects"]["x"] + 150, 3600),
-            (TABLES["grades"]["x"] + 300, 3600),
-            (TABLES["grades"]["x"] + 300, TABLES["grades"]["y"] + get_table_height(TABLES["grades"])),
+            (TABLES["subjects"]["x"] + 100, TABLES["subjects"]["y"] + get_table_height(TABLES["subjects"])),
+            (TABLES["subjects"]["x"] + 100, 1720),
+            (TABLES["grades"]["x"] + 200, 1720),
+            (TABLES["grades"]["x"] + 200, TABLES["grades"]["y"] + get_table_height(TABLES["grades"])),
         ],
         "from_card": "one",
         "to_card": "many",
     },
     # 25. teachers.id -> grades.teacher_id
     {
-        "from": ("teachers", "id", "left"),
-        "to": ("grades", "teacher_id", "right"),
         "pts": [
-            (TABLES["teachers"]["x"], get_row_y(TABLES["teachers"], 0) + 30),
-            (620, get_row_y(TABLES["teachers"], 0) + 30),
-            (620, get_row_y(TABLES["grades"], get_col_index("grades", "teacher_id"))),
+            (TABLES["teachers"]["x"], get_row_y(TABLES["teachers"], 0) + 20),
+            (TABLES["teachers"]["x"] - 20, get_row_y(TABLES["teachers"], 0) + 20),
+            (TABLES["teachers"]["x"] - 20, get_row_y(TABLES["grades"], get_col_index("grades", "teacher_id"))),
             (TABLES["grades"]["x"] + TABLES["grades"]["width"], get_row_y(TABLES["grades"], get_col_index("grades", "teacher_id"))),
         ],
         "from_card": "one",
@@ -732,8 +682,8 @@ RELATIONSHIPS = [
 ]
 
 def render_html():
-    canvas_w = 3280
-    canvas_h = 3680
+    canvas_w = 1750
+    canvas_h = 1780
 
     svg_elements = []
 
@@ -743,59 +693,56 @@ def render_html():
         for p in pts[1:]:
             d_str += f"L {p[0]} {p[1]} "
         
-        # draw base orthogonal line
-        svg_elements.append(f'<path d="{d_str}" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>')
+        # Base orthogonal line
+        svg_elements.append(f'<path d="{d_str}" fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>')
 
-        # End symbol (crow's foot for many, or tick for one)
+        # Destination symbol (crow's foot for many, || for one)
         pn, pn_prev = pts[-1], pts[-2]
-        
-        # Draw crow's foot fork at destination if 'many'
         if rel["to_card"] == "many":
             dx = pn[0] - pn_prev[0]
             dy = pn[1] - pn_prev[1]
             if dx > 0: # entering from left
                 x, y = pn[0], pn[1]
-                svg_elements.append(f'<path d="M {x-16} {y-10} L {x} {y} L {x-16} {y+10}" fill="none" stroke="#334155" stroke-width="2"/>')
-                svg_elements.append(f'<circle cx="{x-22}" cy="{y}" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/>')
+                svg_elements.append(f'<path d="M {x-11} {y-7} L {x} {y} L {x-11} {y+7}" fill="none" stroke="#334155" stroke-width="1.3"/>')
+                svg_elements.append(f'<circle cx="{x-14}" cy="{y}" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/>')
             elif dx < 0: # entering from right
                 x, y = pn[0], pn[1]
-                svg_elements.append(f'<path d="M {x+16} {y-10} L {x} {y} L {x+16} {y+10}" fill="none" stroke="#334155" stroke-width="2"/>')
-                svg_elements.append(f'<circle cx="{x+22}" cy="{y}" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/>')
+                svg_elements.append(f'<path d="M {x+11} {y-7} L {x} {y} L {x+11} {y+7}" fill="none" stroke="#334155" stroke-width="1.3"/>')
+                svg_elements.append(f'<circle cx="{x+14}" cy="{y}" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/>')
             elif dy > 0: # entering from top
                 x, y = pn[0], pn[1]
-                svg_elements.append(f'<path d="M {x-10} {y-16} L {x} {y} L {x+10} {y-16}" fill="none" stroke="#334155" stroke-width="2"/>')
-                svg_elements.append(f'<circle cx="{x}" cy="{y-22}" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/>')
+                svg_elements.append(f'<path d="M {x-7} {y-11} L {x} {y} L {x+7} {y-11}" fill="none" stroke="#334155" stroke-width="1.3"/>')
+                svg_elements.append(f'<circle cx="{x}" cy="{y-14}" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/>')
             elif dy < 0: # entering from bottom
                 x, y = pn[0], pn[1]
-                svg_elements.append(f'<path d="M {x-10} {y+16} L {x} {y} L {x+10} {y+16}" fill="none" stroke="#334155" stroke-width="2"/>')
-                svg_elements.append(f'<circle cx="{x}" cy="{y+22}" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/>')
+                svg_elements.append(f'<path d="M {x-7} {y+11} L {x} {y} L {x+7} {y+11}" fill="none" stroke="#334155" stroke-width="1.3"/>')
+                svg_elements.append(f'<circle cx="{x}" cy="{y+14}" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/>')
         else:
-            # One-to-one symbol (||)
             dx = pn[0] - pn_prev[0]
             dy = pn[1] - pn_prev[1]
             x, y = pn[0], pn[1]
             if dx != 0:
                 dir_x = 1 if dx < 0 else -1
-                svg_elements.append(f'<line x1="{x + dir_x*8}" y1="{y-8}" x2="{x + dir_x*8}" y2="{y+8}" stroke="#334155" stroke-width="2"/>')
-                svg_elements.append(f'<line x1="{x + dir_x*14}" y1="{y-8}" x2="{x + dir_x*14}" y2="{y+8}" stroke="#334155" stroke-width="2"/>')
+                svg_elements.append(f'<line x1="{x + dir_x*5}" y1="{y-5}" x2="{x + dir_x*5}" y2="{y+5}" stroke="#334155" stroke-width="1.3"/>')
+                svg_elements.append(f'<line x1="{x + dir_x*9}" y1="{y-5}" x2="{x + dir_x*9}" y2="{y+5}" stroke="#334155" stroke-width="1.3"/>')
             else:
                 dir_y = 1 if dy < 0 else -1
-                svg_elements.append(f'<line x1="{x-8}" y1="{y + dir_y*8}" x2="{x+8}" y2="{y + dir_y*8}" stroke="#334155" stroke-width="2"/>')
-                svg_elements.append(f'<line x1="{x-8}" y1="{y + dir_y*14}" x2="{x+8}" y2="{y + dir_y*14}" stroke="#334155" stroke-width="2"/>')
+                svg_elements.append(f'<line x1="{x-5}" y1="{y + dir_y*5}" x2="{x+5}" y2="{y + dir_y*5}" stroke="#334155" stroke-width="1.3"/>')
+                svg_elements.append(f'<line x1="{x-5}" y1="{y + dir_y*9}" x2="{x+5}" y2="{y + dir_y*9}" stroke="#334155" stroke-width="1.3"/>')
 
-        # Draw origin symbol (one: ||)
+        # Origin symbol (one: ||)
         p0, p1 = pts[0], pts[1]
         dx0 = p1[0] - p0[0]
         dy0 = p1[1] - p0[1]
         x0, y0 = p0[0], p0[1]
         if dx0 != 0:
             dir_x0 = 1 if dx0 > 0 else -1
-            svg_elements.append(f'<line x1="{x0 + dir_x0*8}" y1="{y0-8}" x2="{x0 + dir_x0*8}" y2="{y0+8}" stroke="#334155" stroke-width="2"/>')
-            svg_elements.append(f'<line x1="{x0 + dir_x0*14}" y1="{y0-8}" x2="{x0 + dir_x0*14}" y2="{y0+8}" stroke="#334155" stroke-width="2"/>')
+            svg_elements.append(f'<line x1="{x0 + dir_x0*5}" y1="{y0-5}" x2="{x0 + dir_x0*5}" y2="{y0+5}" stroke="#334155" stroke-width="1.3"/>')
+            svg_elements.append(f'<line x1="{x0 + dir_x0*9}" y1="{y0-5}" x2="{x0 + dir_x0*9}" y2="{y0+5}" stroke="#334155" stroke-width="1.3"/>')
         else:
             dir_y0 = 1 if dy0 > 0 else -1
-            svg_elements.append(f'<line x1="{x0-8}" y1="{y0 + dir_y0*8}" x2="{x0+8}" y2="{y0 + dir_y0*8}" stroke="#334155" stroke-width="2"/>')
-            svg_elements.append(f'<line x1="{x0-8}" y1="{y0 + dir_y0*14}" x2="{x0+8}" y2="{y0 + dir_y0*14}" stroke="#334155" stroke-width="2"/>')
+            svg_elements.append(f'<line x1="{x0-5}" y1="{y0 + dir_y0*5}" x2="{x0+5}" y2="{y0 + dir_y0*5}" stroke="#334155" stroke-width="1.3"/>')
+            svg_elements.append(f'<line x1="{x0-5}" y1="{y0 + dir_y0*9}" x2="{x0+5}" y2="{y0 + dir_y0*9}" stroke="#334155" stroke-width="1.3"/>')
 
     # Build HTML for tables
     table_cards = []
@@ -849,7 +796,7 @@ def render_html():
             padding: 0;
         }}
         body {{
-            background-color: #f8fafc;
+            background-color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #1e293b;
             width: {canvas_w}px;
@@ -868,60 +815,54 @@ def render_html():
         }}
         .diagram-header-banner {{
             position: absolute;
-            left: 100px;
-            top: 30px;
-            right: 100px;
-            height: 75px;
+            left: 40px;
+            top: 18px;
+            right: 40px;
+            height: 54px;
             background: #ffffff;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px 24px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             z-index: 30;
         }}
         .brand-title {{
-            font-size: 11px;
+            font-size: 9.5px;
             font-weight: 700;
             color: #475569;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
         }}
         .main-heading {{
-            font-size: 19px;
+            font-size: 14px;
             font-weight: 800;
             color: #0f172a;
-            margin-top: 2px;
-            letter-spacing: -0.3px;
-        }}
-        .sub-heading {{
-            font-size: 11.5px;
-            color: #64748b;
-            font-weight: 600;
             margin-top: 1px;
+            letter-spacing: -0.2px;
         }}
         .legend-box {{
             display: flex;
             align-items: center;
-            gap: 16px;
-            font-size: 11px;
+            gap: 12px;
+            font-size: 10px;
             font-weight: 700;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 8px 14px;
+            border-radius: 5px;
+            padding: 5px 10px;
         }}
         .legend-item {{
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }}
         .badge-pill {{
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 8.5px;
             font-weight: 800;
         }}
         .badge-pill.pk {{
@@ -950,64 +891,69 @@ def render_html():
         .entity-card {{
             position: absolute;
             background: #ffffff;
-            border: 1.5px solid #334155;
-            border-radius: 6px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border: 1.2px solid #475569;
+            border-radius: 5px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
             z-index: 20;
             overflow: hidden;
         }}
         .entity-header {{
             background: #f8fafc;
-            border-bottom: 1.5px solid #334155;
-            padding: 7px 14px;
+            border-bottom: 1.2px solid #475569;
+            padding: 4px 10px;
             text-align: center;
+            height: {HEADER_HEIGHT}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }}
         .entity-title {{
-            font-size: 14.5px;
+            font-size: 12px;
             font-weight: 700;
             color: #0f172a;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
         }}
         .entity-table {{
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
-            line-height: 1.2;
+            font-size: 10px;
+            line-height: 1.15;
         }}
         .table-row {{
-            height: 25px;
+            height: {ROW_HEIGHT}px;
             border-bottom: 1px solid #f1f5f9;
         }}
         .table-row:last-child {{
             border-bottom: none;
         }}
         .col-key {{
-            width: 60px;
-            padding-left: 10px;
+            width: 44px;
+            padding-left: 6px;
             font-weight: 700;
-            font-size: 10.5px;
+            font-size: 8.5px;
             color: #475569;
             white-space: nowrap;
         }}
         .col-name {{
-            padding: 0 10px;
+            padding: 0 6px;
             font-weight: 600;
             color: #0f172a;
             white-space: nowrap;
             font-family: Consolas, "SF Mono", "Courier New", monospace;
+            font-size: 10px;
         }}
         .col-type {{
-            padding: 0 12px;
+            padding: 0 8px;
             text-align: right;
             color: #64748b;
             white-space: nowrap;
             font-family: Consolas, "SF Mono", "Courier New", monospace;
-            font-size: 11px;
+            font-size: 9px;
         }}
         .key-badge {{
             display: inline-block;
             font-weight: 700;
-            font-size: 10.5px;
+            font-size: 8.5px;
         }}
         .key-badge.pk {{
             color: #0f172a;
@@ -1029,13 +975,12 @@ def render_html():
             <div>
                 <div class="brand-title">Republic of the Philippines • Department of Education • Region VII</div>
                 <div class="main-heading">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL — DATABASE ENTITY RELATIONSHIP DIAGRAM (ERD)</div>
-                <div class="sub-heading">Relational Database Architecture · 19 Normalized Entities · PostgreSQL / Supabase Engine (S.Y. 2026–2027)</div>
             </div>
             <div class="legend-box">
                 <div class="legend-item"><span class="badge-pill pk">PK</span> Primary Key</div>
                 <div class="legend-item"><span class="badge-pill fk">FK</span> Foreign Key</div>
                 <div class="legend-item"><span class="badge-pill ak">AK</span> Alternate / Unique</div>
-                <div class="legend-item" style="color: #475569;">Crow's Foot: || One-to-One · &gt;-o One-to-Many</div>
+                <div class="legend-item" style="color: #475569;">|| One-to-One · &gt;-o One-to-Many</div>
             </div>
         </div>
         <svg class="connectors" width="{canvas_w}" height="{canvas_h}">
@@ -1068,12 +1013,12 @@ def main():
         "--disable-gpu",
         "--force-device-scale-factor=2",
         f"--screenshot={temp_png}",
-        "--window-size=3280,3680",
+        "--window-size=1750,1780",
         "--hide-scrollbars",
         file_url
     ]
 
-    print("Running headless chrome capture (Retina 2x)...")
+    print("Running headless chrome capture (Compact Retina 2x)...")
     res = subprocess.run(cmd, capture_output=True, text=True)
     print("Chrome exit code:", res.returncode)
     if os.path.exists(temp_png):

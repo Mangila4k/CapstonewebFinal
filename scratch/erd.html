@@ -10,18 +10,18 @@
             padding: 0;
         }
         body {
-            background-color: #f8fafc;
+            background-color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #1e293b;
-            width: 3280px;
-            height: 3680px;
+            width: 1750px;
+            height: 1780px;
             position: relative;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
         .canvas {
-            width: 3280px;
-            height: 3680px;
+            width: 1750px;
+            height: 1780px;
             position: absolute;
             left: 0;
             top: 0;
@@ -29,60 +29,54 @@
         }
         .diagram-header-banner {
             position: absolute;
-            left: 100px;
-            top: 30px;
-            right: 100px;
-            height: 75px;
+            left: 40px;
+            top: 18px;
+            right: 40px;
+            height: 54px;
             background: #ffffff;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px 24px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
             z-index: 30;
         }
         .brand-title {
-            font-size: 11px;
+            font-size: 9.5px;
             font-weight: 700;
             color: #475569;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
         }
         .main-heading {
-            font-size: 19px;
+            font-size: 14px;
             font-weight: 800;
             color: #0f172a;
-            margin-top: 2px;
-            letter-spacing: -0.3px;
-        }
-        .sub-heading {
-            font-size: 11.5px;
-            color: #64748b;
-            font-weight: 600;
             margin-top: 1px;
+            letter-spacing: -0.2px;
         }
         .legend-box {
             display: flex;
             align-items: center;
-            gap: 16px;
-            font-size: 11px;
+            gap: 12px;
+            font-size: 10px;
             font-weight: 700;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 8px 14px;
+            border-radius: 5px;
+            padding: 5px 10px;
         }
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .badge-pill {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 8.5px;
             font-weight: 800;
         }
         .badge-pill.pk {
@@ -103,72 +97,77 @@
             position: absolute;
             left: 0;
             top: 0;
-            width: 3280px;
-            height: 3680px;
+            width: 1750px;
+            height: 1780px;
             pointer-events: none;
             z-index: 10;
         }
         .entity-card {
             position: absolute;
             background: #ffffff;
-            border: 1.5px solid #334155;
-            border-radius: 6px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border: 1.2px solid #475569;
+            border-radius: 5px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
             z-index: 20;
             overflow: hidden;
         }
         .entity-header {
             background: #f8fafc;
-            border-bottom: 1.5px solid #334155;
-            padding: 7px 14px;
+            border-bottom: 1.2px solid #475569;
+            padding: 4px 10px;
             text-align: center;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .entity-title {
-            font-size: 14.5px;
+            font-size: 12px;
             font-weight: 700;
             color: #0f172a;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
         }
         .entity-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
-            line-height: 1.2;
+            font-size: 10px;
+            line-height: 1.15;
         }
         .table-row {
-            height: 25px;
+            height: 18.5px;
             border-bottom: 1px solid #f1f5f9;
         }
         .table-row:last-child {
             border-bottom: none;
         }
         .col-key {
-            width: 60px;
-            padding-left: 10px;
+            width: 44px;
+            padding-left: 6px;
             font-weight: 700;
-            font-size: 10.5px;
+            font-size: 8.5px;
             color: #475569;
             white-space: nowrap;
         }
         .col-name {
-            padding: 0 10px;
+            padding: 0 6px;
             font-weight: 600;
             color: #0f172a;
             white-space: nowrap;
             font-family: Consolas, "SF Mono", "Courier New", monospace;
+            font-size: 10px;
         }
         .col-type {
-            padding: 0 12px;
+            padding: 0 8px;
             text-align: right;
             color: #64748b;
             white-space: nowrap;
             font-family: Consolas, "SF Mono", "Courier New", monospace;
-            font-size: 11px;
+            font-size: 9px;
         }
         .key-badge {
             display: inline-block;
             font-weight: 700;
-            font-size: 10.5px;
+            font-size: 8.5px;
         }
         .key-badge.pk {
             color: #0f172a;
@@ -190,20 +189,19 @@
             <div>
                 <div class="brand-title">Republic of the Philippines • Department of Education • Region VII</div>
                 <div class="main-heading">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL — DATABASE ENTITY RELATIONSHIP DIAGRAM (ERD)</div>
-                <div class="sub-heading">Relational Database Architecture · 19 Normalized Entities · PostgreSQL / Supabase Engine (S.Y. 2026–2027)</div>
             </div>
             <div class="legend-box">
                 <div class="legend-item"><span class="badge-pill pk">PK</span> Primary Key</div>
                 <div class="legend-item"><span class="badge-pill fk">FK</span> Foreign Key</div>
                 <div class="legend-item"><span class="badge-pill ak">AK</span> Alternate / Unique</div>
-                <div class="legend-item" style="color: #475569;">Crow's Foot: || One-to-One · &gt;-o One-to-Many</div>
+                <div class="legend-item" style="color: #475569;">|| One-to-One · &gt;-o One-to-Many</div>
             </div>
         </div>
-        <svg class="connectors" width="3280" height="3680">
-            <path d="M 250 928 L 250 990 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 240 974 L 250 990 L 260 974" fill="none" stroke="#334155" stroke-width="2"/><circle cx="250" cy="968" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="242" y1="936" x2="258" y2="936" stroke="#334155" stroke-width="2"/><line x1="242" y1="942" x2="258" y2="942" stroke="#334155" stroke-width="2"/><path d="M 930 478 L 930 1530 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 920 1514 L 930 1530 L 940 1514" fill="none" stroke="#334155" stroke-width="2"/><circle cx="930" cy="1508" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="922" y1="486" x2="938" y2="486" stroke="#334155" stroke-width="2"/><line x1="922" y1="492" x2="938" y2="492" stroke="#334155" stroke-width="2"/><path d="M 620 190.5 L 720 190.5 L 720 340.5 L 780 340.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="772" y1="332.5" x2="772" y2="348.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="332.5" x2="766" y2="348.5" stroke="#334155" stroke-width="2"/><line x1="628" y1="182.5" x2="628" y2="198.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="182.5" x2="634" y2="198.5" stroke="#334155" stroke-width="2"/><path d="M 780 365.5 L 740 365.5 L 740 540.5 L 620 540.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 636 530.5 L 620 540.5 L 636 550.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="642" cy="540.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="772" y1="357.5" x2="772" y2="373.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="357.5" x2="766" y2="373.5" stroke="#334155" stroke-width="2"/><path d="M 100 1580.5 L 40 1580.5 L 40 565.5 L 100 565.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 555.5 L 100 565.5 L 84 575.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="78" cy="565.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="92" y1="1572.5" x2="92" y2="1588.5" stroke="#334155" stroke-width="2"/><line x1="86" y1="1572.5" x2="86" y2="1588.5" stroke="#334155" stroke-width="2"/><path d="M 620 205.5 L 760 205.5 L 760 110 L 1320 110 L 1320 995.5 L 1360 995.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1344 985.5 L 1360 995.5 L 1344 1005.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="1338" cy="995.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="628" y1="197.5" x2="628" y2="213.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="197.5" x2="634" y2="213.5" stroke="#334155" stroke-width="2"/><path d="M 1360 970.5 L 1300 970.5 L 1300 840.5 L 620 840.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="628" y1="832.5" x2="628" y2="848.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="832.5" x2="634" y2="848.5" stroke="#334155" stroke-width="2"/><line x1="1352" y1="962.5" x2="1352" y2="978.5" stroke="#334155" stroke-width="2"/><line x1="1346" y1="962.5" x2="1346" y2="978.5" stroke="#334155" stroke-width="2"/><path d="M 1560 1883 L 1560 2780 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="1552" y1="2772" x2="1568" y2="2772" stroke="#334155" stroke-width="2"/><line x1="1552" y1="2766" x2="1568" y2="2766" stroke="#334155" stroke-width="2"/><line x1="1552" y1="1891" x2="1568" y2="1891" stroke="#334155" stroke-width="2"/><line x1="1552" y1="1897" x2="1568" y2="1897" stroke="#334155" stroke-width="2"/><path d="M 1710 920 L 1710 570.5 L 2220 570.5 L 2220 568 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2210 584 L 2220 568 L 2230 584" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2220" cy="590" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1702" y1="912" x2="1718" y2="912" stroke="#334155" stroke-width="2"/><line x1="1702" y1="906" x2="1718" y2="906" stroke="#334155" stroke-width="2"/><path d="M 1220 190.5 L 1950 190.5 L 1950 355.5 L 2070 355.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 345.5 L 2070 355.5 L 2054 365.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="355.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="182.5" x2="1228" y2="198.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="182.5" x2="1234" y2="198.5" stroke="#334155" stroke-width="2"/><path d="M 1220 205.5 L 1260 205.5 L 1260 2235.5 L 1220 2235.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1236 2225.5 L 1220 2235.5 L 1236 2245.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="1242" cy="2235.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="197.5" x2="1228" y2="213.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="197.5" x2="1234" y2="213.5" stroke="#334155" stroke-width="2"/><path d="M 1220 1580.5 L 1300 1580.5 L 1300 215.5 L 1420 215.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1404 205.5 L 1420 215.5 L 1404 225.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="1398" cy="215.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="1572.5" x2="1228" y2="1588.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="1572.5" x2="1234" y2="1588.5" stroke="#334155" stroke-width="2"/><path d="M 780 1580.5 L 750 1580.5 L 750 3195.5 L 780 3195.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="772" y1="3187.5" x2="772" y2="3203.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="3187.5" x2="766" y2="3203.5" stroke="#334155" stroke-width="2"/><line x1="772" y1="1572.5" x2="772" y2="1588.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="1572.5" x2="766" y2="1588.5" stroke="#334155" stroke-width="2"/><path d="M 780 1595.5 L 650 1595.5 L 650 1680.5 L 550 1680.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 566 1670.5 L 550 1680.5 L 566 1690.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="572" cy="1680.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="772" y1="1587.5" x2="772" y2="1603.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="1587.5" x2="766" y2="1603.5" stroke="#334155" stroke-width="2"/><path d="M 550 1580.5 L 680 1580.5 L 680 850 L 1970 850 L 1970 955.5 L 2070 955.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 945.5 L 2070 955.5 L 2054 965.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="955.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="558" y1="1572.5" x2="558" y2="1588.5" stroke="#334155" stroke-width="2"/><line x1="564" y1="1572.5" x2="564" y2="1588.5" stroke="#334155" stroke-width="2"/><path d="M 1220 1595.5 L 1950 1595.5 L 1950 980.5 L 2070 980.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 970.5 L 2070 980.5 L 2054 990.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="980.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="1587.5" x2="1228" y2="1603.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="1587.5" x2="1234" y2="1603.5" stroke="#334155" stroke-width="2"/><path d="M 2700 2950.5 L 2580 2950.5 L 2580 1130.5 L 2510 1130.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2526 1120.5 L 2510 1130.5 L 2526 1140.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2532" cy="1130.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="2692" y1="2942.5" x2="2692" y2="2958.5" stroke="#334155" stroke-width="2"/><line x1="2686" y1="2942.5" x2="2686" y2="2958.5" stroke="#334155" stroke-width="2"/><path d="M 620 220.5 L 1310 220.5 L 1310 880 L 1930 880 L 1930 1615.5 L 2070 1615.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 1605.5 L 2070 1615.5 L 2054 1625.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="1615.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="628" y1="212.5" x2="628" y2="228.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="212.5" x2="634" y2="228.5" stroke="#334155" stroke-width="2"/><path d="M 1220 1610.5 L 1970 1610.5 L 1970 1640.5 L 2070 1640.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 1630.5 L 2070 1640.5 L 2054 1650.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="1640.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="1228" y1="1602.5" x2="1228" y2="1618.5" stroke="#334155" stroke-width="2"/><line x1="1234" y1="1602.5" x2="1234" y2="1618.5" stroke="#334155" stroke-width="2"/><path d="M 2700 2965.5 L 2560 2965.5 L 2560 1790.5 L 2510 1790.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2526 1780.5 L 2510 1790.5 L 2526 1800.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2532" cy="1790.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="2692" y1="2957.5" x2="2692" y2="2973.5" stroke="#334155" stroke-width="2"/><line x1="2686" y1="2957.5" x2="2686" y2="2973.5" stroke="#334155" stroke-width="2"/><path d="M 420 928 L 420 2600 L 740 2600 L 740 2655.5 L 780 2655.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 764 2645.5 L 780 2655.5 L 764 2665.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="758" cy="2655.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="412" y1="936" x2="428" y2="936" stroke="#334155" stroke-width="2"/><line x1="412" y1="942" x2="428" y2="942" stroke="#334155" stroke-width="2"/><path d="M 620 235.5 L 1330 235.5 L 1330 2700 L 1970 2700 L 1970 3055.5 L 2070 3055.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 2054 3045.5 L 2070 3055.5 L 2054 3065.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="2048" cy="3055.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="628" y1="227.5" x2="628" y2="243.5" stroke="#334155" stroke-width="2"/><line x1="634" y1="227.5" x2="634" y2="243.5" stroke="#334155" stroke-width="2"/><path d="M 100 190.5 L 30 190.5 L 30 2775.5 L 100 2775.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 2765.5 L 100 2775.5 L 84 2785.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="78" cy="2775.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="92" y1="182.5" x2="92" y2="198.5" stroke="#334155" stroke-width="2"/><line x1="86" y1="182.5" x2="86" y2="198.5" stroke="#334155" stroke-width="2"/><path d="M 100 1595.5 L 50 1595.5 L 50 2825.5 L 100 2825.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 2815.5 L 100 2825.5 L 84 2835.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="78" cy="2825.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="92" y1="1587.5" x2="92" y2="1603.5" stroke="#334155" stroke-width="2"/><line x1="86" y1="1587.5" x2="86" y2="1603.5" stroke="#334155" stroke-width="2"/><path d="M 2850 3238 L 2850 3600 L 400 3600 L 400 3038 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 390 3054 L 400 3038 L 410 3054" fill="none" stroke="#334155" stroke-width="2"/><circle cx="400" cy="3060" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="2842" y1="3246" x2="2858" y2="3246" stroke="#334155" stroke-width="2"/><line x1="2842" y1="3252" x2="2858" y2="3252" stroke="#334155" stroke-width="2"/><path d="M 780 1610.5 L 620 1610.5 L 620 2850.5 L 550 2850.5 " fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M 566 2840.5 L 550 2850.5 L 566 2860.5" fill="none" stroke="#334155" stroke-width="2"/><circle cx="572" cy="2850.5" r="3.5" fill="#ffffff" stroke="#334155" stroke-width="1.8"/><line x1="772" y1="1602.5" x2="772" y2="1618.5" stroke="#334155" stroke-width="2"/><line x1="766" y1="1602.5" x2="766" y2="1618.5" stroke="#334155" stroke-width="2"/>
+        <svg class="connectors" width="1750" height="1780">
+            <path d="M 140 673.0 L 140 680 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 133 669 L 140 680 L 147 669" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="140" cy="666" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="135" y1="678.0" x2="145" y2="678.0" stroke="#334155" stroke-width="1.3"/><line x1="135" y1="682.0" x2="145" y2="682.0" stroke="#334155" stroke-width="1.3"/><path d="M 545 340.0 L 545 1020 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 538 1009 L 545 1020 L 552 1009" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="545" cy="1006" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="540" y1="345.0" x2="550" y2="345.0" stroke="#334155" stroke-width="1.3"/><line x1="540" y1="349.0" x2="550" y2="349.0" stroke="#334155" stroke-width="1.3"/><path d="M 370 127.25 L 387 127.25 L 387 238.25 L 405 238.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><line x1="400" y1="233.25" x2="400" y2="243.25" stroke="#334155" stroke-width="1.3"/><line x1="396" y1="233.25" x2="396" y2="243.25" stroke="#334155" stroke-width="1.3"/><line x1="375" y1="122.25" x2="375" y2="132.25" stroke="#334155" stroke-width="1.3"/><line x1="379" y1="122.25" x2="379" y2="132.25" stroke="#334155" stroke-width="1.3"/><path d="M 405 256.75 L 393 256.75 L 393 386.25 L 370 386.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 381 379.25 L 370 386.25 L 381 393.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="384" cy="386.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="400" y1="251.75" x2="400" y2="261.75" stroke="#334155" stroke-width="1.3"/><line x1="396" y1="251.75" x2="396" y2="261.75" stroke="#334155" stroke-width="1.3"/><path d="M 40 1057.25 L 18 1057.25 L 18 404.75 L 40 404.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 29 397.75 L 40 404.75 L 29 411.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="26" cy="404.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="35" y1="1052.25" x2="35" y2="1062.25" stroke="#334155" stroke-width="1.3"/><line x1="31" y1="1052.25" x2="31" y2="1062.25" stroke="#334155" stroke-width="1.3"/><path d="M 370 139.25 L 397 139.25 L 397 70 L 714 70 L 714 455.75 L 730 455.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 719 448.75 L 730 455.75 L 719 462.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="716" cy="455.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="375" y1="134.25" x2="375" y2="144.25" stroke="#334155" stroke-width="1.3"/><line x1="379" y1="134.25" x2="379" y2="144.25" stroke="#334155" stroke-width="1.3"/><path d="M 730 437.25 L 706 437.25 L 706 350 L 385 350 L 385 608.25 L 370 608.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><line x1="375" y1="603.25" x2="375" y2="613.25" stroke="#334155" stroke-width="1.3"/><line x1="379" y1="603.25" x2="379" y2="613.25" stroke="#334155" stroke-width="1.3"/><line x1="725" y1="432.25" x2="725" y2="442.25" stroke="#334155" stroke-width="1.3"/><line x1="721" y1="432.25" x2="721" y2="442.25" stroke="#334155" stroke-width="1.3"/><path d="M 890 1112.5 L 890 1130 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><line x1="885" y1="1125" x2="895" y2="1125" stroke="#334155" stroke-width="1.3"/><line x1="885" y1="1121" x2="895" y2="1121" stroke="#334155" stroke-width="1.3"/><line x1="885" y1="1117.5" x2="895" y2="1117.5" stroke="#334155" stroke-width="1.3"/><line x1="885" y1="1121.5" x2="895" y2="1121.5" stroke="#334155" stroke-width="1.3"/><path d="M 1060 437.25 L 1080 437.25 L 1080 325.25 L 1095 325.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 318.25 L 1095 325.25 L 1084 332.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="325.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="1065" y1="432.25" x2="1065" y2="442.25" stroke="#334155" stroke-width="1.3"/><line x1="1069" y1="432.25" x2="1069" y2="442.25" stroke="#334155" stroke-width="1.3"/><path d="M 695 127.25 L 1073 127.25 L 1073 195.75 L 1095 195.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 188.75 L 1095 195.75 L 1084 202.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="195.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="700" y1="122.25" x2="700" y2="132.25" stroke="#334155" stroke-width="1.3"/><line x1="704" y1="122.25" x2="704" y2="132.25" stroke="#334155" stroke-width="1.3"/><path d="M 695 139.25 L 709 139.25 L 709 1280.75 L 695 1280.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 706 1273.75 L 695 1280.75 L 706 1287.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="709" cy="1280.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="700" y1="134.25" x2="700" y2="144.25" stroke="#334155" stroke-width="1.3"/><line x1="704" y1="134.25" x2="704" y2="144.25" stroke="#334155" stroke-width="1.3"/><path d="M 695 1057.25 L 710 1057.25 L 710 145.75 L 730 145.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 719 138.75 L 730 145.75 L 719 152.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="716" cy="145.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="700" y1="1052.25" x2="700" y2="1062.25" stroke="#334155" stroke-width="1.3"/><line x1="704" y1="1052.25" x2="704" y2="1062.25" stroke="#334155" stroke-width="1.3"/><path d="M 405 1069.25 L 391 1069.25 L 391 1670.75 L 405 1670.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><line x1="400" y1="1665.75" x2="400" y2="1675.75" stroke="#334155" stroke-width="1.3"/><line x1="396" y1="1665.75" x2="396" y2="1675.75" stroke="#334155" stroke-width="1.3"/><line x1="400" y1="1064.25" x2="400" y2="1074.25" stroke="#334155" stroke-width="1.3"/><line x1="396" y1="1064.25" x2="396" y2="1074.25" stroke="#334155" stroke-width="1.3"/><path d="M 405 1057.25 L 388 1057.25 L 388 1131.25 L 370 1131.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 381 1124.25 L 370 1131.25 L 381 1138.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="384" cy="1131.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="400" y1="1052.25" x2="400" y2="1062.25" stroke="#334155" stroke-width="1.3"/><line x1="396" y1="1052.25" x2="396" y2="1062.25" stroke="#334155" stroke-width="1.3"/><path d="M 370 1069.25 L 395 1069.25 L 395 380 L 1077 380 L 1077 445.75 L 1095 445.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 438.75 L 1095 445.75 L 1084 452.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="445.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="375" y1="1064.25" x2="375" y2="1074.25" stroke="#334155" stroke-width="1.3"/><line x1="379" y1="1064.25" x2="379" y2="1074.25" stroke="#334155" stroke-width="1.3"/><path d="M 695 1069.25 L 1083 1069.25 L 1083 464.25 L 1095 464.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 457.25 L 1095 464.25 L 1084 471.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="464.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="700" y1="1064.25" x2="700" y2="1074.25" stroke="#334155" stroke-width="1.3"/><line x1="704" y1="1064.25" x2="704" y2="1074.25" stroke="#334155" stroke-width="1.3"/><path d="M 1420 867.25 L 1400 867.25 L 1400 575.25 L 1385 575.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1396 568.25 L 1385 575.25 L 1396 582.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1399" cy="575.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="1415" y1="862.25" x2="1415" y2="872.25" stroke="#334155" stroke-width="1.3"/><line x1="1411" y1="862.25" x2="1411" y2="872.25" stroke="#334155" stroke-width="1.3"/><path d="M 370 151.25 L 395 151.25 L 395 610 L 1081 610 L 1081 675.75 L 1095 675.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 668.75 L 1095 675.75 L 1084 682.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="675.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="375" y1="146.25" x2="375" y2="156.25" stroke="#334155" stroke-width="1.3"/><line x1="379" y1="146.25" x2="379" y2="156.25" stroke="#334155" stroke-width="1.3"/><path d="M 695 1081.25 L 1077 1081.25 L 1077 694.25 L 1095 694.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 687.25 L 1095 694.25 L 1084 701.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="694.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="700" y1="1076.25" x2="700" y2="1086.25" stroke="#334155" stroke-width="1.3"/><line x1="704" y1="1076.25" x2="704" y2="1086.25" stroke="#334155" stroke-width="1.3"/><path d="M 1420 879.25 L 1399 879.25 L 1399 805.25 L 1385 805.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1396 798.25 L 1385 805.25 L 1396 812.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1399" cy="805.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="1415" y1="874.25" x2="1415" y2="884.25" stroke="#334155" stroke-width="1.3"/><line x1="1411" y1="874.25" x2="1411" y2="884.25" stroke="#334155" stroke-width="1.3"/><path d="M 220 673.0 L 220 1010 L 389 1010 L 389 1450.75 L 405 1450.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 394 1443.75 L 405 1450.75 L 394 1457.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="391" cy="1450.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="215" y1="678.0" x2="225" y2="678.0" stroke="#334155" stroke-width="1.3"/><line x1="215" y1="682.0" x2="225" y2="682.0" stroke="#334155" stroke-width="1.3"/><path d="M 280 673.0 L 280 1115 L 1081 1115 L 1081 1185.75 L 1095 1185.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 1084 1178.75 L 1095 1185.75 L 1084 1192.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="1081" cy="1185.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="275" y1="678.0" x2="285" y2="678.0" stroke="#334155" stroke-width="1.3"/><line x1="275" y1="682.0" x2="285" y2="682.0" stroke="#334155" stroke-width="1.3"/><path d="M 40 127.25 L 16 127.25 L 16 1500.75 L 40 1500.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 29 1493.75 L 40 1500.75 L 29 1507.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="26" cy="1500.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="35" y1="122.25" x2="35" y2="132.25" stroke="#334155" stroke-width="1.3"/><line x1="31" y1="122.25" x2="31" y2="132.25" stroke="#334155" stroke-width="1.3"/><path d="M 40 1057.25 L 24 1057.25 L 24 1537.75 L 40 1537.75 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 29 1530.75 L 40 1537.75 L 29 1544.75" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="26" cy="1537.75" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="35" y1="1052.25" x2="35" y2="1062.25" stroke="#334155" stroke-width="1.3"/><line x1="31" y1="1052.25" x2="31" y2="1062.25" stroke="#334155" stroke-width="1.3"/><path d="M 1520 1080.0 L 1520 1720 L 240 1720 L 240 1695.0 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 233 1706.0 L 240 1695.0 L 247 1706.0" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="240" cy="1709.0" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="1515" y1="1085.0" x2="1525" y2="1085.0" stroke="#334155" stroke-width="1.3"/><line x1="1515" y1="1089.0" x2="1525" y2="1089.0" stroke="#334155" stroke-width="1.3"/><path d="M 405 1077.25 L 385 1077.25 L 385 1556.25 L 370 1556.25 " fill="none" stroke="#475569" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M 381 1549.25 L 370 1556.25 L 381 1563.25" fill="none" stroke="#334155" stroke-width="1.3"/><circle cx="384" cy="1556.25" r="2.5" fill="#ffffff" stroke="#334155" stroke-width="1.2"/><line x1="400" y1="1072.25" x2="400" y2="1082.25" stroke="#334155" stroke-width="1.3"/><line x1="396" y1="1072.25" x2="396" y2="1082.25" stroke="#334155" stroke-width="1.3"/>
         </svg>
         
-        <div class="entity-card" style="left: 100px; top: 140px; width: 520px;">
+        <div class="entity-card" style="left: 40px; top: 90px; width: 330px;">
             <div class="entity-header">
                 <span class="entity-title">students</span>
             </div>
@@ -394,7 +392,7 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 100px; top: 990px; width: 520px;">
+        <div class="entity-card" style="left: 40px; top: 680px; width: 330px;">
             <div class="entity-header">
                 <span class="entity-title">guidance</span>
             </div>
@@ -501,7 +499,214 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 780px; top: 140px; width: 440px;">
+        <div class="entity-card" style="left: 40px; top: 1020px; width: 330px;">
+            <div class="entity-header">
+                <span class="entity-title">sections</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">name</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade_level</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">strand</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">adviser_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">room</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">adviser_name</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 40px; top: 1235px; width: 330px;">
+            <div class="entity-header">
+                <span class="entity-title">compliance_reports</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">report_type</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">period</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">due_date</td>
+                <td class="col-type">date</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">submitted_date</td>
+                <td class="col-type">date</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">notes</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 40px; top: 1445px; width: 330px;">
+            <div class="entity-header">
+                <span class="entity-title">grades</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">subject_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">section_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">school_year</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">semester</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">quarter</td>
+                <td class="col-type">int4</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">grade</td>
+                <td class="col-type">numeric</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">remarks</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 405px; top: 90px; width: 290px;">
             <div class="entity-header">
                 <span class="entity-title">users</span>
             </div>
@@ -584,7 +789,219 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 1420px; top: 140px; width: 450px;">
+        <div class="entity-card" style="left: 405px; top: 1020px; width: 290px;">
+            <div class="entity-header">
+                <span class="entity-title">teachers</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">user_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge ak">AK</span></td>
+                <td class="col-name">employee_id</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">specialization</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">phone</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">address</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">updated_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 405px; top: 1225px; width: 290px;">
+            <div class="entity-header">
+                <span class="entity-title">activity_logs</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">user_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">role</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">action</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">details</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">timestamp</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 405px; top: 1395px; width: 290px;">
+            <div class="entity-header">
+                <span class="entity-title">transferees</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">student_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">from_school</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">to_school</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">reason</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">status</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">requested_date</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 405px; top: 1615px; width: 290px;">
+            <div class="entity-header">
+                <span class="entity-title">teacher_faces</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">teacher_id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">face_fingerprint</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">face_preview</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">registered_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 730px; top: 90px; width: 330px;">
             <div class="entity-header">
                 <span class="entity-title">teacher_attendance</span>
             </div>
@@ -679,78 +1096,7 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 2070px; top: 280px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">notifications</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">user_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">role</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">title</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">message</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">type</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">read</td>
-                <td class="col-type">bool</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">enrollment_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">is_read</td>
-                <td class="col-type">bool</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 1360px; top: 920px; width: 530px;">
+        <div class="entity-card" style="left: 730px; top: 400px; width: 330px;">
             <div class="entity-header">
                 <span class="entity-title">enrollments</span>
             </div>
@@ -983,7 +1329,131 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 2070px; top: 880px; width: 440px;">
+        <div class="entity-card" style="left: 730px; top: 1130px; width: 330px;">
+            <div class="entity-header">
+                <span class="entity-title">documents</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">enrollment_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">birth_certificate</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">report_card</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">good_moral</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">photo</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 1095px; top: 140px; width: 290px;">
+            <div class="entity-header">
+                <span class="entity-title">notifications</span>
+            </div>
+            <table class="entity-table">
+                <tbody>
+                    
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge pk">PK</span></td>
+                <td class="col-name">id</td>
+                <td class="col-type">uuid NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">user_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">role</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">title</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">message</td>
+                <td class="col-type">text NOT NULL</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">type</td>
+                <td class="col-type">text</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">read</td>
+                <td class="col-type">bool</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">created_at</td>
+                <td class="col-type">timestamptz</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"><span class="key-badge fk">FK</span></td>
+                <td class="col-name">enrollment_id</td>
+                <td class="col-type">uuid</td>
+            </tr>
+            
+            <tr class="table-row">
+                <td class="col-key"></td>
+                <td class="col-name">is_read</td>
+                <td class="col-type">bool</td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="entity-card" style="left: 1095px; top: 390px; width: 290px;">
             <div class="entity-header">
                 <span class="entity-title">schedules</span>
             </div>
@@ -1048,7 +1518,7 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 2070px; top: 1540px; width: 440px;">
+        <div class="entity-card" style="left: 1095px; top: 620px; width: 290px;">
             <div class="entity-header">
                 <span class="entity-title">attendance</span>
             </div>
@@ -1119,479 +1589,7 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 100px; top: 1530px; width: 450px;">
-            <div class="entity-header">
-                <span class="entity-title">sections</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">name</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">grade_level</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">strand</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">adviser_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">room</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">updated_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">adviser_name</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 780px; top: 1530px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">teachers</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">user_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge ak">AK</span></td>
-                <td class="col-name">employee_id</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">specialization</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">phone</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">address</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">updated_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 100px; top: 2160px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">compliance_reports</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">report_type</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">period</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">due_date</td>
-                <td class="col-type">date</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">status</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">submitted_date</td>
-                <td class="col-type">date</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">notes</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 780px; top: 2160px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">activity_logs</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">user_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">role</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">action</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">details</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">timestamp</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 780px; top: 2580px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">transferees</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">student_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">type</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">from_school</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">to_school</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">reason</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">status</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">requested_date</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 780px; top: 3120px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">teacher_faces</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">teacher_id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">face_fingerprint</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">face_preview</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">registered_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 100px; top: 2700px; width: 450px;">
-            <div class="entity-header">
-                <span class="entity-title">grades</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">student_id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">subject_id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">section_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">teacher_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">school_year</td>
-                <td class="col-type">text NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">semester</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">quarter</td>
-                <td class="col-type">int4</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">grade</td>
-                <td class="col-type">numeric</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">remarks</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">updated_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 1420px; top: 2780px; width: 440px;">
-            <div class="entity-header">
-                <span class="entity-title">documents</span>
-            </div>
-            <table class="entity-table">
-                <tbody>
-                    
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge pk">PK</span></td>
-                <td class="col-name">id</td>
-                <td class="col-type">uuid NOT NULL</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"><span class="key-badge fk">FK</span></td>
-                <td class="col-name">enrollment_id</td>
-                <td class="col-type">uuid</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">birth_certificate</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">report_card</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">good_moral</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">photo</td>
-                <td class="col-type">text</td>
-            </tr>
-            
-            <tr class="table-row">
-                <td class="col-key"></td>
-                <td class="col-name">created_at</td>
-                <td class="col-type">timestamptz</td>
-            </tr>
-            
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="entity-card" style="left: 2070px; top: 2980px; width: 450px;">
+        <div class="entity-card" style="left: 1095px; top: 1130px; width: 290px;">
             <div class="entity-header">
                 <span class="entity-title">student_documents</span>
             </div>
@@ -1662,7 +1660,7 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 2700px; top: 2420px; width: 440px;">
+        <div class="entity-card" style="left: 1420px; top: 620px; width: 280px;">
             <div class="entity-header">
                 <span class="entity-title">attendance_locations</span>
             </div>
@@ -1721,7 +1719,7 @@
             </table>
         </div>
         
-        <div class="entity-card" style="left: 2700px; top: 2900px; width: 440px;">
+        <div class="entity-card" style="left: 1420px; top: 830px; width: 280px;">
             <div class="entity-header">
                 <span class="entity-title">subjects</span>
             </div>
