@@ -2,12 +2,12 @@ import os
 import subprocess
 import shutil
 
-# Data structure defining all 18 tables exactly as shown in the user's uploaded ERD
+# Full relational schema with 19 core entities including `guidance`
 
 TABLES = {
     "students": {
         "x": 100,
-        "y": 80,
+        "y": 140,
         "width": 520,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -42,9 +42,32 @@ TABLES = {
             ("", "student_type", "text"),
         ],
     },
+    "guidance": {
+        "x": 100,
+        "y": 990,
+        "width": 520,
+        "columns": [
+            ("PK", "id", "uuid NOT NULL"),
+            ("FK", "student_id", "uuid"),
+            ("", "student_name", "text NOT NULL"),
+            ("", "lrn", "text"),
+            ("", "grade_level", "text"),
+            ("", "section", "text"),
+            ("", "counselor_name", "text"),
+            ("", "session_type", "text"),
+            ("", "purpose", "text"),
+            ("", "notes", "text"),
+            ("", "action_plan", "text"),
+            ("", "status", "text"),
+            ("", "session_date", "date"),
+            ("", "session_time", "text"),
+            ("", "created_at", "timestamptz"),
+            ("", "updated_at", "timestamptz"),
+        ],
+    },
     "users": {
         "x": 780,
-        "y": 80,
+        "y": 140,
         "width": 440,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -178,7 +201,7 @@ TABLES = {
     },
     "sections": {
         "x": 100,
-        "y": 1560,
+        "y": 1530,
         "width": 450,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -194,7 +217,7 @@ TABLES = {
     },
     "teachers": {
         "x": 780,
-        "y": 1560,
+        "y": 1530,
         "width": 440,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -209,7 +232,7 @@ TABLES = {
     },
     "compliance_reports": {
         "x": 100,
-        "y": 2180,
+        "y": 2160,
         "width": 440,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -224,7 +247,7 @@ TABLES = {
     },
     "activity_logs": {
         "x": 780,
-        "y": 2180,
+        "y": 2160,
         "width": 440,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -265,7 +288,7 @@ TABLES = {
     },
     "grades": {
         "x": 100,
-        "y": 2720,
+        "y": 2700,
         "width": 450,
         "columns": [
             ("PK", "id", "uuid NOT NULL"),
@@ -349,7 +372,6 @@ TABLES = {
     },
 }
 
-# Row calculation helper
 ROW_HEIGHT = 25
 HEADER_HEIGHT = 38
 
@@ -365,9 +387,18 @@ def get_col_index(tbl_name, col_name):
             return i
     return 0
 
-# Connectors definition:
-# (from_table, from_col, from_side, to_table, to_col, to_side, waypoints)
 RELATIONSHIPS = [
+    # 0. students.id -> guidance.student_id (NEW Guidance Connection)
+    {
+        "from": ("students", "id", "bottom"),
+        "to": ("guidance", "student_id", "top"),
+        "pts": [
+            (TABLES["students"]["x"] + 150, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
+            (TABLES["students"]["x"] + 150, TABLES["guidance"]["y"]),
+        ],
+        "from_card": "one",
+        "to_card": "many",
+    },
     # 1. users.id -> teachers.user_id
     {
         "from": ("users", "id", "bottom"),
@@ -411,8 +442,8 @@ RELATIONSHIPS = [
         "to": ("students", "section_id", "left"),
         "pts": [
             (TABLES["sections"]["x"], get_row_y(TABLES["sections"], 0)),
-            (TABLES["sections"]["x"] - 50, get_row_y(TABLES["sections"], 0)),
-            (TABLES["sections"]["x"] - 50, get_row_y(TABLES["students"], get_col_index("students", "section_id"))),
+            (TABLES["sections"]["x"] - 60, get_row_y(TABLES["sections"], 0)),
+            (TABLES["sections"]["x"] - 60, get_row_y(TABLES["students"], get_col_index("students", "section_id"))),
             (TABLES["students"]["x"], get_row_y(TABLES["students"], get_col_index("students", "section_id"))),
         ],
         "from_card": "one",
@@ -425,8 +456,8 @@ RELATIONSHIPS = [
         "pts": [
             (TABLES["students"]["x"] + TABLES["students"]["width"], get_row_y(TABLES["students"], 0) + 15),
             (TABLES["users"]["x"] - 20, get_row_y(TABLES["students"], 0) + 15),
-            (TABLES["users"]["x"] - 20, 50),
-            (TABLES["enrollments"]["x"] - 40, 50),
+            (TABLES["users"]["x"] - 20, 110),
+            (TABLES["enrollments"]["x"] - 40, 110),
             (TABLES["enrollments"]["x"] - 40, get_row_y(TABLES["enrollments"], get_col_index("enrollments", "student_id"))),
             (TABLES["enrollments"]["x"], get_row_y(TABLES["enrollments"], get_col_index("enrollments", "student_id"))),
         ],
@@ -622,8 +653,8 @@ RELATIONSHIPS = [
         "from": ("students", "id", "bottom"),
         "to": ("transferees", "student_id", "left"),
         "pts": [
-            (TABLES["students"]["x"] + 200, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
-            (TABLES["students"]["x"] + 200, 2600),
+            (TABLES["students"]["x"] + 320, TABLES["students"]["y"] + get_table_height(TABLES["students"])),
+            (TABLES["students"]["x"] + 320, 2600),
             (TABLES["transferees"]["x"] - 40, 2600),
             (TABLES["transferees"]["x"] - 40, get_row_y(TABLES["transferees"], get_col_index("transferees", "student_id"))),
             (TABLES["transferees"]["x"], get_row_y(TABLES["transferees"], get_col_index("transferees", "student_id"))),
@@ -652,8 +683,8 @@ RELATIONSHIPS = [
         "to": ("grades", "student_id", "left"),
         "pts": [
             (TABLES["students"]["x"], get_row_y(TABLES["students"], 0)),
-            (40, get_row_y(TABLES["students"], 0)),
-            (40, get_row_y(TABLES["grades"], get_col_index("grades", "student_id"))),
+            (30, get_row_y(TABLES["students"], 0)),
+            (30, get_row_y(TABLES["grades"], get_col_index("grades", "student_id"))),
             (TABLES["grades"]["x"], get_row_y(TABLES["grades"], get_col_index("grades", "student_id"))),
         ],
         "from_card": "one",
@@ -665,8 +696,8 @@ RELATIONSHIPS = [
         "to": ("grades", "section_id", "left"),
         "pts": [
             (TABLES["sections"]["x"], get_row_y(TABLES["sections"], 0) + 15),
-            (60, get_row_y(TABLES["sections"], 0) + 15),
-            (60, get_row_y(TABLES["grades"], get_col_index("grades", "section_id"))),
+            (50, get_row_y(TABLES["sections"], 0) + 15),
+            (50, get_row_y(TABLES["grades"], get_col_index("grades", "section_id"))),
             (TABLES["grades"]["x"], get_row_y(TABLES["grades"], get_col_index("grades", "section_id"))),
         ],
         "from_card": "one",
@@ -702,9 +733,8 @@ RELATIONSHIPS = [
 
 def render_html():
     canvas_w = 3280
-    canvas_h = 3480
+    canvas_h = 3680
 
-    # Build SVG for connectors
     svg_elements = []
 
     for rel in RELATIONSHIPS:
@@ -819,7 +849,7 @@ def render_html():
             padding: 0;
         }}
         body {{
-            background-color: #ffffff;
+            background-color: #f8fafc;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #1e293b;
             width: {canvas_w}px;
@@ -836,23 +866,77 @@ def render_html():
             top: 0;
             background: #ffffff;
         }}
-        .diagram-header {{
+        .diagram-header-banner {{
             position: absolute;
             left: 100px;
-            top: 24px;
-            z-index: 5;
+            top: 30px;
+            right: 100px;
+            height: 75px;
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            z-index: 30;
         }}
-        .diagram-header h1 {{
-            font-size: 20px;
+        .brand-title {{
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        .main-heading {{
+            font-size: 19px;
             font-weight: 800;
             color: #0f172a;
-            letter-spacing: -0.5px;
+            margin-top: 2px;
+            letter-spacing: -0.3px;
         }}
-        .diagram-header p {{
-            font-size: 12px;
+        .sub-heading {{
+            font-size: 11.5px;
             color: #64748b;
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 1px;
+        }}
+        .legend-box {{
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px 14px;
+        }}
+        .legend-item {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .badge-pill {{
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+        }}
+        .badge-pill.pk {{
+            background: #0f172a;
+            color: #ffffff;
+        }}
+        .badge-pill.fk {{
+            background: #e2e8f0;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }}
+        .badge-pill.ak {{
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
         }}
         svg.connectors {{
             position: absolute;
@@ -875,7 +959,7 @@ def render_html():
         .entity-header {{
             background: #f8fafc;
             border-bottom: 1.5px solid #334155;
-            padding: 6px 14px;
+            padding: 7px 14px;
             text-align: center;
         }}
         .entity-title {{
@@ -941,6 +1025,19 @@ def render_html():
 </head>
 <body>
     <div class="canvas">
+        <div class="diagram-header-banner">
+            <div>
+                <div class="brand-title">Republic of the Philippines • Department of Education • Region VII</div>
+                <div class="main-heading">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL — DATABASE ENTITY RELATIONSHIP DIAGRAM (ERD)</div>
+                <div class="sub-heading">Relational Database Architecture · 19 Normalized Entities · PostgreSQL / Supabase Engine (S.Y. 2026–2027)</div>
+            </div>
+            <div class="legend-box">
+                <div class="legend-item"><span class="badge-pill pk">PK</span> Primary Key</div>
+                <div class="legend-item"><span class="badge-pill fk">FK</span> Foreign Key</div>
+                <div class="legend-item"><span class="badge-pill ak">AK</span> Alternate / Unique</div>
+                <div class="legend-item" style="color: #475569;">Crow's Foot: || One-to-One · &gt;-o One-to-Many</div>
+            </div>
+        </div>
         <svg class="connectors" width="{canvas_w}" height="{canvas_h}">
             {''.join(svg_elements)}
         </svg>
@@ -971,7 +1068,7 @@ def main():
         "--disable-gpu",
         "--force-device-scale-factor=2",
         f"--screenshot={temp_png}",
-        "--window-size=3280,3480",
+        "--window-size=3280,3680",
         "--hide-scrollbars",
         file_url
     ]
