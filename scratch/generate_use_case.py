@@ -2,27 +2,25 @@ import os
 import subprocess
 import shutil
 
-# Precise UML Use Case Diagram matching the user's uploaded layout
-
 def render_svg_use_case():
     W = 1050
     H = 1500
 
     # System Boundary Box
     sb_x = 180
-    sb_y = 25
+    sb_y = 20
     sb_w = 690
-    sb_h = 1450
+    sb_h = 1455
 
     # Title Box
-    tb_w = 420
+    tb_w = 430
     tb_h = 36
     tb_x = sb_x + (sb_w - tb_w) / 2
-    tb_y = sb_y + 20
+    tb_y = sb_y + 18
 
     # Central Use Cases (16 vertical ovals)
-    uc_cx = sb_x + sb_w / 2  # 525
-    uc_rx = 95
+    uc_cx = 520
+    uc_rx = 92
     uc_ry = 22
 
     use_cases = [
@@ -45,16 +43,16 @@ def render_svg_use_case():
     ]
     uc_map = {u["id"]: u for u in use_cases}
 
-    # Secondary Sub-Use Cases
+    # Secondary Sub-Use Cases (placed cleanly on the right with no overlap)
     sub_use_cases = [
-        {"id": "fill_form", "text": "Fill Out<tspan x='760' dy='14'>Enrollment Form</tspan>", "cx": 760, "cy": 115, "rx": 58, "ry": 24},
-        {"id": "select_strand", "text": "Select Strand", "cx": 760, "cy": 190, "rx": 52, "ry": 20},
-        {"id": "receive_notif", "text": "Receive<tspan x='740' dy='14'>Notification</tspan>", "cx": 740, "cy": 320, "rx": 56, "ry": 24},
-        {"id": "get_info", "text": "Get Information", "cx": 650, "cy": 910, "rx": 52, "ry": 20},
+        {"id": "fill_form", "text_lines": ["Fill Out", "Enrollment Form"], "cx": 770, "cy": 115, "rx": 58, "ry": 24},
+        {"id": "select_strand", "text_lines": ["Select Strand"], "cx": 770, "cy": 185, "rx": 52, "ry": 20},
+        {"id": "receive_notif", "text_lines": ["Receive", "Notification"], "cx": 745, "cy": 305, "rx": 56, "ry": 24},
+        {"id": "get_info", "text_lines": ["Get Information"], "cx": 735, "cy": 915, "rx": 54, "ry": 20},
     ]
     sub_map = {s["id"]: s for s in sub_use_cases}
 
-    # Actors: Stick figures
+    # Actors: Stick figures matching reference
     actors = {
         "admin": {
             "name": "Admin",
@@ -100,7 +98,7 @@ def render_svg_use_case():
             "name": "Guidance",
             "x": 970,
             "y": 1160,
-            "color": "#831843", # Deep Burgundy / Maroon
+            "color": "#831843", # Deep Maroon / Burgundy
             "connect_point": (945, 1175),
             "side": "right"
         },
@@ -175,22 +173,26 @@ def render_svg_use_case():
         ("guidance", "logout"),
     ]
 
-    # Special extra association: Registrar -> receive_notif
+    # Special association: Registrar -> Receive Notification
     extra_associations = [
         (actors["registrar"]["connect_point"], (sub_map["receive_notif"]["cx"] + sub_map["receive_notif"]["rx"], sub_map["receive_notif"]["cy"]))
     ]
 
-    # Include relationships (from_uc, to_sub_uc, label)
+    # Include dashed lines
     include_rels = [
-        {"from": (uc_cx + uc_rx, uc_map["enroll_strand"]["cy"]), "to": (sub_map["fill_form"]["cx"] - sub_map["fill_form"]["rx"] + 10, sub_map["fill_form"]["cy"] + 15), "label": "include", "lx": 670, "ly": 220},
-        {"from": (sub_map["fill_form"]["cx"] + 10, sub_map["fill_form"]["cy"] + sub_map["fill_form"]["ry"]), "to": (sub_map["select_strand"]["cx"] + 10, sub_map["select_strand"]["cy"] - sub_map["select_strand"]["ry"]), "label": "", "lx": 0, "ly": 0},
-        {"from": (uc_cx + uc_rx, uc_map["view_enrollment"]["cy"]), "to": (sub_map["receive_notif"]["cx"] - sub_map["receive_notif"]["rx"] + 10, sub_map["receive_notif"]["cy"] + 10), "label": "include", "lx": 655, "ly": 375},
-        {"from": (uc_cx + uc_rx, uc_map["chat_ai"]["cy"]), "to": (sub_map["get_info"]["cx"] + 10, sub_map["get_info"]["cy"] + sub_map["get_info"]["ry"]), "label": "include", "lx": 575, "ly": 930},
+        # Enroll in Strand -> Fill Out Enrollment Form
+        {"from": (uc_cx + uc_rx, uc_map["enroll_strand"]["cy"]), "to": (sub_map["fill_form"]["cx"] - sub_map["fill_form"]["rx"] + 8, sub_map["fill_form"]["cy"] + 15), "label": "include", "lx": 678, "ly": 200},
+        # Enroll in Strand -> Select Strand
+        {"from": (uc_cx + uc_rx, uc_map["enroll_strand"]["cy"]), "to": (sub_map["select_strand"]["cx"] - sub_map["select_strand"]["rx"] + 5, sub_map["select_strand"]["cy"] + 8), "label": "include", "lx": 668, "ly": 268},
+        # View Enrollment -> Receive Notification
+        {"from": (uc_cx + uc_rx, uc_map["view_enrollment"]["cy"]), "to": (sub_map["receive_notif"]["cx"] - sub_map["receive_notif"]["rx"] + 8, sub_map["receive_notif"]["cy"] + 10), "label": "include", "lx": 660, "ly": 355},
+        # Chat with AI Assistant -> Get Information
+        {"from": (uc_cx + uc_rx, uc_map["chat_ai"]["cy"]), "to": (sub_map["get_info"]["cx"] - sub_map["get_info"]["rx"] + 5, sub_map["get_info"]["cy"] + 8), "label": "include", "lx": 638, "ly": 918},
     ]
 
     svg_lines = []
 
-    # Draw Association Lines
+    # Draw Association Lines with small open arrowheads
     for act_id, uc_id in associations:
         act = actors[act_id]
         uc = uc_map[uc_id]
@@ -201,19 +203,19 @@ def render_svg_use_case():
         else:
             x2 = uc_cx + uc_rx
             y2 = uc["cy"]
-        svg_lines.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#334155" stroke-width="1.2"/>')
+        svg_lines.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#1e293b" stroke-width="1.1" marker-end="url(#arrow)"/>')
 
     # Draw extra associations
     for p1, p2 in extra_associations:
-        svg_lines.append(f'<line x1="{p1[0]}" y1="{p1[1]}" x2="{p2[0]}" y2="{p2[1]}" stroke="#334155" stroke-width="1.2"/>')
+        svg_lines.append(f'<line x1="{p1[0]}" y1="{p1[1]}" x2="{p2[0]}" y2="{p2[1]}" stroke="#1e293b" stroke-width="1.1" marker-end="url(#arrow)"/>')
 
     # Draw include dashed arrows
     for inc in include_rels:
         p1 = inc["from"]
         p2 = inc["to"]
-        svg_lines.append(f'<line x1="{p1[0]}" y1="{p1[1]}" x2="{p2[0]}" y2="{p2[1]}" stroke="#334155" stroke-width="1.2" stroke-dasharray="3,3" marker-end="url(#arrow)"/>')
+        svg_lines.append(f'<line x1="{p1[0]}" y1="{p1[1]}" x2="{p2[0]}" y2="{p2[1]}" stroke="#1e293b" stroke-width="1.1" stroke-dasharray="3,3" marker-end="url(#arrow)"/>')
         if inc["label"]:
-            svg_lines.append(f'<text x="{inc["lx"]}" y="{inc["ly"]}" font-family="Arial, sans-serif" font-size="9" fill="#334155" font-style="italic">&laquo;include&raquo;</text>')
+            svg_lines.append(f'<text x="{inc["lx"]}" y="{inc["ly"]}" font-family="Arial, sans-serif" font-size="9" fill="#1e293b" font-style="italic">&laquo;include&raquo;</text>')
 
     # Draw Stick Figures
     def draw_actor(act):
@@ -225,15 +227,15 @@ def render_svg_use_case():
         <!-- Actor: {name} -->
         <g>
             <!-- Head -->
-            <circle cx="{ax}" cy="{ay}" r="11" fill="{col}" stroke="#1e293b" stroke-width="1.5"/>
+            <circle cx="{ax}" cy="{ay}" r="11" fill="{col}" stroke="#0f172a" stroke-width="1.4"/>
             <!-- Body -->
-            <line x1="{ax}" y1="{ay+11}" x2="{ax}" y2="{ay+42}" stroke="#1e293b" stroke-width="1.8"/>
+            <line x1="{ax}" y1="{ay+11}" x2="{ax}" y2="{ay+42}" stroke="#0f172a" stroke-width="1.6"/>
             <!-- Arms -->
-            <line x1="{ax-16}" y1="{ay+22}" x2="{ax+16}" y2="{ay+22}" stroke="#1e293b" stroke-width="1.8"/>
+            <line x1="{ax-16}" y1="{ay+22}" x2="{ax+16}" y2="{ay+22}" stroke="#0f172a" stroke-width="1.6"/>
             <!-- Left Leg -->
-            <line x1="{ax}" y1="{ay+42}" x2="{ax-14}" y2="{ay+72}" stroke="#1e293b" stroke-width="1.8"/>
+            <line x1="{ax}" y1="{ay+42}" x2="{ax-14}" y2="{ay+72}" stroke="#0f172a" stroke-width="1.6"/>
             <!-- Right Leg -->
-            <line x1="{ax}" y1="{ay+42}" x2="{ax+14}" y2="{ay+72}" stroke="#1e293b" stroke-width="1.8"/>
+            <line x1="{ax}" y1="{ay+42}" x2="{ax+14}" y2="{ay+72}" stroke="#0f172a" stroke-width="1.6"/>
             <!-- Name Label -->
             <text x="{ax}" y="{ay+88}" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#0f172a" text-anchor="middle">{name}</text>
         </g>
@@ -246,7 +248,7 @@ def render_svg_use_case():
     for uc in use_cases:
         use_cases_svg.append(f"""
         <g>
-            <ellipse cx="{uc_cx}" cy="{uc["cy"]}" rx="{uc_rx}" ry="{uc_ry}" fill="#ffffff" stroke="#0f172a" stroke-width="1.4"/>
+            <ellipse cx="{uc_cx}" cy="{uc["cy"]}" rx="{uc_rx}" ry="{uc_ry}" fill="#ffffff" stroke="#0f172a" stroke-width="1.3"/>
             <text x="{uc_cx}" y="{uc["cy"]+4}" font-family="Arial, sans-serif" font-size="10.5" font-weight="600" fill="#0f172a" text-anchor="middle">{uc["text"]}</text>
         </g>
         """)
@@ -254,10 +256,16 @@ def render_svg_use_case():
     # Draw Sub-Use Cases
     sub_cases_svg = []
     for s in sub_use_cases:
+        lines = s["text_lines"]
+        if len(lines) == 1:
+            t_content = f'<text x="{s["cx"]}" y="{s["cy"]+3.5}" font-family="Arial, sans-serif" font-size="9.5" font-weight="600" fill="#0f172a" text-anchor="middle">{lines[0]}</text>'
+        else:
+            t_content = f'<text x="{s["cx"]}" y="{s["cy"]-2}" font-family="Arial, sans-serif" font-size="9" font-weight="600" fill="#0f172a" text-anchor="middle"><tspan x="{s["cx"]}">{lines[0]}</tspan><tspan x="{s["cx"]}" dy="12">{lines[1]}</tspan></text>'
+
         sub_cases_svg.append(f"""
         <g>
-            <ellipse cx="{s["cx"]}" cy="{s["cy"]}" rx="{s["rx"]}" ry="{s["ry"]}" fill="#ffffff" stroke="#0f172a" stroke-width="1.3"/>
-            <text x="{s["cx"]}" y="{s["cy"]-3 if '<tspan' in s["text"] else s["cy"]+3.5}" font-family="Arial, sans-serif" font-size="9.5" font-weight="600" fill="#0f172a" text-anchor="middle">{s["text"]}</text>
+            <ellipse cx="{s["cx"]}" cy="{s["cy"]}" rx="{s["rx"]}" ry="{s["ry"]}" fill="#ffffff" stroke="#0f172a" stroke-width="1.2"/>
+            {t_content}
         </g>
         """)
 
@@ -265,7 +273,7 @@ def render_svg_use_case():
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Placido L. Señor NHS - UML Use Case Model</title>
+    <title>Cross-Platform Enrollment and Scheduling System with Chatbot Support - UML Use Case Model</title>
     <style>
         * {{
             margin: 0;
@@ -286,8 +294,8 @@ def render_svg_use_case():
 <body>
     <svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">
         <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+            <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 7 5 L 0 8.5" fill="none" stroke="#1e293b" stroke-width="1.3" stroke-linecap="round"/>
             </marker>
         </defs>
 
@@ -295,7 +303,7 @@ def render_svg_use_case():
         <rect x="{sb_x}" y="{sb_y}" width="{sb_w}" height="{sb_h}" fill="#ffffff" stroke="#0f172a" stroke-width="1.8"/>
 
         <!-- Title Box at top of System Boundary -->
-        <rect x="{tb_x}" y="{tb_y}" width="{tb_w}" height="{tb_h}" fill="#ffffff" stroke="#0f172a" stroke-width="1.4"/>
+        <rect x="{tb_x}" y="{tb_y}" width="{tb_w}" height="{tb_h}" fill="#ffffff" stroke="#0f172a" stroke-width="1.3"/>
         <text x="{tb_x + tb_w/2}" y="{tb_y + 22}" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#0f172a" text-anchor="middle">
             Cross-Platform Enrollment and Scheduling System with Chatbot Support
         </text>
