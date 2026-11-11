@@ -374,35 +374,56 @@ export const GuidanceCounselingPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
       {/* 1. Institutional DepEd Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-            Student Counseling &amp; Consultation Center
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Placido L. Señor NHS confidential career guidance, behavioral remediation, mental wellness, and student consultation services.
-          </p>
+      <div className="border-b border-slate-200 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
+              Student Counseling &amp; Consultation Center
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              Placido L. Señor NHS confidential career guidance, behavioral remediation, mental wellness, and student consultation services.
+            </p>
+          </div>
+
+          {/* Header Action Controls */}
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={() => setIsBookModalOpen(true)}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
+            >
+              <Plus className="h-4 w-4" /> Book Session
+            </button>
+
+            <button
+              type="button"
+              onClick={exportToCSV}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
+            </button>
+
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        {/* Header Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        {/* Mobile Action Controls */}
+        <div className="sm:hidden mt-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setIsBookModalOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
+            className="flex-1 min-w-[130px] inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-3 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer active:scale-98"
           >
-            <Plus className="h-4 w-4" /> Book Session
+            <Plus className="h-3.5 w-3.5" /> Book Session
           </button>
 
           <button
             type="button"
             onClick={exportToCSV}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
+            className="flex-1 min-w-[120px] inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer active:scale-98"
           >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-700" /> Export CSV
           </button>
-
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

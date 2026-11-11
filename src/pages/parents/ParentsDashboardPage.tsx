@@ -504,17 +504,19 @@ export const ParentsDashboardPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
       {/* Page Header - Aligned like Admin */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
-            Parent & Guardian Portal
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Monitor real-time academic progress, daily attendance check-ins, and school advisories for your child.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 shrink-0">
-          <PageHeaderNotificationSlot />
+      <div className="border-b border-slate-200 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Parent &amp; Guardian Portal
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              Monitor real-time academic progress, daily attendance check-ins, and school advisories for your child.
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
       </div>
 

@@ -417,26 +417,40 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
         className="hidden"
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
-            My Assessments &amp; Classwork
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            View classwork assigned to your Year Level &amp; Section, download teacher materials, and turn in your work via file upload like Google Classroom.
-          </p>
+      <div className="border-b border-slate-200 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              My Assessments &amp; Classwork
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              View classwork assigned to your Year Level &amp; Section, download teacher materials, and turn in your work via file upload like Google Classroom.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-bold text-white">
+              <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
+              {studentMeta.grade_level}
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+              <Layers className="h-3.5 w-3.5 text-emerald-600" />
+              Section {studentMeta.section}
+            </span>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-bold text-white">
+        {/* Mobile Sub-Header Badges */}
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-2.5 py-1 text-xs font-bold text-white">
             <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
             {studentMeta.grade_level}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
             <Layers className="h-3.5 w-3.5 text-emerald-600" />
             Section {studentMeta.section}
           </span>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

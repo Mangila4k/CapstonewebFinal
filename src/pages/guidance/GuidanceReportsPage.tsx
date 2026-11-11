@@ -400,37 +400,55 @@ export const GuidanceReportsPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16 animate-fade-in">
       {/* Top Banner & Title - Screen Only */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5 print:hidden">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#152e69]/10 text-[#152e69] border border-[#152e69]/20 flex items-center justify-center font-bold shadow-2xs">
-              <Scale className="w-5 h-5 text-[#152e69]" />
+      <div className="border-b border-slate-200 pb-5 print:hidden">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-[#152e69]/10 text-[#152e69] border border-[#152e69]/20 flex items-center justify-center font-bold shadow-2xs shrink-0 mt-0.5">
+                <Scale className="w-5 h-5 text-[#152e69]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display leading-snug">
+                  Guidance &amp; Counseling Accomplishment Reports
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 leading-relaxed">
+                  Placido L. Señor National High School · Student Welfare, Behavioral Statistics, and Child Protection Compliance
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display">
-                Guidance &amp; Counseling Accomplishment Reports
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                Placido L. Señor National High School · Student Welfare, Behavioral Statistics, and Child Protection Compliance
-              </p>
-            </div>
+          </div>
+
+          {/* Action Controls */}
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              onClick={handleExportCsv}
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
+            </button>
+            <button
+              onClick={handlePrint}
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#152e69] hover:bg-[#0f1f4b] rounded-xl shadow-xs border border-[#152e69] transition-all cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" /> Print Official Report
+            </button>
+            <PageHeaderNotificationSlot />
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-          <PageHeaderNotificationSlot />
+        {/* Mobile Action Controls */}
+        <div className="sm:hidden mt-3 flex flex-wrap items-center gap-2">
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
+            className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
           </button>
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#152e69] hover:bg-[#0f1f4b] rounded-xl shadow-xs border border-[#152e69] transition-all cursor-pointer"
+            className="flex-1 min-w-[150px] inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-[#152e69] hover:bg-[#0f1f4b] rounded-xl shadow-xs border border-[#152e69] transition-all cursor-pointer"
           >
-            <Printer className="w-3.5 h-3.5" /> Print Official Report
+            <Printer className="w-3.5 h-3.5" /> Print Report
           </button>
         </div>
       </div>

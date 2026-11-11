@@ -351,10 +351,10 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-        <div>
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
               Faculty Face Attendance &amp; Biometrics
             </h1>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200">
@@ -362,14 +362,14 @@ export const TeacherFaceAttendancePage: React.FC = () => {
               Live AI Biometric Terminal
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
             Placido L. Señor National High School · Instant facial recognition attendance for faculty members.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 ml-auto pt-0.5">
           {/* Live Clock Pill */}
-          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 shadow-2xs text-xs font-bold text-slate-800 font-mono">
+          <div className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 shadow-2xs text-xs font-bold text-slate-800 font-mono">
             <Clock className="h-4 w-4 text-[#152e69]" />
             <span>{currentTime || '07:15:00 AM'}</span>
           </div>

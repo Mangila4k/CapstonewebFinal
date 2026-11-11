@@ -532,27 +532,38 @@ export const GuidanceDashboardPage: React.FC = () => {
   return (
     <div className="space-y-7 animate-fade-in max-w-7xl mx-auto pb-16">
       {/* 1. Institutional DepEd Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-            Guidance &amp; Student Welfare Center
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Placido L. Señor NHS Student Welfare, Behavioral Records, Counseling Consultations, and Good Moral Clearances.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
+              Guidance &amp; Student Welfare Center
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+              Placido L. Señor NHS Student Welfare, Behavioral Records, Counseling Consultations, and Good Moral Clearances.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={() => setIsGoodMoralModalOpen(true)}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1B2A4A] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#15233d] transition-all cursor-pointer active:scale-98"
+            >
+              <Award className="h-4 w-4 text-[#F5C518]" /> Issue Good Moral
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        {/* Header Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        {/* Mobile Action Button Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             type="button"
             onClick={() => setIsGoodMoralModalOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1B2A4A] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#15233d] transition-all cursor-pointer active:scale-98"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#1B2A4A] px-3.5 text-xs font-bold text-white shadow-xs hover:bg-[#15233d] transition-all cursor-pointer active:scale-98"
           >
             <Award className="h-4 w-4 text-[#F5C518]" /> Issue Good Moral
           </button>
-
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

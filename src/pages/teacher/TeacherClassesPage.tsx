@@ -711,16 +711,16 @@ export const TeacherClassesPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
             My Teaching Sections
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
             Enrolled learner rosters, subject schedules, and class schedule distribution for students to print or download.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
           <PageHeaderNotificationSlot />
         </div>
       </div>

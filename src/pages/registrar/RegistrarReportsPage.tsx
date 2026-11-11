@@ -287,51 +287,74 @@ export const RegistrarReportsPage: React.FC = () => {
       `}</style>
 
       {/* Page Header */}
-      <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
-              Registrar Official Reports &amp; School Register
-            </h1>
-            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
-              Office of the School Registrar
-            </span>
+      <div className="no-print border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+                Registrar Official Reports &amp; School Register
+              </h1>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                Office of the School Registrar
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              DepEd School Form 1 (SF1), official enrolment rosters, learner 201 file compliance, and certified school registers · S.Y. 2026–2027
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            DepEd School Form 1 (SF1), official enrolment rosters, learner 201 file compliance, and certified school registers · S.Y. 2026–2027
-          </p>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <div className="hidden sm:flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                <Download className="h-3.5 w-3.5 text-slate-500" />
+                <span>Export CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#152e69] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#0f1f4b] transition-all cursor-pointer"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                <span>Print SF1</span>
+              </button>
+            </div>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5 text-slate-500" />
-            <span>Export SF1 (CSV)</span>
-          </button>
-
+        {/* Mobile Action Controls Row */}
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#152e69] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#0f1f4b] transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#152e69] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
           >
             <Printer className="h-3.5 w-3.5" />
-            <span>Print DepEd SF1</span>
+            <span>Print SF1</span>
           </button>
-
-          <PageHeaderNotificationSlot />
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            <Download className="h-3.5 w-3.5 text-slate-500" />
+            <span>Export</span>
+          </button>
         </div>
       </div>
 

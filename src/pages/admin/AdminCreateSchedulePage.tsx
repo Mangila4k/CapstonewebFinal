@@ -422,34 +422,55 @@ export const AdminCreateSchedulePage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
-            Class Schedule &amp; Faculty Timetable Distribution
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Upload and send official teaching schedule files to faculty teachers and manage class periods by Year Level &amp; Section.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Class Schedule &amp; Faculty Timetable Distribution
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Upload and send official teaching schedule files to faculty teachers and manage class periods by Year Level &amp; Section.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <div className="hidden sm:flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsSendFileModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Send className="h-4 w-4" /> Send Schedule File
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4" /> Add Schedule Slot
+              </button>
+            </div>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsSendFileModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer whitespace-nowrap"
-          >
-            <Send className="h-4 w-4" /> Send Schedule File to Teachers
-          </button>
-
+        {/* Mobile Action Controls Row */}
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
           >
-            <Plus className="h-4 w-4" /> Add Schedule Slot
+            <Plus className="h-4 w-4" /> Add Slot
           </button>
-
-          <PageHeaderNotificationSlot />
+          <button
+            type="button"
+            onClick={() => setIsSendFileModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
+          >
+            <Send className="h-4 w-4" /> Send File
+          </button>
         </div>
       </div>
 

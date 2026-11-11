@@ -413,18 +413,20 @@ export const StudentViolationsPage: React.FC = () => {
       `}</style>
 
       {/* Screen Control Header */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-            Guidance &amp; Student Conduct Record
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Official behavioral standing, DepEd Child Protection Policy compliance, and guidance clearance · S.Y. {schoolYear}
-          </p>
-        </div>
+      <div className="no-print border-b border-slate-200 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Guidance &amp; Student Conduct Record
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              Official behavioral standing, DepEd Child Protection Policy compliance, and guidance clearance · S.Y. {schoolYear}
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <PageHeaderNotificationSlot />
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
       </div>
 

@@ -848,17 +848,40 @@ export const AdminTeachersPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
-            Teachers & Class Advisers
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Manage faculty members and assign Class Advisers to Grade 7–12 sections.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Teachers &amp; Class Advisers
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Manage faculty members and assign Class Advisers to Grade 7–12 sections.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              onClick={() => {
+                setForm({
+                  firstName: '',
+                  lastName: '',
+                  email: '',
+                  specialization: 'General Education',
+                  password: '',
+                  advisorySectionId: '',
+                });
+                setIsAddModalOpen(true);
+              }}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4" /> Register Teacher / Adviser
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Action Button Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             onClick={() => {
               setForm({
@@ -871,11 +894,10 @@ export const AdminTeachersPage: React.FC = () => {
               });
               setIsAddModalOpen(true);
             }}
-            className="flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Register Teacher / Adviser
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

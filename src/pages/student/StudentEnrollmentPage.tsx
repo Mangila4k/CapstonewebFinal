@@ -409,17 +409,17 @@ export const StudentEnrollmentPage: React.FC = () => {
       `}</style>
 
       {/* Screen Control Header */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
+      <div className="no-print flex items-start justify-between gap-3 border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
             Enrollment &amp; Registration Record
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
             Official academic matriculation record, DepEd LIS registration status, and curriculum assignment · S.Y. {schoolYear}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
           <PageHeaderNotificationSlot />
         </div>
       </div>

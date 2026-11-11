@@ -337,40 +337,61 @@ export const AdminReportsPage: React.FC = () => {
       `}</style>
 
       {/* Screen Control Header (Excluded from Print) */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-            Official Institutional Reports
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Senior High School (SHS) enrollment matrix, curricular track breakdown, and DepEd SF4 statistical certification.
-          </p>
+      <div className="no-print border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Official Institutional Reports
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Senior High School (SHS) enrollment matrix, curricular track breakdown, and DepEd SF4 statistical certification.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <div className="hidden sm:flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+                title="Download official SHS enrollment report dataset as CSV"
+              >
+                <Download className="h-4 w-4 text-slate-500" />
+                <span>Export CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="inline-flex h-10 items-center gap-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+                title="Print official report on standard short bond paper (8.5&quot; × 11&quot;)"
+              >
+                <Printer className="h-4 w-4 text-[#F5C518]" />
+                <span>Print Official Report</span>
+              </button>
+            </div>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          {/* Export CSV Button */}
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-            title="Download official SHS enrollment report dataset as CSV"
-          >
-            <Download className="h-4 w-4 text-slate-500" />
-            <span>Export CSV</span>
-          </button>
-
-          {/* Print Official Report Button */}
+        {/* Mobile Action Controls Row */}
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex h-10 items-center gap-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
-            title="Print official report on standard short bond paper (8.5&quot; × 11&quot;)"
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-3.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
           >
-            <Printer className="h-4 w-4 text-[#F5C518]" />
-            <span>Print Official Report</span>
+            <Printer className="h-3.5 w-3.5 text-[#F5C518]" />
+            <span>Print Report</span>
           </button>
-
-          <PageHeaderNotificationSlot />
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            <Download className="h-3.5 w-3.5 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
         </div>
       </div>
 

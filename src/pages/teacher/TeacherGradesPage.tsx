@@ -813,10 +813,10 @@ export const TeacherGradesPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-36 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
               Learner Grade Encoder (SF9 / Form 138)
             </h1>
             {isDirty && (
@@ -825,11 +825,11 @@ export const TeacherGradesPage: React.FC = () => {
               </span>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
             Input, calculate, and synchronize quarterly ratings for your classes under official DepEd Order No. 8, s. 2015 guidelines.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
           <PageHeaderNotificationSlot />
         </div>
       </div>

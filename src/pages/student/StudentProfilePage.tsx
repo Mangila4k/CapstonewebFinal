@@ -237,17 +237,19 @@ export const StudentProfilePage: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 font-display">
-            Learner Profile &amp; Account Settings
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Review your official school records, emergency contacts, and security credentials.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 shrink-0">
-          <PageHeaderNotificationSlot />
+      <div className="border-b border-slate-200 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Learner Profile &amp; Account Settings
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              Review your official school records, emergency contacts, and security credentials.
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
       </div>
 

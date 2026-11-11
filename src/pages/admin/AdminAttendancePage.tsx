@@ -440,48 +440,70 @@ export const AdminAttendancePage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-16">
       {/* 1. Header with DepEd Branding & Action Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
-            Official Attendance Logs
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Institutional check-in tracking via QR scanner &amp; LRNs, and faculty biometrics logs.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Official Attendance Logs
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Institutional check-in tracking via QR scanner &amp; LRNs, and faculty biometrics logs.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <div className="hidden sm:flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+                title="Export filtered records as CSV"
+              >
+                <Download className="h-3.5 w-3.5 text-slate-500" />
+                <span>Export CSV</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer disabled:opacity-50"
+                title="Refresh attendance records"
+              >
+                <RotateCw className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+
+              <Link
+                to="/teacher/attendance"
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-4 text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-98"
+              >
+                <UserCheck className="h-4 w-4" />
+                <span>Open Attendance Sheet</span>
+                <ArrowRight className="h-3.5 w-3.5 opacity-80" />
+              </Link>
+            </div>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        {/* Mobile Header Actions Row */}
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
+          <Link
+            to="/teacher/attendance"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-3 text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-98"
+          >
+            <UserCheck className="h-3.5 w-3.5" />
+            <span>Attendance Sheet</span>
+          </Link>
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-            title="Export filtered records as CSV"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
           >
             <Download className="h-3.5 w-3.5 text-slate-500" />
-            <span>Export CSV</span>
+            <span>Export</span>
           </button>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer disabled:opacity-50"
-            title="Refresh attendance records"
-          >
-            <RotateCw className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-
-          <Link
-            to="/teacher/attendance"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-4 text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-98"
-          >
-            <UserCheck className="h-4 w-4" />
-            <span>Open Attendance Sheet</span>
-            <ArrowRight className="h-3.5 w-3.5 opacity-80" />
-          </Link>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

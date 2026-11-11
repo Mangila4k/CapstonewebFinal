@@ -587,30 +587,45 @@ export const StudentAttendancePage: React.FC = () => {
       `}</style>
 
       {/* Page Header (Matching Admin & Dashboard Alignment Standard) */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-            {isParent ? 'Learner Attendance Record' : 'Attendance Record'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            {isParent
-              ? `Real-time gate turnstile timestamps, morning arrival logs, and DepEd SF2 compliance for your child · S.Y. ${schoolYear}`
-              : `Official daily school attendance log, gate check-in timestamps, and DepEd SF2 summary · S.Y. ${schoolYear}`}
-          </p>
+      <div className="no-print border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              {isParent ? 'Learner Attendance Record' : 'Attendance Record'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              {isParent
+                ? `Real-time gate turnstile timestamps, morning arrival logs, and DepEd SF2 compliance for your child · S.Y. ${schoolYear}`
+                : `Official daily school attendance log, gate check-in timestamps, and DepEd SF2 summary · S.Y. ${schoolYear}`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={fetchLiveAttendance}
+              disabled={isRefreshing}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+              title="Refresh attendance records from Supabase database"
+            >
+              <RotateCw className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Sync Database</span>
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Action Controls Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             type="button"
             onClick={fetchLiveAttendance}
             disabled={isRefreshing}
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-            title="Refresh attendance records from Supabase database"
           >
             <RotateCw className={`h-3.5 w-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Sync Database</span>
+            <span>Sync Records</span>
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

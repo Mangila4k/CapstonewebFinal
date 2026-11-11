@@ -438,25 +438,38 @@ export const AdminAnnouncementsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
-            Campus Announcements &amp; Circulars
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Publish official school circulars, manage campus bulletins, and broadcast real-time alerts to students, parents, and faculty.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Campus Announcements &amp; Circulars
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Publish official school circulars, manage campus bulletins, and broadcast real-time alerts to students, parents, and faculty.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> New Announcement
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Action Button Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" /> New Announcement
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

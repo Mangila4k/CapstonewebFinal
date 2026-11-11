@@ -868,24 +868,36 @@ export const TeacherAssessmentsPage: React.FC = () => {
       />
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
-            Assessments &amp; Classwork Manager
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Post assessments by Year Level &amp; Section and review student file uploads, turn-in status, and passing scores like Google Classroom.
-          </p>
+      <div className="border-b border-slate-200 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Assessments &amp; Classwork Manager
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              Post assessments by Year Level &amp; Section and review student file uploads, turn-in status, and passing scores like Google Classroom.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="h-4 w-4" /> Create Assessment
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Action Controls */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer shrink-0"
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" /> Create Assessment
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

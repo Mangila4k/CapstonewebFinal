@@ -658,28 +658,39 @@ export const RegistrarRequirementsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* 1. Institutional DepEd Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-            Documentary Compliance &amp; Requirements Audit
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Audit, verify, and validate official hard copies and scanned submissions for SF9 (Form 138), PSA Birth Certificates, and Good Moral.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
+              Documentary Compliance &amp; Requirements Audit
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-2xl">
+              Audit, verify, and validate official hard copies and scanned submissions for SF9 (Form 138), PSA Birth Certificates, and Good Moral.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
+              title="Download Full Documentary Audit Checklist as CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        {/* Header Action Controls */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Action Button Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
-            title="Download Full Documentary Audit Checklist as CSV"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
           </button>
-
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

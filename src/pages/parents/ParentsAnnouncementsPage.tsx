@@ -269,29 +269,44 @@ export const ParentsAnnouncementsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-            PTA &amp; School Announcements
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Official general circulars, parent-teacher conferences, and academic advisories · S.Y. 2026–2027
-          </p>
+      <div className="border-b border-slate-200 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              PTA &amp; School Announcements
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              Official general circulars, parent-teacher conferences, and academic advisories · S.Y. 2026–2027
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-98"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                Mark All Read ({unreadCount})
+              </button>
+            )}
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
-          {unreadCount > 0 && (
+        {unreadCount > 0 && (
+          <div className="sm:hidden mt-3 flex items-center">
             <button
               type="button"
               onClick={markAllAsRead}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs hover:shadow-xs active:scale-98"
+              className="w-full inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:border-emerald-600 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs active:scale-98"
             >
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
               Mark All Read ({unreadCount})
             </button>
-          )}
-          <PageHeaderNotificationSlot />
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 4 Executive Overview KPI Metric Cards */}

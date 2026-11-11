@@ -369,27 +369,43 @@ export const StudentSchedulePage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Clean Executive DepEd PLSNHS Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
-            Official Class Schedule
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Placido L. Señor National High School · Access the official class schedule file attached and published by your Class Adviser and Subject Teachers.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
+              Official Class Schedule
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Placido L. Señor National High School · Access the official class schedule file attached and published by your Class Adviser and Subject Teachers.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+              title="Refresh attached schedule status"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 text-[#152e69] ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Check for Updates</span>
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
+
+        {/* Mobile Action Controls Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             type="button"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-            title="Refresh attached schedule status"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 text-[#152e69] ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Check for Updates</span>
+            <span>Check Updates</span>
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

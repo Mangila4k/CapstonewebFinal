@@ -446,30 +446,43 @@ export const AdminSubjectsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-display tracking-tight">
-              Curriculum Subjects by Year Level & Semester
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <Sparkles className="h-3 w-3 text-emerald-600" /> DepEd K–12 Aligned
-            </span>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-display tracking-tight leading-snug">
+                Curriculum Subjects by Year Level &amp; Semester
+              </h1>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <Sparkles className="h-3 w-3 text-emerald-600" /> DepEd K–12 Aligned
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Official masterlist of Core, Applied, and Specialized learning areas categorized by educational year level, with Senior High School organized by academic semester.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-            Official masterlist of Core, Applied, and Specialized learning areas categorized by educational year level, with Senior High School organized by academic semester.
-          </p>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              onClick={handleOpenAdd}
+              className="hidden sm:inline-flex h-10 items-center gap-2 rounded-xl bg-[#1a225a] hover:bg-[#25327d] px-4 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add New Subject</span>
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+        {/* Mobile Action Button Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             onClick={handleOpenAdd}
-            className="flex h-10 items-center gap-2 rounded-xl bg-[#1a225a] hover:bg-[#25327d] px-4 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#1a225a] hover:bg-[#25327d] px-3.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Add New Subject</span>
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

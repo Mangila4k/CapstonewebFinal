@@ -363,17 +363,38 @@ export const StudentRequirementsPage: React.FC = () => {
       `}</style>
 
       {/* Screen Control Header */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight whitespace-nowrap">
-            Documentary Requirements
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Official DepEd student document compliance status, archive tracking, and registrar clearance · S.Y. {schoolYear}
-          </p>
+      <div className="no-print border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              Documentary Requirements
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Official DepEd student document compliance status, archive tracking, and registrar clearance · S.Y. {schoolYear}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setUploadErrMsg('');
+                setUploadSuccessMsg('');
+                setUploadFile(null);
+                setUploadRemarks('');
+                setIsUploadModalOpen(true);
+              }}
+              className="hidden sm:inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+            >
+              <UploadCloud className="h-4 w-4" />
+              <span>Submit / Upload Document</span>
+            </button>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Mobile Action Button Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <button
             type="button"
             onClick={() => {
@@ -383,12 +404,11 @@ export const StudentRequirementsPage: React.FC = () => {
               setUploadRemarks('');
               setIsUploadModalOpen(true);
             }}
-            className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
           >
             <UploadCloud className="h-4 w-4" />
-            <span>Submit / Upload Document</span>
+            <span>Upload Document</span>
           </button>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 
