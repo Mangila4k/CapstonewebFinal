@@ -483,17 +483,40 @@ export const AdminDashboardPage: React.FC = () => {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
-            PLSNHS Admin Dashboard
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Real-time enrollment metrics, accounts, and system operations for Placido L. Señor NHS.
-          </p>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              PLSNHS Admin Dashboard
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Real-time enrollment metrics, accounts, and system operations for Placido L. Señor NHS.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <Link
+              to="/admin/enrollments"
+              className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs transition-all ${
+                isEnrollmentOpen
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
+              }`}
+              title="Click to manage student enrollment status"
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isEnrollmentOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                }`}
+              />
+              {isEnrollmentOpen ? 'Enrollment: OPEN' : 'Enrollment: CLOSED'}
+            </Link>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto shrink-0">
+        {/* Mobile Enrollment Status Badge Row */}
+        <div className="sm:hidden mt-3 flex items-center">
           <Link
             to="/admin/enrollments"
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs transition-all ${
@@ -510,7 +533,6 @@ export const AdminDashboardPage: React.FC = () => {
             />
             {isEnrollmentOpen ? 'Enrollment: OPEN' : 'Enrollment: CLOSED'}
           </Link>
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 

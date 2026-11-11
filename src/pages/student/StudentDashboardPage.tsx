@@ -213,31 +213,43 @@ export const StudentDashboardPage: React.FC = () => {
   return (
     <div className="space-y-5 sm:space-y-6 animate-fade-in max-w-7xl mx-auto pb-10">
       {/* Page Header - Clean & Aligned */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-4 sm:pb-5">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight">
-              Welcome back, {user?.first_name || fullName.split(' ')[0]}!
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
-              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500" /> S.Y. {schoolYear}
-            </span>
+      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+                Welcome back, {user?.first_name || fullName.split(' ')[0]}!
+              </h1>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200">
+                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500" /> S.Y. {schoolYear}
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Placido L. Señor National High School · Access your official digital student ID, class schedule, academic grades, and documentary compliance.
+            </p>
           </div>
-          <p className="text-[11px] sm:text-sm text-slate-500 mt-1 max-w-2xl line-clamp-2 sm:line-clamp-none">
-            Placido L. Señor National High School · Access your official digital student ID, class schedule, academic grades, and documentary compliance.
-          </p>
+
+          <div className="flex items-center gap-2 shrink-0 ml-auto pt-0.5">
+            <div className="hidden sm:inline-flex h-9 sm:h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:px-3.5 text-xs font-bold text-slate-700 shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                {enrollmentStatus}
+              </span>
+            </div>
+            <PageHeaderNotificationSlot />
+          </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0">
-          <div className="inline-flex h-9 sm:h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:px-3.5 text-xs font-bold text-slate-700 shadow-2xs">
+        {/* Mobile Status Row */}
+        <div className="sm:hidden mt-3 flex items-center">
+          <div className="inline-flex h-8 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</span>
             <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               {enrollmentStatus}
             </span>
           </div>
-
-          <PageHeaderNotificationSlot />
         </div>
       </div>
 
