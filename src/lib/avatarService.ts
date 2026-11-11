@@ -126,9 +126,10 @@ export async function uploadAndSaveAvatar(
   if (typeof window !== 'undefined' && finalAvatar) {
     if (cleanEmail) {
       localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, finalAvatar);
-      localStorage.setItem(`plsnhs_avatar_${user.email}`, finalAvatar);
+      if (user.email) {
+        localStorage.setItem(`plsnhs_avatar_${user.email}`, finalAvatar);
+      }
     }
-    localStorage.setItem('plsnhs_avatar_default', finalAvatar);
     window.dispatchEvent(new Event('plsnhs-avatar-updated'));
   }
 

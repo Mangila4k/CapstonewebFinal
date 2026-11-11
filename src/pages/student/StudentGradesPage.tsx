@@ -139,21 +139,6 @@ export const StudentGradesPage: React.FC = () => {
               .maybeSingle();
             if (data) student = data;
           }
-          if (!student && user.id) {
-            const { data } = await supabase
-              .from('students')
-              .select('*')
-              .eq('id', user.id)
-              .maybeSingle();
-            if (data) student = data;
-          }
-          if (!student && (user.first_name || user.last_name)) {
-            let nameQuery = supabase.from('students').select('*');
-            if (user.first_name) nameQuery = nameQuery.ilike('first_name', `%${user.first_name}%`);
-            if (user.last_name) nameQuery = nameQuery.ilike('last_name', `%${user.last_name}%`);
-            const { data: nameRows } = await nameQuery.limit(1);
-            if (nameRows && nameRows.length > 0) student = nameRows[0];
-          }
         }
 
         if (student) {

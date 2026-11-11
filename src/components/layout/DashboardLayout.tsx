@@ -285,26 +285,29 @@ export const DashboardLayout: React.FC = () => {
 
   const roleTitle = roleLabels[user?.role || 'student'] || 'Portal User';
 
-  // Resolve profile picture from user object, localStorage, or custom event
+  // Resolve profile picture from user object or strictly user-scoped storage
   const resolveProfileAvatar = () => {
-    if (user?.avatar_url) return user.avatar_url;
     if (typeof window !== 'undefined') {
-      const email = (user?.email || '').trim().toLowerCase();
+      // Clean up legacy shared fallback keys to prevent cross-account profile leakage
+      try {
+        localStorage.removeItem('plsnhs_avatar_default');
+        localStorage.removeItem('plsnhs_avatar_student');
+      } catch {}
+    }
+    if (user?.avatar_url) return user.avatar_url;
+    if (typeof window !== 'undefined' && user) {
+      const email = (user.email || '').trim().toLowerCase();
       if (email) {
         const found =
           localStorage.getItem(`plsnhs_avatar_${email}`) ||
-          localStorage.getItem(`plsnhs_avatar_${user?.email || ''}`);
+          localStorage.getItem(`plsnhs_avatar_${user.email || ''}`);
         if (found) return found;
       }
-      const studentLrn = user?.student_lrn;
+      const studentLrn = user.student_lrn;
       if (studentLrn) {
         const byLrn = localStorage.getItem(`plsnhs_avatar_${studentLrn}`);
         if (byLrn) return byLrn;
       }
-      const studentFallback = localStorage.getItem('plsnhs_avatar_student');
-      if (studentFallback) return studentFallback;
-      const fallback = localStorage.getItem('plsnhs_avatar_default');
-      if (fallback) return fallback;
     }
     return null;
   };
@@ -327,6 +330,8 @@ export const DashboardLayout: React.FC = () => {
             const cleanEmail = user.email.trim().toLowerCase();
             localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, photo);
           }
+        } else {
+          setSidebarAvatar(null);
         }
       }).catch(() => {});
     }
@@ -362,7 +367,7 @@ export const DashboardLayout: React.FC = () => {
     if (user?.email) {
       return user.email.substring(0, 2).toUpperCase();
     }
-    return 'JM';
+    return 'U';
   };
 
   return (

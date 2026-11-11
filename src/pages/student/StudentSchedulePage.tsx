@@ -80,7 +80,6 @@ export const StudentSchedulePage: React.FC = () => {
       const orFilters: string[] = [];
       if (user?.student_id) orFilters.push(`id.eq.${user.student_id}`);
       if (cleanEmail) orFilters.push(`email.ilike.${cleanEmail}`);
-      if (user?.id) orFilters.push(`id.eq.${user.id}`);
       if (user?.student_lrn) orFilters.push(`lrn.eq.${user.student_lrn}`);
 
       if (orFilters.length > 0) {

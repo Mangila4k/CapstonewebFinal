@@ -82,17 +82,24 @@ export const AdminProfilePage: React.FC = () => {
   const roleKey = user?.role || 'admin';
   const roleMeta = ROLE_CONFIG[roleKey] || ROLE_CONFIG.admin;
 
+  const resolveInitialAvatar = () => {
+    if (user?.avatar_url) return user.avatar_url;
+    if (typeof window !== 'undefined' && user?.email) {
+      const cleanEmail = user.email.trim().toLowerCase();
+      return localStorage.getItem(`plsnhs_avatar_${cleanEmail}`) || '';
+    }
+    return '';
+  };
+
   const [firstName, setFirstName] = useState(
-    user?.first_name || user?.full_name?.split(' ')[0] || 'Justine'
+    user?.first_name || user?.full_name?.split(' ')[0] || ''
   );
   const [lastName, setLastName] = useState(
-    user?.last_name || user?.full_name?.split(' ').slice(1).join(' ') || 'Mangila'
+    user?.last_name || user?.full_name?.split(' ').slice(1).join(' ') || ''
   );
-  const [phone, setPhone] = useState(user?.phone || '0912-345-6789');
-  const [department, setDepartment] = useState(roleMeta.department);
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    user?.avatar_url || localStorage.getItem(`plsnhs_avatar_${user?.email || 'default'}`) || ''
-  );
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [department, setDepartment] = useState(roleMeta.department || '');
+  const [avatarUrl, setAvatarUrl] = useState<string>(resolveInitialAvatar);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -103,6 +110,18 @@ export const AdminProfilePage: React.FC = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize state whenever user object is hydrated or updated
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.first_name || user.full_name?.split(' ')[0] || '');
+      setLastName(user.last_name || user.full_name?.split(' ').slice(1).join(' ') || '');
+      setPhone(user.phone || '');
+      const cleanEmail = (user.email || '').trim().toLowerCase();
+      const local = cleanEmail ? localStorage.getItem(`plsnhs_avatar_${cleanEmail}`) : '';
+      setAvatarUrl(user.avatar_url || local || '');
+    }
+  }, [user]);
 
   // Load avatar from Supabase database if not in memory
   useEffect(() => {
@@ -119,7 +138,9 @@ export const AdminProfilePage: React.FC = () => {
   const getInitials = () => {
     const f = firstName.trim()[0] || '';
     const l = lastName.trim()[0] || '';
-    return (`${f}${l}` || user?.email?.substring(0, 2) || 'JM').toUpperCase();
+    if (f || l) return `${f}${l}`.toUpperCase();
+    if (user?.email) return user.email.substring(0, 2).toUpperCase();
+    return 'U';
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,7 +188,6 @@ export const AdminProfilePage: React.FC = () => {
           localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, compressed);
           localStorage.setItem(`plsnhs_avatar_${user.email}`, compressed);
         }
-        localStorage.setItem('plsnhs_avatar_default', compressed);
         updateCurrentUser({ avatar_url: compressed });
         window.dispatchEvent(new Event('plsnhs-avatar-updated'));
         setNotice({ type: 'success', message: 'Profile photo uploaded and saved to database.' });
@@ -230,7 +250,6 @@ export const AdminProfilePage: React.FC = () => {
           localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, avatarUrl);
           localStorage.setItem(`plsnhs_avatar_${user.email}`, avatarUrl);
         }
-        localStorage.setItem('plsnhs_avatar_default', avatarUrl);
       }
       window.dispatchEvent(new Event('plsnhs-avatar-updated'));
 
@@ -247,7 +266,11 @@ export const AdminProfilePage: React.FC = () => {
     }
   };
 
-  const fullNameDisplay = `${firstName} ${lastName}`.trim() || user?.full_name || 'Portal User';
+  const fullNameDisplay =
+    `${firstName} ${lastName}`.trim() ||
+    user?.full_name ||
+    user?.email?.split('@')[0] ||
+    'Unset Profile';
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-12">
@@ -335,7 +358,7 @@ export const AdminProfilePage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-slate-300/90">
                 <span className="inline-flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5 text-amber-400" />
-                  {user?.email || 'admin@PLSNHS.edu.ph'}
+                  {user?.email || 'No email registered'}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5 text-amber-400" />

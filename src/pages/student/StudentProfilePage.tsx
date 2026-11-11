@@ -25,16 +25,23 @@ import { uploadAndSaveAvatar, fetchUserAvatarFromDatabase } from '../../lib/avat
 export const StudentProfilePage: React.FC = () => {
   const { user, updateCurrentUser } = useAuth();
 
+  const resolveInitialAvatar = () => {
+    if (user?.avatar_url) return user.avatar_url;
+    if (typeof window !== 'undefined' && user?.email) {
+      const cleanEmail = user.email.trim().toLowerCase();
+      return localStorage.getItem(`plsnhs_avatar_${cleanEmail}`) || '';
+    }
+    return '';
+  };
+
   const [firstName, setFirstName] = useState(
-    user?.first_name || user?.full_name?.split(' ')[0] || 'Student'
+    user?.first_name || user?.full_name?.split(' ')[0] || ''
   );
   const [lastName, setLastName] = useState(
-    user?.last_name || user?.full_name?.split(' ').slice(1).join(' ') || 'Learner'
+    user?.last_name || user?.full_name?.split(' ').slice(1).join(' ') || ''
   );
-  const [phone, setPhone] = useState(user?.phone || '0912-345-6789');
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    user?.avatar_url || localStorage.getItem(`plsnhs_avatar_${user?.email || 'student'}`) || ''
-  );
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [avatarUrl, setAvatarUrl] = useState<string>(resolveInitialAvatar);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,6 +52,18 @@ export const StudentProfilePage: React.FC = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize state whenever user object is hydrated or updated
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.first_name || user.full_name?.split(' ')[0] || '');
+      setLastName(user.last_name || user.full_name?.split(' ').slice(1).join(' ') || '');
+      setPhone(user.phone || '');
+      const cleanEmail = (user.email || '').trim().toLowerCase();
+      const local = cleanEmail ? localStorage.getItem(`plsnhs_avatar_${cleanEmail}`) : '';
+      setAvatarUrl(user.avatar_url || local || '');
+    }
+  }, [user]);
 
   // Load avatar from Supabase database if not in memory
   useEffect(() => {
@@ -58,22 +77,24 @@ export const StudentProfilePage: React.FC = () => {
     }
   }, [user?.email, user?.id, user?.student_lrn]);
 
-  const fullNameDisplay = `${firstName} ${lastName}`.trim() || user?.full_name || 'Student Name';
-  const studentLrn = user?.student_lrn || '109823456789';
-  const studentGrade = user?.student_grade || 'Grade 7';
-  const gradeNumMatch = String(studentGrade).match(/\d+/);
-  const gradeNum = gradeNumMatch ? parseInt(gradeNumMatch[0], 10) : 7;
-  const isSeniorHigh = gradeNum >= 11 || String(studentGrade).toLowerCase().includes('senior');
-  const studentStrand = isSeniorHigh ? user?.student_strand || 'STEM' : 'Junior High';
-  const studentSection =
-    user?.student_section ||
-    (isSeniorHigh ? `Grade ${gradeNum} - Section A` : `Grade ${gradeNum} - Rizal`);
+  const fullNameDisplay =
+    `${firstName} ${lastName}`.trim() ||
+    user?.full_name ||
+    user?.email?.split('@')[0] ||
+    'Unset Profile';
+
+  const studentLrn = user?.student_lrn || '';
+  const studentGrade = user?.student_grade || '';
+  const studentStrand = user?.student_strand || '';
+  const studentSection = user?.student_section || '';
   const schoolYear = user?.school_year || '2026-2027';
 
   const getInitials = () => {
     const f = firstName.trim()[0] || '';
     const l = lastName.trim()[0] || '';
-    return (`${f}${l}` || 'ST').toUpperCase();
+    if (f || l) return `${f}${l}`.toUpperCase();
+    if (user?.email) return user.email.substring(0, 2).toUpperCase();
+    return 'ST';
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +142,6 @@ export const StudentProfilePage: React.FC = () => {
           localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, compressed);
           localStorage.setItem(`plsnhs_avatar_${user.email}`, compressed);
         }
-        localStorage.setItem('plsnhs_avatar_default', compressed);
         updateCurrentUser({ avatar_url: compressed });
         window.dispatchEvent(new Event('plsnhs-avatar-updated'));
         setNotice({ type: 'success', message: 'Student 2x2 profile photo saved to database.' });
@@ -204,7 +224,6 @@ export const StudentProfilePage: React.FC = () => {
           localStorage.setItem(`plsnhs_avatar_${cleanEmail}`, avatarUrl);
           localStorage.setItem(`plsnhs_avatar_${user.email}`, avatarUrl);
         }
-        localStorage.setItem('plsnhs_avatar_default', avatarUrl);
       }
       window.dispatchEvent(new Event('plsnhs-avatar-updated'));
 
@@ -294,11 +313,13 @@ export const StudentProfilePage: React.FC = () => {
               </div>
 
               <p className="text-xs sm:text-sm text-amber-300 font-bold">
-                {studentGrade} • {studentStrand} ({studentSection})
+                {studentGrade
+                  ? `${studentGrade}${studentStrand ? ` • ${studentStrand}` : ''}${studentSection ? ` (${studentSection})` : ''}`
+                  : 'Pending Grade & Section Assignment'}
               </p>
 
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-slate-300/90 font-mono">
-                <span>LRN: {studentLrn}</span>
+                <span>LRN: {studentLrn || 'Not Assigned'}</span>
                 <span>•</span>
                 <span className="font-sans">S.Y. {schoolYear}</span>
               </div>
@@ -343,7 +364,7 @@ export const StudentProfilePage: React.FC = () => {
                     Learner Reference Number (LRN)
                   </span>
                   <span className="font-extrabold font-mono text-slate-900 mt-0.5 block">
-                    {studentLrn}
+                    {studentLrn || 'Not Assigned'}
                   </span>
                 </div>
 
@@ -352,7 +373,7 @@ export const StudentProfilePage: React.FC = () => {
                     Grade Level & Strand
                   </span>
                   <span className="font-extrabold text-slate-800 mt-0.5 block">
-                    {studentGrade} • {studentStrand}
+                    {studentGrade || 'Not Enrolled'}{studentStrand ? ` • ${studentStrand}` : ''}
                   </span>
                 </div>
 
@@ -361,7 +382,7 @@ export const StudentProfilePage: React.FC = () => {
                     Advisory Section
                   </span>
                   <span className="font-bold text-slate-800 mt-0.5 block">
-                    {studentSection}
+                    {studentSection || 'Not Assigned'}
                   </span>
                 </div>
               </div>
@@ -457,6 +478,7 @@ export const StudentProfilePage: React.FC = () => {
                       type="text"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      placeholder="e.g. 0912-345-6789"
                       className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
                     />
                   </div>

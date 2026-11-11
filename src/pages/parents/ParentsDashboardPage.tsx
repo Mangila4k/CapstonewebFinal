@@ -201,7 +201,7 @@ export const ParentsDashboardPage: React.FC = () => {
             section: resolvedSection,
             status: s.status || s.academic_status || 'Enrolled',
             guardian_name: s.parent_name || parentFullName,
-            guardian_contact: s.parent_contact || user?.phone || '0912-345-6789',
+            guardian_contact: s.parent_contact || user?.phone || '',
             photo_url: s.two_by_two_picture_url || s.avatar_url || '',
           };
         });
@@ -273,7 +273,7 @@ export const ParentsDashboardPage: React.FC = () => {
     section: user?.student_section || (isSasumanParent ? 'Section Almario' : ''),
     status: user?.student_status || 'Enrolled',
     guardian_name: parentFullName,
-    guardian_contact: user?.phone || '0912-345-6789',
+    guardian_contact: user?.phone || '',
   };
 
   // Live Child Attendance, Grades & Violations from Supabase
@@ -1000,7 +1000,7 @@ export const ParentsDashboardPage: React.FC = () => {
                 grade_level: activeChild.grade_level,
                 strand: activeChild.strand,
                 parent_name: activeChild.guardian_name || parentFullName,
-                parent_contact: activeChild.guardian_contact || user?.phone || '0912-345-6789',
+                parent_contact: activeChild.guardian_contact || user?.phone || '',
                 photo_url: activeChild.photo_url,
                 school_year: '2026-2027',
               }}

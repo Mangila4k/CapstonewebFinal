@@ -227,18 +227,22 @@ export const StudentRequirementsPage: React.FC = () => {
   useEffect(() => {
     async function loadStudentDocuments() {
       try {
-        const studentId = user?.student_id || user?.id;
+        const studentId = user?.student_id;
         const cleanEmail = (user?.email || '').trim().toLowerCase();
         const cleanLrn = (user?.student_lrn || '').trim();
 
-        let sQuery = supabase.from('students').select('*');
-        if (studentId) {
-          sQuery = sQuery.or(`id.eq.${studentId},email.ilike.${cleanEmail},lrn.eq.${cleanLrn}`);
-        } else {
-          sQuery = sQuery.or(`email.ilike.${cleanEmail},lrn.eq.${cleanLrn}`);
-        }
+        const conditions: string[] = [];
+        if (studentId) conditions.push(`id.eq.${studentId}`);
+        if (cleanEmail) conditions.push(`email.ilike.${cleanEmail}`);
+        if (cleanLrn) conditions.push(`lrn.eq.${cleanLrn}`);
 
-        const { data: sRows } = await sQuery.limit(1);
+        if (conditions.length === 0) return;
+
+        const { data: sRows } = await supabase
+          .from('students')
+          .select('*')
+          .or(conditions.join(','))
+          .limit(1);
         if (sRows && sRows.length > 0) {
           const s = sRows[0];
           setDocumentRequirements((prev) =>
