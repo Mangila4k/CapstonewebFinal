@@ -380,8 +380,8 @@ export const RegistrarDashboardPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
       {/* 1. Institutional DepEd Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div className="space-y-1">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-5">
+        <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight">
             Registrar Dashboard
           </h1>
@@ -391,7 +391,7 @@ export const RegistrarDashboardPage: React.FC = () => {
         </div>
 
         {/* Header Action Controls */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
           <PageHeaderNotificationSlot />
         </div>
       </div>

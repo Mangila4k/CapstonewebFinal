@@ -951,8 +951,8 @@ export const AdminEnrollmentsPage: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold text-slate-900 font-display tracking-tight">
             Enrollment Applications
           </h1>
@@ -960,7 +960,7 @@ export const AdminEnrollmentsPage: React.FC = () => {
             Review, verify, and manage student admissions organized by Year Level (Grade 7–12) and Section.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
           <PageHeaderNotificationSlot />
         </div>
       </div>

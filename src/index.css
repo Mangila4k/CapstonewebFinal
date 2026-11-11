@@ -77,3 +77,14 @@
 .animate-fade-in {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Ensure Page Header Notification Slot and its container are always aligned to the right side */
+#page-header-notification-slot {
+  margin-left: auto !important;
+}
+
+div:has(> #page-header-notification-slot),
+div:has(> * > #page-header-notification-slot) {
+  margin-left: auto !important;
+  align-self: flex-end !important;
+}
