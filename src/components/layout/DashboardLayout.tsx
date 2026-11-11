@@ -535,6 +535,7 @@ export const DashboardLayout: React.FC = () => {
             <span className="hidden sm:inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
               {roleTitle}
             </span>
+            <div id="mobile-header-notification-slot" className="inline-flex items-center" />
             {sidebarAvatar ? (
               <img
                 src={sidebarAvatar}

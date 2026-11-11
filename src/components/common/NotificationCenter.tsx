@@ -112,13 +112,88 @@ export const NotificationCenter: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [selectedItem, setSelectedItem] = useState<UnifiedNotificationItem | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const [slotElement, setSlotElement] = useState<HTMLElement | null>(null);
 
+  // Responsive device classification for auto-adjusting on mobile phones vs tablets vs desktop
+  const [deviceType, setDeviceType] = useState<'phone' | 'tablet' | 'desktop'>(() => {
+    if (typeof window === 'undefined') return 'desktop';
+    const w = window.innerWidth;
+    if (w < 640) return 'phone';
+    if (w < 1024) return 'tablet';
+    return 'desktop';
+  });
+
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const handleResizeDevice = () => {
+      const w = window.innerWidth;
+      const nextType = w < 640 ? 'phone' : w < 1024 ? 'tablet' : 'desktop';
+      setDeviceType((prev) => (prev !== nextType ? nextType : prev));
+    };
+    handleResizeDevice();
+    window.addEventListener('resize', handleResizeDevice);
+    return () => window.removeEventListener('resize', handleResizeDevice);
+  }, []);
+
+  // Compute exact viewport position to guarantee the dropdown never clips or overflows on mobile or tablet
+  const updateDropdownPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let width = 410;
+    let minMargin = 16;
+
+    if (vw < 640) {
+      // Mobile phone (e.g. iPhone, Android)
+      width = Math.min(vw - 20, 375);
+      minMargin = 10;
+    } else if (vw < 1024) {
+      // Tablet (e.g. iPad portrait/landscape)
+      width = Math.min(vw - 32, 400);
+      minMargin = 16;
+    } else {
+      // Desktop
+      width = 410;
+      minMargin = 20;
+    }
+
+    // Default: Align right edge of dropdown with right edge of button
+    let left = rect.right - width;
+
+    // If button is on left or center of screen, clamp left so it never overflows off left screen edge
+    if (left < minMargin) {
+      left = minMargin;
+    }
+
+    // Also prevent extending past the right viewport boundary
+    if (left + width > vw - minMargin) {
+      left = Math.max(minMargin, vw - minMargin - width);
+    }
+
+    const top = rect.bottom + (vw < 640 ? 6 : 8);
+    const availableHeight = vh - top - 16;
+    const maxHeight = Math.max(260, Math.min(vw < 640 ? 460 : 540, availableHeight));
+
+    setDropdownPos({ top, left, width, maxHeight });
+  }, []);
+
   useEffect(() => {
     const updateSlot = () => {
-      const el = document.getElementById('page-header-notification-slot');
-      setSlotElement((prev) => (prev !== el ? el : prev));
+      const pageSlot = document.getElementById('page-header-notification-slot');
+      const mobileSlot = document.getElementById('mobile-header-notification-slot');
+      const target = pageSlot || mobileSlot;
+      setSlotElement((prev) => (prev !== target ? target : prev));
     };
 
     updateSlot();
@@ -393,16 +468,48 @@ export const NotificationCenter: React.FC = () => {
     };
   }, [user, userKey, fetchAllNotifications]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking or tapping outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(target) &&
+        panelRef.current &&
+        !panelRef.current.contains(target)
+      ) {
         setDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  // Keep dropdown anchored and reposition when window is resized or scrolled
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleScrollOrResize = () => {
+      updateDropdownPosition();
+    };
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [dropdownOpen, updateDropdownPosition]);
+
+  const toggleDropdown = () => {
+    if (!dropdownOpen) {
+      updateDropdownPosition();
+    }
+    setDropdownOpen((prev) => !prev);
+  };
 
   const markItemReadStatus = async (item: UnifiedNotificationItem, readState: boolean) => {
     const readIds = getStoredList(readStorageKey);
@@ -460,207 +567,242 @@ export const NotificationCenter: React.FC = () => {
 
   const bellDropdownNode = (
     <div ref={dropdownRef} className="relative z-40 inline-flex items-center">
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((o) => !o)}
-              aria-label="Notifications"
-              title="Notifications & Announcements"
-              className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all cursor-pointer select-none active:scale-95 ${
-                dropdownOpen
-                  ? 'border-[#152e69] bg-[#152e69] text-white shadow-sm ring-2 ring-[#152e69]/20'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-2xs hover:shadow-xs'
-              }`}
-            >
-              <Bell
-                className={`h-4.5 w-4.5 transition-colors ${
-                  dropdownOpen
-                    ? 'text-amber-400'
-                    : unreadItems.length > 0
-                    ? 'text-[#152e69]'
-                    : 'text-slate-600'
-                }`}
-              />
-              {unreadItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-black text-white shadow-xs ring-2 ring-white leading-none">
-                  {unreadItems.length > 99 ? '99+' : unreadItems.length}
-                </span>
-              )}
-            </button>
-
-            {/* Dropdown Panel */}
-            {dropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-[340px] sm:w-[390px] rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden z-50 animate-fade-in">
-                {/* Dropdown Header */}
-                <div className="border-b border-slate-100 bg-white px-4 py-3.5 flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                      Notifications & Circulars
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Official Administration & Campus Updates
-                    </p>
-                  </div>
-
-                  {unreadItems.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={markAllAsRead}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-[#1B2A4A] transition-colors cursor-pointer"
-                    >
-                      <CheckCheck className="h-3 w-3" /> Mark all read
-                    </button>
-                  )}
-                </div>
-
-                {/* Filter Tabs */}
-                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-2">
-                  <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setFilter('all')}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                        filter === 'all'
-                          ? 'bg-white text-slate-900 shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      All ({items.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFilter('unread')}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                        filter === 'unread'
-                          ? 'bg-white text-slate-900 shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Unread ({unreadItems.length})
-                    </button>
-                  </div>
-
-                  <span className="text-[10px] font-medium text-slate-400">
-                    Select to view details
-                  </span>
-                </div>
-
-                {/* Notification Items List */}
-                <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
-                  {displayedItems.length === 0 ? (
-                    <div className="py-10 px-6 text-center space-y-1.5">
-                      <CheckCircle2 className="h-7 w-7 text-emerald-500 mx-auto" />
-                      <p className="text-xs font-bold text-slate-800">
-                        {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {filter === 'unread'
-                          ? 'You are caught up on all official school circulars.'
-                          : 'Official advisories from the Administration will appear here.'}
-                      </p>
-                    </div>
-                  ) : (
-                    displayedItems.map((item) => {
-                      const isUrgent =
-                        item.priority === 'urgent' ||
-                        item.priority === 'high' ||
-                        item.priority === 'important';
-
-                      return (
-                        <div
-                          key={item.uid}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => handleOpenItem(item)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              handleOpenItem(item);
-                            }
-                          }}
-                          className={`group p-3.5 transition-colors cursor-pointer select-none flex items-start gap-3 ${
-                            !item.isRead
-                              ? 'bg-slate-50/90 hover:bg-slate-100/70'
-                              : 'bg-white hover:bg-slate-50/60'
-                          }`}
-                        >
-                          <div
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5 ${
-                              !item.isRead
-                                ? 'bg-[#1B2A4A] text-white'
-                                : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {isUrgent ? (
-                              <AlertTriangle className="h-3.5 w-3.5" />
-                            ) : (
-                              <Megaphone className="h-3.5 w-3.5" />
-                            )}
-                          </div>
-
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                                {item.senderRole || 'ADMINISTRATION'}
-                              </span>
-                              <span className="text-[10px] text-slate-400">
-                                {formatTimeAgo(item.createdAt)}
-                              </span>
-                            </div>
-
-                            <h5
-                              className={`text-xs leading-snug group-hover:text-[#1B2A4A] transition-colors ${
-                                !item.isRead
-                                  ? 'font-extrabold text-slate-900'
-                                  : 'font-semibold text-slate-700'
-                              }`}
-                            >
-                              {item.title}
-                            </h5>
-
-                            <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                              {item.content}
-                            </p>
-
-                            <div className="pt-1 flex items-center justify-between">
-                              <span
-                                className={`inline-flex items-center gap-1.5 text-[10px] font-semibold ${
-                                  !item.isRead ? 'text-[#1B2A4A]' : 'text-slate-400'
-                                }`}
-                              >
-                                {!item.isRead ? (
-                                  <>
-                                    <span className="h-1.5 w-1.5 rounded-full bg-[#1B2A4A]" />
-                                    Unread
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                    Read
-                                  </>
-                                )}
-                              </span>
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markItemReadStatus(item, !item.isRead);
-                                }}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 cursor-pointer"
-                              >
-                                {!item.isRead ? 'Mark read' : 'Mark unread'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleDropdown}
+        aria-label="Notifications"
+        title="Notifications & Announcements"
+        className={`relative flex items-center justify-center rounded-xl border transition-all cursor-pointer select-none active:scale-95 touch-manipulation ${
+          deviceType === 'phone' ? 'h-9 w-9' : 'h-10 w-10'
+        } ${
+          dropdownOpen
+            ? 'border-[#152e69] bg-[#152e69] text-white shadow-sm ring-2 ring-[#152e69]/20'
+            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-2xs hover:shadow-xs'
+        }`}
+      >
+        <Bell
+          className={`transition-colors ${
+            deviceType === 'phone' ? 'h-4 w-4' : 'h-4.5 w-4.5'
+          } ${
+            dropdownOpen
+              ? 'text-amber-400'
+              : unreadItems.length > 0
+              ? 'text-[#152e69]'
+              : 'text-slate-600'
+          }`}
+        />
+        {unreadItems.length > 0 && (
+          <span
+            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-rose-600 font-black text-white shadow-xs ring-2 ring-white leading-none ${
+              deviceType === 'phone'
+                ? 'h-4 min-w-[16px] text-[9px] px-1'
+                : 'h-4.5 min-w-[18px] text-[10px] px-1.5'
+            }`}
+          >
+            {unreadItems.length > 99 ? '99+' : unreadItems.length}
+          </span>
+        )}
+      </button>
     </div>
   );
+
+  const dropdownPanelPortal =
+    dropdownOpen &&
+    dropdownPos &&
+    createPortal(
+      <>
+        {/* Mobile/Tablet Backdrop for easy touch dismissal */}
+        <div
+          className="fixed inset-0 z-[9990] bg-slate-900/15 sm:bg-transparent"
+          onClick={() => setDropdownOpen(false)}
+          aria-hidden="true"
+        />
+
+        {/* Clamped Auto-Adjusting Dropdown Panel */}
+        <div
+          ref={panelRef}
+          style={{
+            position: 'fixed',
+            top: `${dropdownPos.top}px`,
+            left: `${dropdownPos.left}px`,
+            width: `${dropdownPos.width}px`,
+            maxHeight: `${dropdownPos.maxHeight}px`,
+          }}
+          className="rounded-2xl border border-slate-200 bg-white shadow-2xl flex flex-col overflow-hidden z-[9999] animate-fade-in"
+        >
+          {/* Dropdown Header */}
+          <div className="border-b border-slate-100 bg-white px-3.5 sm:px-4 py-3 sm:py-3.5 flex items-center justify-between shrink-0">
+            <div className="min-w-0 pr-2">
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
+                Notifications & Circulars
+              </h4>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+                Official Administration & Campus Updates
+              </p>
+            </div>
+
+            {unreadItems.length > 0 && (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="inline-flex items-center gap-1 shrink-0 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 px-2 sm:px-2.5 py-1 text-[10px] font-bold text-[#1B2A4A] transition-colors cursor-pointer"
+              >
+                <CheckCheck className="h-3 w-3" />
+                <span>Mark all read</span>
+              </button>
+            )}
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-3.5 sm:px-4 py-2 shrink-0">
+            <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5">
+              <button
+                type="button"
+                onClick={() => setFilter('all')}
+                className={`rounded-md px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
+                  filter === 'all'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All ({items.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilter('unread')}
+                className={`rounded-md px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
+                  filter === 'unread'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Unread ({unreadItems.length})
+              </button>
+            </div>
+
+            <span className="text-[10px] font-medium text-slate-400">
+              Select to view details
+            </span>
+          </div>
+
+          {/* Notification Items List */}
+          <div className="overflow-y-auto divide-y divide-slate-100 flex-1 overscroll-contain">
+            {displayedItems.length === 0 ? (
+              <div className="py-10 px-6 text-center space-y-1.5">
+                <CheckCircle2 className="h-7 w-7 text-emerald-500 mx-auto" />
+                <p className="text-xs font-bold text-slate-800">
+                  {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {filter === 'unread'
+                    ? 'You are caught up on all official school circulars.'
+                    : 'Official advisories from the Administration will appear here.'}
+                </p>
+              </div>
+            ) : (
+              displayedItems.map((item) => {
+                const isUrgent =
+                  item.priority === 'urgent' ||
+                  item.priority === 'high' ||
+                  item.priority === 'important';
+
+                return (
+                  <div
+                    key={item.uid}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenItem(item)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenItem(item);
+                      }
+                    }}
+                    className={`group p-3 sm:p-3.5 transition-colors cursor-pointer select-none flex items-start gap-2.5 sm:gap-3 ${
+                      !item.isRead
+                        ? 'bg-slate-50/90 hover:bg-slate-100/70'
+                        : 'bg-white hover:bg-slate-50/60'
+                    }`}
+                  >
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5 ${
+                        !item.isRead
+                          ? 'bg-[#1B2A4A] text-white'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {isUrgent ? (
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      ) : (
+                        <Megaphone className="h-3.5 w-3.5" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
+                          {item.senderRole || 'ADMINISTRATION'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 shrink-0">
+                          {formatTimeAgo(item.createdAt)}
+                        </span>
+                      </div>
+
+                      <h5
+                        className={`text-xs leading-snug group-hover:text-[#1B2A4A] transition-colors line-clamp-2 ${
+                          !item.isRead
+                            ? 'font-extrabold text-slate-900'
+                            : 'font-semibold text-slate-700'
+                        }`}
+                      >
+                        {item.title}
+                      </h5>
+
+                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                        {item.content}
+                      </p>
+
+                      <div className="pt-1 flex items-center justify-between">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[10px] font-semibold ${
+                            !item.isRead ? 'text-[#1B2A4A]' : 'text-slate-400'
+                          }`}
+                        >
+                          {!item.isRead ? (
+                            <>
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#1B2A4A]" />
+                              Unread
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                              Read
+                            </>
+                          )}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markItemReadStatus(item, !item.isRead);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 cursor-pointer"
+                        >
+                          {!item.isRead ? 'Mark read' : 'Mark unread'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </>,
+      document.body
+    );
 
   return (
     <>
@@ -673,6 +815,8 @@ export const NotificationCenter: React.FC = () => {
           </div>
         </div>
       )}
+
+      {dropdownPanelPortal}
 
       {/* Official School Notice & Notification Detail Modal */}
       <Modal
