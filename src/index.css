@@ -78,13 +78,30 @@
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Ensure Page Header Notification Slot and its container are always aligned to the right side */
+/* Professional Page Header Notification Slot: Always level with the title on the top-right */
 #page-header-notification-slot {
   margin-left: auto !important;
+  align-self: flex-start !important;
+  flex-shrink: 0 !important;
 }
 
 div:has(> #page-header-notification-slot),
 div:has(> * > #page-header-notification-slot) {
   margin-left: auto !important;
-  align-self: flex-end !important;
+  align-self: flex-start !important;
+  flex-shrink: 0 !important;
+}
+
+/* Ensure the header container across all pages maintains a top-aligned row on all screen sizes */
+div.border-b:has(#page-header-notification-slot) {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+}
+
+div.border-b:has(#page-header-notification-slot) > div:first-child {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
 }

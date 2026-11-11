@@ -973,5 +973,5 @@ export const NotificationCenter: React.FC = () => {
 };
 
 export const PageHeaderNotificationSlot: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div id="page-header-notification-slot" className={`inline-flex items-center shrink-0 ml-auto ${className}`} />
+  <div id="page-header-notification-slot" className={`inline-flex items-center shrink-0 ml-auto self-start ${className}`} />
 );
