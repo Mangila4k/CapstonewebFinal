@@ -413,9 +413,9 @@ export const AdminEnrollmentsPage: React.FC = () => {
   const fetchAllData = async () => {
     try {
       const ENROLLMENT_LIST_COLS =
-        'id, student_id, first_name, last_name, middle_name, email, grade_level, strand, status, student_type, guardian_name, guardian_contact, guardian_email, guardian_address, mother_name, father_name, dob, date_of_birth, gender, address, contact_number, school_year, last_school_year, enrolled_date, form_137_url, report_card_url, certificate_of_completion_url, psa_birth_cert_url, good_moral_cert_url, created_at';
+        'id, student_id, first_name, last_name, middle_name, email, grade_level, strand, status, student_type, guardian_name, guardian_contact, guardian_email, guardian_address, mother_name, father_name, dob, date_of_birth, gender, address, contact_number, school_year, last_school_year, enrolled_date, two_by_two_picture_url, form_137_url, report_card_url, certificate_of_completion_url, psa_birth_cert_url, good_moral_cert_url, created_at';
       const STUDENT_LIST_COLS =
-        'id, lrn, first_name, last_name, email, grade_level, strand, section_id, enrollment_id, student_type, academic_status';
+        'id, lrn, first_name, last_name, email, grade_level, strand, section_id, enrollment_id, student_type, academic_status, two_by_two_picture_url, avatar_url';
 
       const [{ data: enrData }, { data: stData }, { data: secData }] = await Promise.all([
         supabase
@@ -665,6 +665,7 @@ export const AdminEnrollmentsPage: React.FC = () => {
             academic_status: 'Enrolled',
             documents_status: 'Verified',
             two_by_two_picture_url: targetEnr.two_by_two_picture_url || null,
+            avatar_url: targetEnr.two_by_two_picture_url || null,
             form_138_url:
               targetEnr.report_card_url || targetEnr.form_137_url || null,
             psa_birth_url: targetEnr.psa_birth_cert_url || null,
