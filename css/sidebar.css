@@ -958,3 +958,17 @@
     font-weight: 500 !important;
 }
 
+/* Hide complete sidebar system during official document printouts */
+@media print {
+    .sidebar,
+    .sidebar-header,
+    .nav-menu,
+    .sidebar-footer,
+    .mobile-nav-toggle {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+}
+
