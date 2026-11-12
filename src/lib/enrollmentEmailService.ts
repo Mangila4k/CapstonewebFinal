@@ -107,14 +107,25 @@ export async function sendStudentApprovalEmail(
     console.warn('Edge function invocation note:', err);
   }
 
-  // 3. Log to `notifications` and `activity_logs`
+  // 3. Log notification ONLY for the specific recipient student (NEVER broadcast to admin or other users)
   try {
-    await supabase.from('notifications').insert({
-      title: 'Student Credentials Dispatched',
-      message: `Login credentials sent to ${cleanEmail}. Username: ${cleanEmail} | Temporary Password: ${temporaryPassword}`,
-      type: 'enrollment',
-      role: 'registrar',
-    });
+    let studentUserId: string | null = null;
+    const { data: stUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+    if (stUser?.id) studentUserId = stUser.id;
+
+    if (studentUserId || cleanEmail) {
+      await supabase.from('notifications').insert({
+        title: 'Your Student Portal Access Credentials',
+        message: `Welcome to Placido L. Señor National High School! Your student portal account is ready. Username: ${cleanEmail} | Temporary Password: ${temporaryPassword}. Please log in and verify your official student records.`,
+        type: 'enrollment',
+        role: 'student',
+        user_id: studentUserId || cleanEmail, // STRICTLY RESTRICTED TO THIS SPECIFIC STUDENT
+      });
+    }
   } catch {
     // ignore
   }
@@ -123,7 +134,7 @@ export async function sendStudentApprovalEmail(
     const logRecord = {
       role: 'system',
       action: 'Approval Email Sent',
-      details: `Enrollment approved. Credentials sent to ${cleanEmail} (Username: ${cleanEmail}, Temporary Password: ${temporaryPassword})`,
+      details: `Enrollment approved. Official access credentials generated and dispatched to student (${cleanEmail}).`,
       timestamp: new Date().toISOString(),
     };
     await supabase.from('activity_logs').insert([logRecord]);

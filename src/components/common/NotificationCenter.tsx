@@ -291,9 +291,27 @@ export const NotificationCenter: React.FC = () => {
           const targetUserId = n.user_id ? String(n.user_id).toLowerCase() : '';
           const targetRole = n.role ? String(n.role).toLowerCase() : 'all';
 
+          // Strict Security & Privacy Guard:
+          // Notifications with access credentials or temporary passwords must ONLY be received by the intended user!
+          // Neither the admin, registrar, teachers, nor other students may ever receive another user's credentials notice.
+          const titleLower = String(n.title || '').toLowerCase();
+          const msgLower = String(n.message || n.content || '').toLowerCase();
+          const isCredentialsNotice =
+            titleLower.includes('credentials') ||
+            titleLower.includes('temporary password') ||
+            msgLower.includes('temporary password') ||
+            msgLower.includes('temp password');
+
           let matchesUser = false;
           if (targetUserId) {
             matchesUser = userIds.has(targetUserId);
+          } else if (isCredentialsNotice) {
+            // If targetUserId was missing on a legacy credentials notice, strictly restrict to the recipient whose email is in the message
+            if (user?.email && msgLower.includes(user.email.toLowerCase().trim())) {
+              matchesUser = true;
+            } else {
+              matchesUser = false; // Never show to admin or any other user
+            }
           } else {
             matchesUser = isAudienceMatch(targetRole, role);
           }
