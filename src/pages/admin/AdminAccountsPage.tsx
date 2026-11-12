@@ -734,7 +734,7 @@ export const AdminAccountsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Filter Role:</span>
             <select
@@ -742,18 +742,23 @@ export const AdminAccountsPage: React.FC = () => {
               onChange={(e) => setRoleFilter(e.target.value)}
               className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
             >
-              <option value="all">All Roles</option>
-              <option value="student">Student</option>
-              <option value="teacher">Teacher / Faculty</option>
-              <option value="parent">Parent</option>
-              <option value="guidance">Guidance Counselor</option>
-              <option value="registrar">Registrar</option>
-              <option value="admin">Administrator</option>
+              <option value="all">All Roles ({accounts.length})</option>
+              <option value="student">Student ({roleCounts['student'] || 0})</option>
+              <option value="teacher">Teacher / Faculty ({roleCounts['teacher'] || 0})</option>
+              <option value="parent">Parent ({roleCounts['parent'] || 0})</option>
+              <option value="guidance">Guidance Counselor ({roleCounts['guidance'] || 0})</option>
+              <option value="registrar">Registrar ({roleCounts['registrar'] || 0})</option>
+              <option value="admin">Administrator ({(roleCounts['admin'] || 0) + (roleCounts['principal'] || 0)})</option>
             </select>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs whitespace-nowrap">
+              {roleFilter === 'all'
+                ? `${accounts.length} Total Users`
+                : `${(roleFilter === 'admin' ? (roleCounts['admin'] || 0) + (roleCounts['principal'] || 0) : roleCounts[roleFilter] || 0)} Total Users`}
+            </span>
           </div>
 
           <div className="text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg whitespace-nowrap">
-            Showing <span className="text-slate-900">{totalInCurrentView}</span> {totalInCurrentView === 1 ? 'account' : 'accounts'}
+            Showing <span className="text-slate-900">{totalInCurrentView}</span> of <span className="text-slate-900">{accounts.length}</span> total users
           </div>
         </div>
       </div>
