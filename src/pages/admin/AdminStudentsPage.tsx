@@ -38,6 +38,7 @@ import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
+import { sendStudentApprovalEmail } from '../../lib/enrollmentEmailService';
 import type { Student, Section } from '../../types';
 
 // Standard Grade Levels in PLSNHS
@@ -203,6 +204,8 @@ export const AdminStudentsPage: React.FC = () => {
   // Send to Gmail Modal State
   const [gmailStudent, setGmailStudent] = useState<Student | null>(null);
   const [gmailCopied, setGmailCopied] = useState(false);
+  const [gmailSending, setGmailSending] = useState(false);
+  const [gmailSentStatus, setGmailSentStatus] = useState<string | null>(null);
 
   // Handlers for Manage actions
   const handleOpenEditModal = (student: Student) => {
@@ -415,6 +418,8 @@ export const AdminStudentsPage: React.FC = () => {
     }
     setGmailStudent(student);
     setGmailCopied(false);
+    setGmailSending(false);
+    setGmailSentStatus(null);
   };
 
   const exportQuickIdAsImage = async (elementId: string, filename: string) => {
@@ -2195,82 +2200,177 @@ export const AdminStudentsPage: React.FC = () => {
       )}
 
       {/* SEND TO GMAIL MODAL */}
-      {gmailStudent && (
-        <Modal
-          isOpen={!!gmailStudent}
-          onClose={() => setGmailStudent(null)}
-          title={`Send Credentials to Gmail: ${gmailStudent.first_name} ${gmailStudent.last_name}`}
-          subtitle={`Target Address: ${gmailStudent.email}`}
-        >
-          <div className="space-y-4 text-xs">
-            <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2 text-slate-700">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[#152e69] text-xs">Email Payload Preview</span>
-                <span className="font-mono text-[11px] text-blue-700">{gmailStudent.email}</span>
-              </div>
-              <div className="p-3 rounded-lg bg-white border border-blue-100 font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed shadow-2xs">
-{`Subject: Pedro 'Oloy' N. Roa Sr. High School - Student Portal Access Credentials
+      {gmailStudent && (() => {
+        const studentEmail = (gmailStudent.email || '').trim().toLowerCase();
+        const safeFirstName = (gmailStudent.first_name || 'Student').trim();
+        const safeLastName = (gmailStudent.last_name || 'Learner').trim();
+        const tempPassword = safeLastName; // Temporary password is student's last name
+        const studentLrn =
+          gmailStudent.lrn && String(gmailStudent.lrn).trim() !== 'N/A'
+            ? String(gmailStudent.lrn).trim()
+            : 'Pending Assignment';
+        const sectionDisplay = `${gmailStudent.grade_level || 'Grade 10'} - ${gmailStudent.section || 'Unassigned'}`;
 
-Dear ${gmailStudent.first_name} ${gmailStudent.last_name},
+        const emailSubject = 'Placido L. Señor National High School - Student Portal Access Credentials';
+
+        const emailBody = `Dear ${safeFirstName} ${safeLastName},
+
+Your student portal account for Placido L. Señor National High School has been approved and prepared:
+
+• Portal Link: ${window.location.origin}/login
+• Username (Gmail): ${studentEmail}
+• Temporary Password: ${tempPassword}
+• Learner Reference No. (LRN): ${studentLrn}
+• Grade & Section: ${sectionDisplay}
+
+Please keep your credentials safe and log in to verify your enrollment status. For your security, please update your password after your first login.
+
+Warm regards,
+Placido L. Señor National High School
+Registrar & Admissions Office`;
+
+        const gmailWebComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+          studentEmail
+        )}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+        return (
+          <Modal
+            isOpen={!!gmailStudent}
+            onClose={() => {
+              setGmailStudent(null);
+              setGmailSentStatus(null);
+            }}
+            title={`Send Credentials to Gmail: ${safeFirstName} ${safeLastName}`}
+            subtitle={`Target Address: ${studentEmail}`}
+          >
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2 text-slate-700">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#152e69] text-xs">Email Payload Preview</span>
+                  <span className="font-mono text-[11px] text-blue-700">{studentEmail}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white border border-blue-100 font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed shadow-2xs">
+{`Subject: Placido L. Señor National High School - Student Portal Access Credentials
+
+Dear ${safeFirstName} ${safeLastName},
 
 Your student portal account has been prepared:
 • Portal Link: ${window.location.origin}/login
-• LRN / Username: ${gmailStudent.lrn}
-• Grade & Section: ${gmailStudent.grade_level || 'Grade 10'} - ${gmailStudent.section || 'Unassigned'}
-• Temporary Password: PLSNHS-${(gmailStudent.lrn || '2026').slice(-4)}
+• Username (Gmail): ${studentEmail}
+• Temporary Password: ${tempPassword}
+• Learner Reference No. (LRN): ${studentLrn}
+• Grade & Section: ${sectionDisplay}
 
 Please keep your credentials safe and log in to verify your enrollment status.`}
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => {
-                  const body = `Dear ${gmailStudent.first_name} ${gmailStudent.last_name},\n\nYour student portal account has been prepared:\n• Portal Link: ${window.location.origin}/login\n• LRN / Username: ${gmailStudent.lrn}\n• Grade & Section: ${gmailStudent.grade_level || 'Grade 10'} - ${gmailStudent.section || 'Unassigned'}\n• Temporary Password: PLSNHS-${(gmailStudent.lrn || '2026').slice(-4)}\n\nPlease keep your credentials safe and log in to verify your enrollment status.`;
-                  navigator.clipboard.writeText(body);
-                  setGmailCopied(true);
-                  setTimeout(() => setGmailCopied(false), 2500);
-                }}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Copy className="h-3.5 w-3.5 text-slate-500" />
-                <span>{gmailCopied ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
-              </button>
+              {gmailSentStatus && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold text-xs flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>{gmailSentStatus}</span>
+                </div>
+              )}
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setGmailStudent(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <a
-                  href={`mailto:${gmailStudent.email}?subject=${encodeURIComponent(
-                    "Pedro 'Oloy' N. Roa Sr. High School - Student Portal Access Credentials"
-                  )}&body=${encodeURIComponent(
-                    `Dear ${gmailStudent.first_name} ${gmailStudent.last_name},\n\nYour student portal account has been prepared:\n• Portal Link: ${window.location.origin}/login\n• LRN / Username: ${gmailStudent.lrn}\n• Grade & Section: ${gmailStudent.grade_level || 'Grade 10'} - ${gmailStudent.section || 'Unassigned'}\n• Temporary Password: PLSNHS-${(gmailStudent.lrn || '2026').slice(-4)}\n\nPlease keep your credentials safe and log in to verify your enrollment status.`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
                   onClick={() => {
-                    setGmailStudent(null);
-                    setAlert({
-                      type: 'success',
-                      message: `Opened mail client to dispatch credentials to ${gmailStudent.email}.`,
-                    });
+                    navigator.clipboard.writeText(emailBody);
+                    setGmailCopied(true);
+                    setTimeout(() => setGmailCopied(false), 2500);
                   }}
-                  className="flex-1 sm:flex-initial px-5 py-2 rounded-xl bg-[#152e69] hover:bg-[#0f1c3f] text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-all"
                 >
-                  <Send className="h-3.5 w-3.5 text-[#F5C518]" />
-                  <span>Open in Mail Client</span>
-                </a>
+                  <Copy className="h-3.5 w-3.5 text-slate-500" />
+                  <span>{gmailCopied ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGmailStudent(null);
+                      setGmailSentStatus(null);
+                    }}
+                    className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer transition-all"
+                  >
+                    Cancel
+                  </button>
+
+                  {/* 1-Click Direct Delivery via Gmail Web */}
+                  <a
+                    href={gmailWebComposeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={async () => {
+                      try {
+                        await sendStudentApprovalEmail({
+                          toEmail: studentEmail,
+                          firstName: safeFirstName,
+                          lastName: safeLastName,
+                          gradeLevel: gmailStudent.grade_level || 'Grade 10',
+                          strand: gmailStudent.strand,
+                          sectionName: gmailStudent.section,
+                          studentId: gmailStudent.id,
+                        });
+                      } catch {
+                        // background sync
+                      }
+                      setAlert({
+                        type: 'success',
+                        message: `Opened Gmail composer for ${studentEmail}. Click 'Send' in Gmail to deliver immediately!`,
+                      });
+                      setGmailStudent(null);
+                    }}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#ea4335] hover:bg-[#d93025] text-white font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+                    title="Open directly in Gmail web composer to send"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>Send via Gmail Web</span>
+                  </a>
+
+                  {/* Direct Cloud Auto-Dispatch */}
+                  <button
+                    type="button"
+                    disabled={gmailSending}
+                    onClick={async () => {
+                      setGmailSending(true);
+                      try {
+                        const res = await sendStudentApprovalEmail({
+                          toEmail: studentEmail,
+                          firstName: safeFirstName,
+                          lastName: safeLastName,
+                          gradeLevel: gmailStudent.grade_level || 'Grade 10',
+                          strand: gmailStudent.strand,
+                          sectionName: gmailStudent.section,
+                          studentId: gmailStudent.id,
+                        });
+                        setGmailSentStatus(res.message);
+                        setAlert({
+                          type: 'success',
+                          message: `Credentials dispatched for ${studentEmail}. Username: ${studentEmail} | Temp Password: ${tempPassword}`,
+                        });
+                      } catch (err: any) {
+                        setAlert({
+                          type: 'error',
+                          message: `Dispatch note: ${err?.message || 'Error sending'}. Please use 'Send via Gmail Web'.`,
+                        });
+                      } finally {
+                        setGmailSending(false);
+                      }
+                    }}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1c3f] text-white font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4 text-[#F5C518]" />
+                    <span>{gmailSending ? 'Dispatching...' : 'Auto-Dispatch'}</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 };

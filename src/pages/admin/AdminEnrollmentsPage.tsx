@@ -22,6 +22,9 @@ import {
   Unlock,
   ShieldAlert,
   CheckCircle2,
+  Mail,
+  Send,
+  Copy,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -367,6 +370,20 @@ export const AdminEnrollmentsPage: React.FC = () => {
   const [idCardSide, setIdCardSide] = useState<'both' | 'front' | 'back'>('both');
   const [idCardFlipped, setIdCardFlipped] = useState(false);
   const [idDownloading, setIdDownloading] = useState(false);
+
+  // Credentials Gmail Dispatch Modal State
+  const [approvalGmailDialog, setApprovalGmailDialog] = useState<{
+    studentName: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    gradeLevel: string;
+    section: string;
+    lrn: string;
+  } | null>(null);
+  const [approvalGmailCopied, setApprovalGmailCopied] = useState(false);
+  const [approvalGmailSending, setApprovalGmailSending] = useState(false);
+  const [approvalGmailStatus, setApprovalGmailStatus] = useState<string | null>(null);
 
   const exportQuickIdAsImage = async (elementId: string, filename: string) => {
     const el = document.getElementById(elementId);
@@ -722,6 +739,20 @@ export const AdminEnrollmentsPage: React.FC = () => {
             sectionName: chosenSectionName,
             studentId: resolvedStudentId,
           });
+
+          // Present instant Gmail dispatch modal to Admin/Registrar
+          setApprovalGmailDialog({
+            studentName: `${safeFirstName} ${safeLastName}`,
+            email: safeEmail,
+            firstName: safeFirstName,
+            lastName: safeLastName,
+            gradeLevel: normalizedGrade,
+            section: chosenSectionName,
+            lrn: resolvedLrn,
+          });
+          setApprovalGmailCopied(false);
+          setApprovalGmailSending(false);
+          setApprovalGmailStatus(null);
         } catch (syncErr) {
           console.warn('Student masterlist sync note:', syncErr);
         }
@@ -1789,6 +1820,149 @@ export const AdminEnrollmentsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* APPROVAL GMAIL DISPATCH MODAL */}
+      {approvalGmailDialog && (() => {
+        const studentEmail = approvalGmailDialog.email.trim().toLowerCase();
+        const safeFirstName = approvalGmailDialog.firstName.trim();
+        const safeLastName = approvalGmailDialog.lastName.trim();
+        const tempPassword = safeLastName; // Student's last name is their temporary password
+        const studentLrn =
+          approvalGmailDialog.lrn && String(approvalGmailDialog.lrn).trim() !== 'N/A'
+            ? String(approvalGmailDialog.lrn).trim()
+            : 'Pending Assignment';
+        const sectionDisplay = `${approvalGmailDialog.gradeLevel} - ${approvalGmailDialog.section}`;
+
+        const emailSubject = 'Placido L. Señor National High School - Student Portal Access Credentials';
+
+        const emailBody = `Dear ${safeFirstName} ${safeLastName},
+
+Your student portal account for Placido L. Señor National High School has been approved and prepared:
+
+• Portal Link: ${window.location.origin}/login
+• Username (Gmail): ${studentEmail}
+• Temporary Password: ${tempPassword}
+• Learner Reference No. (LRN): ${studentLrn}
+• Grade & Section: ${sectionDisplay}
+
+Please keep your credentials safe and log in to verify your enrollment status. For your security, please update your password after your first login.
+
+Warm regards,
+Placido L. Señor National High School
+Registrar & Admissions Office`;
+
+        const gmailWebComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+          studentEmail
+        )}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+        return (
+          <Modal
+            isOpen={!!approvalGmailDialog}
+            onClose={() => setApprovalGmailDialog(null)}
+            title={`Send Credentials to Gmail: ${safeFirstName} ${safeLastName}`}
+            subtitle={`Target Address: ${studentEmail}`}
+          >
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2 text-slate-700">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#152e69] text-xs">Email Payload Preview</span>
+                  <span className="font-mono text-[11px] text-blue-700">{studentEmail}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white border border-blue-100 font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed shadow-2xs">
+{`Subject: Placido L. Señor National High School - Student Portal Access Credentials
+
+Dear ${safeFirstName} ${safeLastName},
+
+Your student portal account has been prepared:
+• Portal Link: ${window.location.origin}/login
+• Username (Gmail): ${studentEmail}
+• Temporary Password: ${tempPassword}
+• Learner Reference No. (LRN): ${studentLrn}
+• Grade & Section: ${sectionDisplay}
+
+Please keep your credentials safe and log in to verify your enrollment status.`}
+                </div>
+              </div>
+
+              {approvalGmailStatus && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold text-xs flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>{approvalGmailStatus}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(emailBody);
+                    setApprovalGmailCopied(true);
+                    setTimeout(() => setApprovalGmailCopied(false), 2500);
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                >
+                  <Copy className="h-3.5 w-3.5 text-slate-500" />
+                  <span>{approvalGmailCopied ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setApprovalGmailDialog(null)}
+                    className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer transition-all"
+                  >
+                    Done
+                  </button>
+
+                  {/* 1-Click Direct Delivery via Gmail Web */}
+                  <a
+                    href={gmailWebComposeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => {
+                      setNotice({
+                        type: 'success',
+                        message: `Opened Gmail composer for ${studentEmail}. Click 'Send' in Gmail to deliver immediately!`,
+                      });
+                      setApprovalGmailDialog(null);
+                    }}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#ea4335] hover:bg-[#d93025] text-white font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+                    title="Open directly in Gmail web composer to send"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>Send via Gmail Web</span>
+                  </a>
+
+                  {/* Direct Cloud Auto-Dispatch */}
+                  <button
+                    type="button"
+                    disabled={approvalGmailSending}
+                    onClick={async () => {
+                      setApprovalGmailSending(true);
+                      try {
+                        const res = await sendStudentApprovalEmail({
+                          toEmail: studentEmail,
+                          firstName: safeFirstName,
+                          lastName: safeLastName,
+                          gradeLevel: approvalGmailDialog.gradeLevel,
+                          sectionName: approvalGmailDialog.section,
+                        });
+                        setApprovalGmailStatus(res.message);
+                      } finally {
+                        setApprovalGmailSending(false);
+                      }
+                    }}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1c3f] text-white font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4 text-[#F5C518]" />
+                    <span>{approvalGmailSending ? 'Dispatching...' : 'Auto-Dispatch'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 };
