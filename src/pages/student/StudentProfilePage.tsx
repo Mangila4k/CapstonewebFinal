@@ -336,18 +336,6 @@ export const StudentProfilePage: React.FC = () => {
       <div className="border-b border-slate-200/90 pb-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                DepEd LIS Verified Learner
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
-                S.Y. {schoolYear}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
-                School ID: 303035
-              </span>
-            </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-tight">
               Learner Profile &amp; Official Credentials
             </h1>
