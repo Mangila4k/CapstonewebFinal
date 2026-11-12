@@ -91,9 +91,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       .maybeSingle();
                     if (sec?.name) updatedSection = sec.name;
                   }
+                  if (s.created_at && !parsed.created_at) {
+                    parsed.created_at = s.created_at;
+                  }
                 }
               } catch {
                 // ignore
+              }
+
+              if (!parsed.created_at && parsed.id) {
+                try {
+                  const { data: uRow } = await supabase
+                    .from('users')
+                    .select('created_at')
+                    .eq('id', parsed.id)
+                    .maybeSingle();
+                  if (uRow?.created_at) {
+                    parsed.created_at = uRow.created_at;
+                  }
+                } catch {}
               }
 
               try {
@@ -142,7 +158,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   updatedStrand !== parsed.student_strand ||
                   updatedSection !== parsed.student_section ||
                   updatedLrn !== parsed.student_lrn ||
-                  (updatedAvatar && updatedAvatar !== parsed.avatar_url))
+                  (updatedAvatar && updatedAvatar !== parsed.avatar_url) ||
+                  parsed.created_at !== JSON.parse(stored).created_at)
               ) {
                 const refreshed = {
                   ...parsed,
@@ -357,6 +374,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let studentID = matchedUser.student_id || matchedUser.id;
       let studentName = '';
+      let studentCreatedAt: string | undefined = undefined;
 
       if (userRole === 'student') {
         try {
@@ -380,6 +398,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (s.lrn) studentLRN = s.lrn;
             if (s.grade_level) studentGrade = s.grade_level;
             if (s.strand) studentStrand = s.strand;
+            if (s.created_at) studentCreatedAt = s.created_at;
             if (s.avatar_url || s.two_by_two_picture_url) {
               userAvatar = s.avatar_url || s.two_by_two_picture_url;
             }
@@ -531,6 +550,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         student_status: studentStatus,
         school_year: schoolYear,
         avatar_url: userAvatar || storedAvatar,
+        created_at: matchedUser.created_at || studentCreatedAt || new Date().toISOString(),
       };
 
       if (userAvatar && cleanEmail) {

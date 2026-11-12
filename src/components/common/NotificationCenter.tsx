@@ -235,6 +235,44 @@ export const NotificationCenter: React.FC = () => {
     const unreadOverrides = getStoredList(unreadStorageKey);
     const role = (user.role || 'student').toLowerCase();
 
+    // Resolve student registration timestamp for strict filtering:
+    // If the user is a student (especially new students), they MUST NOT receive old notifications
+    // or announcements created prior to their account registration / enrollment.
+    let studentRegisteredAt: number | null = null;
+    if (user?.created_at) {
+      const t = new Date(user.created_at).getTime();
+      if (!isNaN(t)) studentRegisteredAt = t;
+    }
+
+    if ((role === 'student' || user?.role === 'student') && !studentRegisteredAt && (user?.id || user?.email)) {
+      try {
+        if (user?.id) {
+          const { data: uRow } = await supabase
+            .from('users')
+            .select('created_at')
+            .eq('id', user.id)
+            .maybeSingle();
+          if (uRow?.created_at) {
+            const t = new Date(uRow.created_at).getTime();
+            if (!isNaN(t)) studentRegisteredAt = t;
+          }
+        }
+        if (!studentRegisteredAt && user?.email) {
+          const { data: stRow } = await supabase
+            .from('students')
+            .select('created_at')
+            .ilike('email', user.email.trim().toLowerCase())
+            .maybeSingle();
+          if (stRow?.created_at) {
+            const t = new Date(stRow.created_at).getTime();
+            if (!isNaN(t)) studentRegisteredAt = t;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     const unifiedMap = new Map<string, UnifiedNotificationItem>();
 
     // 1. Fetch official announcements from Supabase
@@ -248,6 +286,12 @@ export const NotificationCenter: React.FC = () => {
       if (Array.isArray(annData)) {
         annData.forEach((a: any) => {
           if (!isAudienceMatch(a.target_audience, role)) return;
+
+          // If current user is a student, discard old announcements published before they registered
+          if ((role === 'student' || user?.role === 'student') && studentRegisteredAt) {
+            const annTime = new Date(a.created_at || a.date_created || 0).getTime();
+            if (annTime < studentRegisteredAt) return;
+          }
           const uid = `ann_${a.id}`;
           const isRead = readIds.includes(uid) && !unreadOverrides.includes(uid);
           unifiedMap.set(uid, {
@@ -318,6 +362,18 @@ export const NotificationCenter: React.FC = () => {
 
           if (!matchesUser) return;
 
+          // If current user is a student, they cannot receive old notifications created before their registration
+          if ((role === 'student' || user?.role === 'student') && studentRegisteredAt) {
+            const notifTime = new Date(n.created_at || 0).getTime();
+            if (!targetUserId) {
+              // Broadcast notification (sent to student body or all): strictly block if created before student registration
+              if (notifTime < studentRegisteredAt) return;
+            } else {
+              // Direct personal notification: allow if dispatched to this student, but reject any notification from before registration handshake (5m buffer)
+              if (notifTime < studentRegisteredAt - 5 * 60 * 1000) return;
+            }
+          }
+
           const uid = `notif_${n.id}`;
           let isRead = Boolean(n.read || n.is_read);
           if (readIds.includes(uid)) isRead = true;
@@ -371,6 +427,12 @@ export const NotificationCenter: React.FC = () => {
 
             if (targetUser && !myIds.includes(targetUser)) return;
             if (!targetUser && !isAudienceMatch(loc.target_audience, role)) return;
+
+            // If current user is a student, discard old local broadcasts created before registration
+            if ((role === 'student' || user?.role === 'student') && studentRegisteredAt && !targetUser) {
+              const locTime = new Date(loc.created_at || 0).getTime();
+              if (locTime < studentRegisteredAt) return;
+            }
 
             const uid = `local_${loc.id}`;
             if (!unifiedMap.has(uid)) {
