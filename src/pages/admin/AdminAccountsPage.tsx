@@ -713,8 +713,8 @@ export const AdminAccountsPage: React.FC = () => {
 
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
-        <div className="relative w-full sm:w-96">
+      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+        <div className="relative w-full xl:w-80 shrink-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
@@ -734,13 +734,14 @@ export const AdminAccountsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+        {/* Side Controls: Filter Role Dropdown + Tags for Every User Category */}
+        <div className="flex flex-wrap items-center gap-2.5 justify-between xl:justify-end flex-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Filter Role:</span>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
             >
               <option value="all">All Roles ({accounts.length})</option>
               <option value="student">Student ({roleCounts['student'] || 0})</option>
@@ -750,15 +751,121 @@ export const AdminAccountsPage: React.FC = () => {
               <option value="registrar">Registrar ({roleCounts['registrar'] || 0})</option>
               <option value="admin">Administrator ({(roleCounts['admin'] || 0) + (roleCounts['principal'] || 0)})</option>
             </select>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs whitespace-nowrap">
-              {roleFilter === 'all'
-                ? `${accounts.length} Total Users`
-                : `${(roleFilter === 'admin' ? (roleCounts['admin'] || 0) + (roleCounts['principal'] || 0) : roleCounts[roleFilter] || 0)} Total Users`}
-            </span>
           </div>
 
-          <div className="text-[11px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg whitespace-nowrap">
-            Showing <span className="text-slate-900">{totalInCurrentView}</span> of <span className="text-slate-900">{accounts.length}</span> total users
+          {/* Compact User Count Tags for Every User Category */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setRoleFilter(roleFilter === 'student' ? 'all' : 'student')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'student'
+                  ? 'bg-emerald-700 text-white shadow-2xs'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100/70'
+              }`}
+              title="Click to filter Students"
+            >
+              <span>Students</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'student' ? 'bg-white/20 text-white' : 'bg-emerald-200/70 text-emerald-900'}`}>
+                {roleCounts['student'] || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoleFilter(roleFilter === 'teacher' ? 'all' : 'teacher')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'teacher'
+                  ? 'bg-purple-700 text-white shadow-2xs'
+                  : 'bg-purple-50 text-purple-800 border border-purple-200/80 hover:bg-purple-100/70'
+              }`}
+              title="Click to filter Teachers"
+            >
+              <span>Teachers</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'teacher' ? 'bg-white/20 text-white' : 'bg-purple-200/70 text-purple-900'}`}>
+                {roleCounts['teacher'] || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoleFilter(roleFilter === 'guidance' ? 'all' : 'guidance')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'guidance'
+                  ? 'bg-blue-700 text-white shadow-2xs'
+                  : 'bg-blue-50 text-blue-800 border border-blue-200/80 hover:bg-blue-100/70'
+              }`}
+              title="Click to filter Guidance"
+            >
+              <span>Guidance</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'guidance' ? 'bg-white/20 text-white' : 'bg-blue-200/70 text-blue-900'}`}>
+                {roleCounts['guidance'] || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoleFilter(roleFilter === 'admin' ? 'all' : 'admin')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'admin'
+                  ? 'bg-rose-700 text-white shadow-2xs'
+                  : 'bg-rose-50 text-rose-800 border border-rose-200/80 hover:bg-rose-100/70'
+              }`}
+              title="Click to filter Administrators"
+            >
+              <span>Admin</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'admin' ? 'bg-white/20 text-white' : 'bg-rose-200/70 text-rose-900'}`}>
+                {(roleCounts['admin'] || 0) + (roleCounts['principal'] || 0)}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoleFilter(roleFilter === 'registrar' ? 'all' : 'registrar')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'registrar'
+                  ? 'bg-teal-700 text-white shadow-2xs'
+                  : 'bg-teal-50 text-teal-800 border border-teal-200/80 hover:bg-teal-100/70'
+              }`}
+              title="Click to filter Registrar"
+            >
+              <span>Registrar</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'registrar' ? 'bg-white/20 text-white' : 'bg-teal-200/70 text-teal-900'}`}>
+                {roleCounts['registrar'] || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoleFilter(roleFilter === 'parent' ? 'all' : 'parent')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'parent'
+                  ? 'bg-amber-700 text-white shadow-2xs'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100/70'
+              }`}
+              title="Click to filter Parents"
+            >
+              <span>Parents</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'parent' ? 'bg-white/20 text-white' : 'bg-amber-200/70 text-amber-900'}`}>
+                {roleCounts['parent'] || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoleFilter('all')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                roleFilter === 'all'
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200/80'
+              }`}
+              title="Click to show All Users"
+            >
+              <span>All Users</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${roleFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800'}`}>
+                {accounts.length}
+              </span>
+            </button>
           </div>
         </div>
       </div>
