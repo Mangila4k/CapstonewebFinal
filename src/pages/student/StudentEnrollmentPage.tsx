@@ -20,6 +20,11 @@ import {
   RefreshCw,
   Lock,
   Unlock,
+  User,
+  Award,
+  FileCheck,
+  CheckCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -197,7 +202,7 @@ export const StudentEnrollmentPage: React.FC = () => {
   const learnerStrand = studentRecord?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School');
   const adviserName = sectionRecord?.adviser_name || 'Class Adviser';
   const roomName = sectionRecord?.room || 'Academic Building';
-  const schoolYear = enrollmentRecord?.school_year || '2026–2027';
+  const schoolYear = enrollmentRecord?.school_year || enrollmentSettings?.schoolYear || '2026–2027';
 
   useEffect(() => {
     async function loadStudentEnrollmentData() {
@@ -409,9 +414,21 @@ export const StudentEnrollmentPage: React.FC = () => {
       `}</style>
 
       {/* Screen Control Header */}
-      <div className="no-print flex items-start justify-between gap-3 border-b border-slate-200 pb-4 sm:pb-5">
+      <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/90 pb-5">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              DepEd LIS Verified
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+              S.Y. {schoolYear}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
+              School ID: 303035
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-tight">
             Enrollment &amp; Registration Record
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
@@ -419,7 +436,28 @@ export const StudentEnrollmentPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+        {/* Action Controls & Notification Slot in unified header container */}
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex h-9 sm:h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 sm:px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+            title="Download official enrollment matriculation record as CSV"
+          >
+            <Download className="h-4 w-4 text-slate-500" />
+            <span>Export Slip</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="inline-flex h-9 sm:h-10 items-center justify-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-3.5 sm:px-4 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+            title="Print official Certificate of Matriculation & Enrollment"
+          >
+            <Printer className="h-4 w-4 text-[#F5C518]" />
+            <span>Print Certificate</span>
+          </button>
+
           <PageHeaderNotificationSlot />
         </div>
       </div>
@@ -450,32 +488,39 @@ export const StudentEnrollmentPage: React.FC = () => {
       )}
 
       {/* Learner Demographic Matrix Strip */}
-      <div className="no-print rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-black shrink-0">
-              <CheckCircle2 className="h-6 w-6 text-emerald-700" />
+      <div className="no-print rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:border-slate-300">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#152e69] to-[#0f1f4b] text-[#F5C518] font-black text-lg shadow-sm shrink-0 border border-slate-700/20">
+              <GraduationCap className="h-6 w-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-slate-900 text-sm sm:text-base">{learnerName}</span>
-                <span className="font-mono text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                  LRN: {learnerLrn}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight font-display">
+                  {learnerName}
                 </span>
-                <Badge variant="success" size="sm">
-                  {user?.student_status || 'Enrolled'}
-                </Badge>
+                <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200/80 px-2.5 py-0.5 rounded-lg shadow-2xs">
+                  <span className="text-slate-400 font-sans text-[10px]">DepEd LRN:</span> {learnerLrn}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10.5px] font-extrabold text-emerald-800">
+                  <CheckCircle className="h-3 w-3 text-emerald-600" />
+                  Officially Enrolled
+                </span>
               </div>
-              <p className="text-slate-500 text-[11.5px] mt-0.5">
-                Current Level: <strong className="text-slate-800">{learnerGrade} – {learnerSection}</strong> · <span className="text-[#152e69] font-bold">{learnerStrand}</span> · School ID: <strong>303035</strong>
+              <p className="text-slate-500 text-xs sm:text-[12.5px] mt-1 leading-relaxed">
+                Academic Level: <strong className="text-slate-800 font-bold">{learnerGrade} – {learnerSection}</strong> · Track: <span className="text-[#152e69] font-bold">{learnerStrand}</span> · <span className="text-slate-600">Placido L. Señor National High School</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> DepEd LIS Confirmed · 1st Semester
-            </span>
+          <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3.5 py-2 text-xs font-bold text-emerald-900 shadow-2xs">
+              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+              <div>
+                <div className="text-[11px] font-black leading-none">DepEd LIS Confirmed</div>
+                <div className="text-[10px] font-medium text-emerald-700 leading-none mt-0.5">1st Semester · S.Y. {schoolYear}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -483,102 +528,112 @@ export const StudentEnrollmentPage: React.FC = () => {
       {/* Executive Matriculation KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Enrollment Status */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Matriculation Status
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-2xs">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             </div>
           </div>
-          <div className="mt-2">
+          <div className="mt-2.5">
             <p className="text-xl font-black text-slate-900 font-display">Officially Enrolled</p>
             <span className="text-xs font-bold text-emerald-700">Admitted &amp; Reconciled</span>
           </div>
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 border-t border-slate-100 pt-2.5">
+            <Calendar className="h-3 w-3 text-slate-400" />
             <span>Enrolled: August 14, 2026</span>
           </div>
         </div>
 
         {/* Card 2: Curriculum Load */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Approved Load
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-              <BookOpen className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+              <BookOpen className="h-4 w-4 text-blue-600" />
             </div>
           </div>
-          <div className="mt-2">
+          <div className="mt-2.5">
             <p className="text-xl font-black text-slate-900 font-display">{courses.length} Learning Areas</p>
             <span className="text-xs font-bold text-blue-700">{totalUnits} Units Approved</span>
           </div>
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 border-t border-slate-100 pt-2.5">
+            <Sparkles className="h-3 w-3 text-blue-500" />
             <span>Core, Applied &amp; Specialized</span>
           </div>
         </div>
 
         {/* Card 3: Advisory & Room */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-yellow-400" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Assigned Section
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-              <Layers className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60 shadow-2xs">
+              <Layers className="h-4 w-4 text-amber-600" />
             </div>
           </div>
-          <div className="mt-2">
+          <div className="mt-2.5">
             <p className="text-xl font-black text-slate-900 font-display">{learnerSection}</p>
-            <span className="text-xs font-bold text-amber-700">{adviserName} (Adviser)</span>
+            <span className="text-xs font-bold text-amber-800">{adviserName} (Adviser)</span>
           </div>
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
-            <span>{roomName}</span>
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 border-t border-slate-100 pt-2.5">
+            <Building className="h-3 w-3 text-slate-400" />
+            <span className="truncate">{roomName}</span>
           </div>
         </div>
 
         {/* Card 4: Government Subsidy */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#152e69] to-indigo-600" />
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Tuition &amp; Fees
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#152e69]">
-              <ShieldCheck className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-[#152e69] border border-indigo-200/60 shadow-2xs">
+              <ShieldCheck className="h-4 w-4 text-[#152e69]" />
             </div>
           </div>
-          <div className="mt-2">
+          <div className="mt-2.5">
             <p className="text-xl font-black text-slate-900 font-display">100% Free Public Ed</p>
             <span className="text-xs font-bold text-[#152e69]">DepEd Subsidized</span>
           </div>
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 border-t border-slate-100 pt-2.5">
+            <Check className="h-3 w-3 text-emerald-600" />
             <span>Zero Matriculation Fees Due</span>
           </div>
         </div>
       </div>
 
       {/* Enrolled Curriculum Load & Schedule Table */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div>
-            <h3 className="text-base font-extrabold text-slate-900">
+            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight font-display">
               Officially Enrolled Curriculum &amp; Class Schedule
             </h3>
-            <p className="text-xs text-slate-500">
-              Confirmed subject load for Grade 11 · 1st Semester · S.Y. {schoolYear}
+            <p className="text-xs text-slate-500 mt-0.5">
+              Confirmed subject load for {learnerGrade} · 1st Semester · S.Y. {schoolYear}
             </p>
           </div>
-          <span className="text-xs font-bold text-slate-700 font-mono bg-slate-100 px-3 py-1 rounded-xl w-fit">
-            Total Academic Credit: <strong>{totalUnits} Units</strong>
-          </span>
+          <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-100 border border-slate-200/80 px-3.5 py-1.5 rounded-xl w-fit shadow-2xs">
+            <GraduationCap className="h-4 w-4 text-[#152e69]" />
+            <span>Total Academic Credit:</span>
+            <span className="font-mono font-extrabold text-[#152e69]">{totalUnits} Units</span>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+              <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-5 py-3.5">Subject Code &amp; Title</th>
                   <th className="px-5 py-3.5">Classification</th>
@@ -592,18 +647,20 @@ export const StudentEnrollmentPage: React.FC = () => {
                 {courses.map((course) => (
                   <tr key={course.code} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-5 py-3.5">
-                      <p className="font-bold text-slate-900">{course.title}</p>
-                      <span className="font-mono text-[10.5px] text-slate-400">{course.code}</span>
+                      <p className="font-bold text-slate-900 text-[12.5px]">{course.title}</p>
+                      <span className="inline-block mt-0.5 font-mono text-[10.5px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        {course.code}
+                      </span>
                     </td>
 
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-bold text-[10.5px] ${
                           course.classification === 'Core'
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
                             : course.classification === 'Applied'
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                         }`}
                       >
                         {course.classification}
@@ -615,58 +672,82 @@ export const StudentEnrollmentPage: React.FC = () => {
                     </td>
 
                     <td className="px-5 py-3.5 text-slate-700 font-medium whitespace-nowrap">
-                      {course.schedule}
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>{course.schedule}</span>
+                      </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
-                      {course.room}
+                      <div className="flex items-center gap-1.5">
+                        <Building className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>{course.room}</span>
+                      </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-slate-800 font-semibold whitespace-nowrap">
-                      {course.instructor}
+                      <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>{course.instructor}</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot className="bg-slate-50/80 border-t border-slate-200 text-slate-700 text-xs font-semibold">
+                <tr>
+                  <td colSpan={2} className="px-5 py-3 text-slate-600 font-bold">
+                    Total Curriculum Load ({courses.length} Subject Areas)
+                  </td>
+                  <td className="px-5 py-3 text-center font-mono font-black text-[#152e69]">
+                    {totalUnits} Units
+                  </td>
+                  <td colSpan={3} className="px-5 py-3 text-right text-slate-500 font-mono text-[11px]">
+                    Department of Education Validated Load
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
       </div>
 
-      {/* Official Documentary Requirements Audit & Submission Trail */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      {/* Official Documentary Requirements Audit */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
           <div>
-            <h3 className="text-base font-extrabold text-slate-900">
+            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight font-display">
               Official Documentary Requirements Audit
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 mt-0.5">
               Department of Education mandatory admission documents on permanent file with the Registrar
             </p>
           </div>
-          <span className="text-xs font-bold text-emerald-800 font-mono bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-xl w-fit">
-            ✓ 100% Verified &amp; Compliant
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 font-mono bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl w-fit shadow-2xs">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            100% Verified &amp; Compliant
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
           {requirementsList.map((req) => (
             <div
               key={req.id}
-              className="p-4 rounded-xl border border-slate-100 bg-slate-50/70 space-y-1.5 hover:border-slate-200 transition-all"
+              className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/60 space-y-2 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-2xs"
             >
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-slate-900 truncate" title={req.title}>
+              <div className="flex items-start justify-between gap-2 text-xs font-bold">
+                <span className="text-slate-900 font-semibold line-clamp-1" title={req.title}>
                   {req.title}
                 </span>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 shrink-0 ml-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-900 shrink-0">
+                  <Check className="h-2.5 w-2.5 text-emerald-700" />
                   {req.status}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 leading-tight">{req.type}</p>
-              <div className="flex items-center justify-between text-[10.5px] text-slate-400 pt-1 border-t border-slate-200/60 font-mono">
+              <div className="flex items-center justify-between text-[10.5px] text-slate-500 pt-2 border-t border-slate-200/60 font-mono">
                 <span>Verified: {req.dateVerified}</span>
-                <span>{req.referenceNo}</span>
+                <span className="text-slate-400">{req.referenceNo}</span>
               </div>
             </div>
           ))}
@@ -674,40 +755,53 @@ export const StudentEnrollmentPage: React.FC = () => {
       </div>
 
       {/* Official DepEd Certification & Tri-Signatory Block */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-        <div className="text-xs text-slate-700 leading-relaxed space-y-1">
-          <p className="font-bold text-slate-900 uppercase tracking-wide text-[11px]">
-            Official Certification of Matriculation:
-          </p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-[#152e69]" />
+            <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+              Official Certification of Matriculation
+            </h4>
+          </div>
+          <span className="font-mono text-[10.5px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            DEPED-R7-NAGA-303035
+          </span>
+        </div>
+
+        <div className="text-xs sm:text-[12.5px] text-slate-700 leading-relaxed">
           <p>
-            This document certifies that <strong>{learnerName.toUpperCase()}</strong> (LRN: <span className="font-mono font-bold text-slate-900">{learnerLrn}</span>) is an officially registered learner of <strong>PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</strong> for the <strong>First Semester of School Year {schoolYear}</strong> in the Senior High School Program. All preliminary credentials, DepEd Learner Information System (LIS) endorsements, and course assignments have been duly validated and accepted.
+            This document certifies that <strong className="text-slate-900 font-extrabold">{learnerName.toUpperCase()}</strong> (Learner Reference Number: <span className="font-mono font-bold text-slate-950 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{learnerLrn}</span>) is an officially registered learner of <strong>PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</strong> for the <strong>First Semester of School Year {schoolYear}</strong> in the Senior High School Program. All preliminary credentials, DepEd Learner Information System (LIS) endorsements, and curriculum course assignments have been duly verified, validated, and entered into the institutional permanent record.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-slate-100 text-center text-xs">
-          <div>
-            <div className="border-b border-slate-300 pb-1 mb-1 font-bold text-slate-950 uppercase text-[11px]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-5 border-t border-slate-100 text-center text-xs">
+          <div className="space-y-1">
+            <div className="border-b border-slate-300 pb-1 mb-1 font-bold text-slate-950 uppercase text-[11.5px] tracking-tight">
               {adviserName.toUpperCase()}
             </div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Class Adviser</span>
-            <span className="text-[9px] text-slate-400">Faculty Adviser · Placido L. Señor NHS</span>
+            <span className="text-[10px] uppercase font-bold text-slate-600 block">Class Adviser</span>
+            <span className="text-[9.5px] text-slate-400 block">Faculty Adviser · Placido L. Señor NHS</span>
           </div>
 
-          <div>
-            <div className="border-b border-slate-300 pb-1 mb-1 font-bold text-slate-950 uppercase text-[11px]">
+          <div className="space-y-1">
+            <div className="border-b border-slate-300 pb-1 mb-1 font-bold text-slate-950 uppercase text-[11.5px] tracking-tight">
               MARIA ELENA R. REGISTRAR
             </div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">School Registrar II</span>
-            <span className="text-[9px] text-slate-400">LIS In-Charge &amp; Records Officer</span>
+            <span className="text-[10px] uppercase font-bold text-slate-600 block">School Registrar II</span>
+            <span className="text-[9.5px] text-slate-400 block">LIS In-Charge &amp; Records Officer</span>
           </div>
 
-          <div>
-            <div className="border-b border-slate-300 pb-1 mb-1 font-bold text-slate-950 uppercase text-[11px]">
+          <div className="space-y-1">
+            <div className="border-b border-slate-300 pb-1 mb-1 font-bold text-slate-950 uppercase text-[11.5px] tracking-tight">
               JUSTINE MANGILA, Dev.Ed.D.
             </div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">School Principal I</span>
-            <span className="text-[9px] text-slate-400">School Head / Authorized Officer</span>
+            <span className="text-[10px] uppercase font-bold text-slate-600 block">School Principal I</span>
+            <span className="text-[9.5px] text-slate-400 block">School Head / Authorized Officer</span>
           </div>
+        </div>
+
+        <div className="pt-2 text-center text-[10px] text-slate-400 uppercase tracking-widest font-mono">
+          Official DepEd Electronic Record · Placido L. Señor NHS · Division of City of Naga, Cebu
         </div>
       </div>
 
@@ -720,7 +814,7 @@ export const StudentEnrollmentPage: React.FC = () => {
           title="Download official enrollment matriculation record as CSV"
         >
           <Download className="h-4 w-4 text-slate-500" />
-          <span>Export Slip</span>
+          <span>Export Slip (CSV)</span>
         </button>
 
         <button
@@ -730,7 +824,7 @@ export const StudentEnrollmentPage: React.FC = () => {
           title="Print official Certificate of Matriculation & Enrollment"
         >
           <Printer className="h-4 w-4 text-[#F5C518]" />
-          <span>Print Certificate of Enrollment</span>
+          <span>Print Official Certificate of Enrollment</span>
         </button>
       </div>
     </div>
