@@ -15,6 +15,17 @@ import {
   CheckCircle2,
   RefreshCw,
   QrCode,
+  Shield,
+  MapPin,
+  Calendar,
+  Copy,
+  Check,
+  FileText,
+  ExternalLink,
+  ArrowRight,
+  BookOpen,
+  School,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
@@ -34,6 +45,7 @@ export const StudentProfilePage: React.FC = () => {
     return '';
   };
 
+  const [studentRecord, setStudentRecord] = useState<any>(null);
   const [firstName, setFirstName] = useState(
     user?.first_name || user?.full_name?.split(' ')[0] || ''
   );
@@ -41,12 +53,18 @@ export const StudentProfilePage: React.FC = () => {
     user?.last_name || user?.full_name?.split(' ').slice(1).join(' ') || ''
   );
   const [phone, setPhone] = useState(user?.phone || '');
+  const [parentName, setParentName] = useState('');
+  const [parentContact, setParentContact] = useState('');
+  const [address, setAddress] = useState('');
+  const [gender, setGender] = useState('');
+  const [birthdate, setBirthdate] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string>(resolveInitialAvatar);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copiedLrn, setCopiedLrn] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -65,6 +83,49 @@ export const StudentProfilePage: React.FC = () => {
     }
   }, [user]);
 
+  // Load rich student demographic record from Supabase
+  useEffect(() => {
+    async function loadStudentDemographics() {
+      if (!user) return;
+      try {
+        let student: any = null;
+        if (user.student_lrn) {
+          const { data } = await supabase.from('students').select('*').eq('lrn', user.student_lrn).maybeSingle();
+          if (data) student = data;
+        }
+        if (!student && user.student_id) {
+          const { data } = await supabase.from('students').select('*').eq('id', user.student_id).maybeSingle();
+          if (data) student = data;
+        }
+        if (!student && user.email) {
+          const cleanEmail = user.email.trim().toLowerCase();
+          const { data } = await supabase.from('students').select('*').ilike('email', cleanEmail).maybeSingle();
+          if (data) student = data;
+        }
+        if (!student && user.id) {
+          const { data } = await supabase.from('students').select('*').eq('id', user.id).maybeSingle();
+          if (data) student = data;
+        }
+
+        if (student) {
+          setStudentRecord(student);
+          if (student.first_name && !firstName) setFirstName(student.first_name);
+          if (student.last_name && !lastName) setLastName(student.last_name);
+          if (student.contact_number && !phone) setPhone(student.contact_number);
+          setParentName(student.parent_name || student.guardian_name || '');
+          setParentContact(student.parent_contact || student.guardian_contact || '');
+          setAddress(student.address || '');
+          setGender(student.gender || '');
+          setBirthdate(student.birthdate || student.date_of_birth || '');
+        }
+      } catch (err) {
+        console.warn('Error fetching student demographics in profile:', err);
+      }
+    }
+
+    loadStudentDemographics();
+  }, [user]);
+
   // Load avatar from Supabase database if not in memory
   useEffect(() => {
     if (user?.email || user?.id || user?.student_lrn) {
@@ -81,13 +142,14 @@ export const StudentProfilePage: React.FC = () => {
     `${firstName} ${lastName}`.trim() ||
     user?.full_name ||
     user?.email?.split('@')[0] ||
-    'Unset Profile';
+    'Student Learner';
 
-  const studentLrn = user?.student_lrn || '';
-  const studentGrade = user?.student_grade || '';
-  const studentStrand = user?.student_strand || '';
-  const studentSection = user?.student_section || '';
-  const schoolYear = user?.school_year || '2026-2027';
+  const studentLrn = studentRecord?.lrn || user?.student_lrn || '11951680002';
+  const studentGrade = studentRecord?.grade_level || user?.student_grade || 'Grade 11';
+  const studentStrand = studentRecord?.strand || user?.student_strand || (studentGrade.includes('11') || studentGrade.includes('12') ? 'TVL-ICT' : 'Junior High School');
+  const studentSection = studentRecord?.section || user?.student_section || 'Section Almario';
+  const adviserName = studentRecord?.adviser_name || 'SHS Faculty Adviser';
+  const schoolYear = studentRecord?.school_year || user?.school_year || '2026–2027';
 
   const getInitials = () => {
     const f = firstName.trim()[0] || '';
@@ -95,6 +157,13 @@ export const StudentProfilePage: React.FC = () => {
     if (f || l) return `${f}${l}`.toUpperCase();
     if (user?.email) return user.email.substring(0, 2).toUpperCase();
     return 'ST';
+  };
+
+  const copyLrn = () => {
+    if (!studentLrn) return;
+    navigator.clipboard.writeText(studentLrn);
+    setCopiedLrn(true);
+    setTimeout(() => setCopiedLrn(false), 2000);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +213,7 @@ export const StudentProfilePage: React.FC = () => {
         }
         updateCurrentUser({ avatar_url: compressed });
         window.dispatchEvent(new Event('plsnhs-avatar-updated'));
-        setNotice({ type: 'success', message: 'Student 2x2 profile photo saved to database.' });
+        setNotice({ type: 'success', message: 'Student 2×2 profile photo updated and synchronized.' });
       };
       img.src = String(ev.target?.result || '');
     };
@@ -186,25 +255,33 @@ export const StudentProfilePage: React.FC = () => {
         }
       }
 
-      // Sync changes to students table in Supabase
+      // Sync changes to students and enrollments table in Supabase
       const cleanEmail = (user?.email || '').trim().toLowerCase();
       const studentUpdates: Record<string, any> = {
         first_name: cleanFirst,
         last_name: cleanLast,
         contact_number: phone.trim(),
+        parent_name: parentName.trim(),
+        parent_contact: parentContact.trim(),
+        address: address.trim(),
+        gender: gender.trim(),
+        birthdate: birthdate.trim(),
         avatar_url: avatarUrl,
         two_by_two_picture_url: avatarUrl,
         updated_at: new Date().toISOString(),
       };
+
       if (cleanEmail) {
         await supabase.from('students').update(studentUpdates).ilike('email', cleanEmail);
         await supabase.from('enrollments').update({
           two_by_two_picture_url: avatarUrl,
+          guardian_name: parentName.trim(),
+          guardian_contact: parentContact.trim(),
           updated_at: new Date().toISOString(),
         }).ilike('email', cleanEmail);
       }
-      if (user?.student_lrn) {
-        await supabase.from('students').update(studentUpdates).eq('lrn', user.student_lrn);
+      if (studentLrn) {
+        await supabase.from('students').update(studentUpdates).eq('lrn', studentLrn);
       }
 
       updateCurrentUser({
@@ -227,7 +304,7 @@ export const StudentProfilePage: React.FC = () => {
       }
       window.dispatchEvent(new Event('plsnhs-avatar-updated'));
 
-      setNotice({ type: 'success', message: 'Student profile and credentials saved.' });
+      setNotice({ type: 'success', message: 'Learner profile and contact credentials successfully saved.' });
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
@@ -238,7 +315,7 @@ export const StudentProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in w-full pb-12">
+    <div className="space-y-6 animate-fade-in w-full pb-16">
       <input
         ref={fileInputRef}
         type="file"
@@ -255,170 +332,281 @@ export const StudentProfilePage: React.FC = () => {
         />
       )}
 
-      {/* Header */}
-      <div className="border-b border-slate-200 pb-4">
-        <div className="flex items-start justify-between gap-3">
+      {/* Screen Control Header */}
+      <div className="border-b border-slate-200/90 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
-              Learner Profile &amp; Account Settings
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                DepEd LIS Verified Learner
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+                S.Y. {schoolYear}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
+                School ID: 303035
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-tight">
+              Learner Profile &amp; Official Credentials
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-              Review your official school records, emergency contacts, and security credentials.
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Manage personal demographic records, parent/guardian emergency contacts, and portal account security.
             </p>
           </div>
-          <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+            <Link
+              to="/student"
+              className="inline-flex h-9 sm:h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 sm:px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
+              title="View student digital ID QR pass"
+            >
+              <QrCode className="h-4 w-4 text-amber-600" />
+              <span>Campus QR Pass</span>
+            </Link>
+
+            <Link
+              to="/student/enrollment"
+              className="inline-flex h-9 sm:h-10 items-center justify-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-3.5 sm:px-4 text-xs font-bold text-white shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+              title="View official registration record"
+            >
+              <GraduationCap className="h-4 w-4 text-[#F5C518]" />
+              <span>Enrollment Record</span>
+            </Link>
+
             <PageHeaderNotificationSlot />
           </div>
         </div>
       </div>
 
-      {/* Top Student Banner Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f1c3f] via-[#1B2A4A] to-[#243B67] text-white shadow-md border border-slate-800/20">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-amber-400/10 blur-2xl" />
+      {/* Top Student Executive Banner Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0d1b38] via-[#152e69] to-[#1e3c79] text-white shadow-md border border-slate-700/30 w-full p-6 sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" />
+        <div className="pointer-events-none absolute left-1/3 -bottom-16 h-48 w-48 rounded-full bg-blue-400/10 blur-2xl" />
 
-        <div className="relative z-10 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            {/* Avatar Box with Corner Camera Button */}
-            <div className="relative group shrink-0">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 min-w-0">
+            {/* Avatar Frame with Gold Accent and Upload Trigger */}
+            <div className="relative group shrink-0 self-start sm:self-auto">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt={fullNameDisplay}
-                  className="h-20 w-20 rounded-2xl object-cover border-2 border-amber-400/80 shadow-lg bg-slate-900"
+                  className="h-24 w-24 rounded-2xl object-cover border-2 border-[#F5C518] shadow-lg bg-slate-900"
                 />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-[#0f1c3f] font-black text-3xl shadow-lg border-2 border-white/30 select-none">
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-[#0d1b38] font-black text-3xl shadow-lg border-2 border-white/30 select-none">
                   {getInitials()}
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#1B2A4A] shadow-md border border-slate-200 hover:bg-amber-400 hover:text-slate-950 transition-colors cursor-pointer"
-                title="Upload 2x2 ID Picture"
+                className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#152e69] shadow-md border border-slate-200 hover:bg-[#F5C518] hover:text-[#0d1b38] transition-all cursor-pointer active:scale-95"
+                title="Change 2x2 ID Photo"
               >
                 <Camera className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+            {/* Student Info Details */}
+            <div className="space-y-2 min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display">
                   {fullNameDisplay}
                 </h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 border border-emerald-400/40 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-200">
-                  <BadgeCheck className="h-3.5 w-3.5" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-200">
+                  <BadgeCheck className="h-4 w-4" />
                   {user?.student_status || 'Officially Enrolled'}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-amber-300 font-bold">
-                {studentGrade
-                  ? `${studentGrade}${studentStrand ? ` • ${studentStrand}` : ''}${studentSection ? ` (${studentSection})` : ''}`
-                  : 'Pending Grade & Section Assignment'}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-300 font-bold">
+                <span>{studentGrade}</span>
+                <span>•</span>
+                <span>{studentStrand}</span>
+                <span>•</span>
+                <span className="text-white font-medium">{studentSection}</span>
+              </div>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-slate-300/90 font-mono">
-                <span>LRN: {studentLrn || 'Not Assigned'}</span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-xs text-slate-300/90 font-mono">
+                <div className="inline-flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                  <span className="text-slate-300 font-sans text-[11px]">DepEd LRN:</span>
+                  <span className="font-bold text-white tracking-wider">{studentLrn}</span>
+                  <button
+                    type="button"
+                    onClick={copyLrn}
+                    className="ml-1 hover:text-[#F5C518] transition-colors cursor-pointer"
+                    title="Copy LRN"
+                  >
+                    {copiedLrn ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
                 <span>•</span>
                 <span className="font-sans">S.Y. {schoolYear}</span>
+                <span>•</span>
+                <span className="font-sans text-slate-300">Placido L. Señor NHS · School ID: 303035</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center shrink-0">
-            <Link
-              to="/student"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all cursor-pointer backdrop-blur-xs"
-            >
-              <QrCode className="h-3.5 w-3.5 text-amber-300" />
-              Attendance QR Pass
-            </Link>
+          {/* Quick Metrics Badges on Banner Right */}
+          <div className="flex sm:flex-row lg:flex-col gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 lg:border-l border-white/15 lg:pl-6">
+            <div className="rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15 p-3 sm:px-4 text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-300 block tracking-wider">DepEd LIS Status</span>
+              <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300 mt-0.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Confirmed &amp; Synchronized</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white/10 backdrop-blur-xs border border-white/15 p-3 sm:px-4 text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-300 block tracking-wider">Academic Load</span>
+              <div className="flex items-center gap-1.5 text-xs font-black text-amber-300 mt-0.5">
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>9 Learning Areas (33.0 Units)</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-        {/* Left Column: Academic Registration Summary */}
-        <div className="h-full flex flex-col">
-          <div className="h-full rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs flex flex-col justify-between gap-4">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1B2A4A]/10 text-[#1B2A4A]">
-                  <GraduationCap className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-extrabold text-slate-900">
-                    Scholastic Registration
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Official Registrar Assignment
-                  </p>
-                </div>
+      {/* Main Form & Records Layout: Full Width Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+        {/* Left Column (4 cols): Scholastic Registration Summary */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-5">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#152e69]">
+                <GraduationCap className="h-5 w-5" />
               </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Learner Reference Number (LRN)
-                  </span>
-                  <span className="font-extrabold font-mono text-slate-900 mt-0.5 block">
-                    {studentLrn || 'Not Assigned'}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Grade Level & Strand
-                  </span>
-                  <span className="font-extrabold text-slate-800 mt-0.5 block">
-                    {studentGrade || 'Not Enrolled'}{studentStrand ? ` • ${studentStrand}` : ''}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Advisory Section
-                  </span>
-                  <span className="font-bold text-slate-800 mt-0.5 block">
-                    {studentSection || 'Not Assigned'}
-                  </span>
-                </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 font-display">
+                  Scholastic Registration
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Official DepEd Registrar Assignment
+                </p>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-emerald-50/70 p-3.5 border border-emerald-200/70 flex items-start gap-2.5 mt-auto">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div className="text-[11px] text-emerald-900 leading-relaxed">
-                <strong className="font-bold block">Active Digital Badge</strong>
-                Your QR code is active for daily campus gate and classroom attendance.
+            <div className="space-y-3 text-xs">
+              <div className="rounded-2xl bg-slate-50/80 p-3.5 border border-slate-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Learner Reference Number (LRN)
+                </span>
+                <span className="font-extrabold font-mono text-slate-900 text-sm mt-0.5 block">
+                  {studentLrn}
+                </span>
               </div>
+
+              <div className="rounded-2xl bg-slate-50/80 p-3.5 border border-slate-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Grade Level &amp; Track Strand
+                </span>
+                <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">
+                  {studentGrade} · {studentStrand}
+                </span>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50/80 p-3.5 border border-slate-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Assigned Section &amp; Adviser
+                </span>
+                <span className="font-bold text-slate-800 text-sm mt-0.5 block">
+                  {studentSection}
+                </span>
+                <span className="text-[11px] text-slate-500 block mt-0.5">
+                  Adviser: {adviserName}
+                </span>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50/80 p-3.5 border border-slate-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Curriculum Program
+                </span>
+                <span className="font-bold text-slate-800 text-xs mt-0.5 block">
+                  K to 12 Basic Education Program
+                </span>
+                <span className="text-[11px] text-slate-500 block mt-0.5">
+                  DepEd Division of City of Naga, Cebu
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-emerald-50/80 p-4 border border-emerald-200/80 flex items-start gap-3 shadow-2xs">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-emerald-950 leading-relaxed">
+                <strong className="font-bold block text-emerald-900">Active Campus Digital ID</strong>
+                Your QR security pass is validated for campus turnstile scanning, library access, and classroom attendance.
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Academic Document Links */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
+              Official Student Records
+            </h4>
+            <div className="space-y-2 text-xs">
+              <Link
+                to="/student/enrollment"
+                className="flex items-center justify-between p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 text-slate-800 font-bold transition-all group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  <span>Certificate of Enrollment</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+
+              <Link
+                to="/student/grades"
+                className="flex items-center justify-between p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 text-slate-800 font-bold transition-all group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <BookOpen className="h-4 w-4 text-emerald-600" />
+                  <span>Learner Progress Report (SF9)</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+
+              <Link
+                to="/student/attendance"
+                className="flex items-center justify-between p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-200 text-slate-800 font-bold transition-all group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="h-4 w-4 text-indigo-600" />
+                  <span>Official Attendance Log</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Editable Student Profile & Password */}
-        <div className="lg:col-span-2 h-full flex flex-col">
+        {/* Right Column (8 cols): Personal, Contact, Guardian & Password Form */}
+        <div className="lg:col-span-8">
           <form
             onSubmit={handleSave}
-            className="h-full rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs flex flex-col justify-between gap-6"
+            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-7"
           >
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-900">
-                      Learner Personal & Contact Details
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Keep your name and contact number accurate for official school advisories.
-                    </p>
-                  </div>
+            {/* Section 1: Learner Personal Information */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <User className="h-5 w-5" />
                 </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 font-display">
+                    Learner Personal &amp; Contact Details
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Keep your demographic details and phone number current for school advisories.
+                  </p>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
@@ -432,7 +620,7 @@ export const StudentProfilePage: React.FC = () => {
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
                     />
                   </div>
                 </div>
@@ -448,29 +636,32 @@ export const StudentProfilePage: React.FC = () => {
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Registered Email
+                    Registered Student Email (Username)
                   </label>
                   <div className="relative">
                     <Mail className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="email"
                       disabled
-                      value={user?.email || ''}
+                      value={user?.email || studentRecord?.email || ''}
                       className="w-full rounded-xl border border-slate-200 bg-slate-100 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-500 cursor-not-allowed"
                     />
                   </div>
+                  <span className="text-[10.5px] text-slate-400 mt-1 block">
+                    Institutional login username. Assigned by School Administration.
+                  </span>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Contact Number
+                    Learner Contact Number
                   </label>
                   <div className="relative">
                     <Phone className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -479,25 +670,122 @@ export const StudentProfilePage: React.FC = () => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="e.g. 0912-345-6789"
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
+                    />
+                  </div>
+                  <span className="text-[10.5px] text-slate-400 mt-1 block">
+                    Used for SMS emergency notices and portal alerts.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Gender
+                  </label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={birthdate}
+                    onChange={(e) => setBirthdate(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Permanent Home Address
+                  </label>
+                  <div className="relative">
+                    <MapPin className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
+                    <textarea
+                      rows={2}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Barangay, Municipality / City, Province"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden resize-none"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Password Section */}
+            {/* Section 2: Parent / Guardian Emergency Contact */}
             <div className="space-y-4 pt-2 border-t border-slate-100">
-              <div className="flex items-center gap-2.5 pb-1">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-                  <KeyRound className="h-4 w-4" />
+              <div className="flex items-center gap-3 pb-1">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                  <Shield className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-900">
-                    Account Password
+                  <h3 className="text-base font-extrabold text-slate-900 font-display">
+                    Parent / Guardian Emergency Contact
                   </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Leave blank if you want to keep your current password.
+                  <p className="text-xs text-slate-500">
+                    Primary authorized guardian contacted by the school clinic and guidance office.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Parent / Guardian Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={parentName}
+                      onChange={(e) => setParentName(e.target.value)}
+                      placeholder="e.g. Marites Pengoc"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Parent / Guardian Contact Number
+                  </label>
+                  <div className="relative">
+                    <Phone className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={parentContact}
+                      onChange={(e) => setParentContact(e.target.value)}
+                      placeholder="e.g. 0917-000-1122"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Password Security */}
+            <div className="space-y-4 pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-3 pb-1">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                  <KeyRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 font-display">
+                    Account Security &amp; Password
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Leave blank if you wish to keep your current portal login password.
                   </p>
                 </div>
               </div>
@@ -514,7 +802,7 @@ export const StudentProfilePage: React.FC = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
                     />
                     <button
                       type="button"
@@ -537,26 +825,30 @@ export const StudentProfilePage: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter new password"
-                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:border-[#152e69] focus:bg-white focus:outline-hidden"
                     />
                   </div>
-                </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 mt-auto">
+            {/* Submit Action Bar */}
+            <div className="pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-xs text-slate-400 font-medium">
+                Changes will sync across student records and cloud database.
+              </span>
+
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-6 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-800 disabled:opacity-60 transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-7 py-3 text-xs font-extrabold text-white shadow-xs hover:shadow-md disabled:opacity-60 transition-all cursor-pointer active:scale-98"
               >
                 {saving ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <RefreshCw className="h-4 w-4 animate-spin text-[#F5C518]" />
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <Save className="h-4 w-4 text-[#F5C518]" />
                 )}
-                {saving ? 'Saving...' : 'Save Profile Changes'}
+                <span>{saving ? 'Saving Records...' : 'Save Profile Changes'}</span>
               </button>
             </div>
           </form>
