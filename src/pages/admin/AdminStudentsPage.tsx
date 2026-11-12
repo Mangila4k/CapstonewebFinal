@@ -29,6 +29,7 @@ import {
   ExternalLink,
   Copy,
   Send,
+  UserCheck,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -59,6 +60,45 @@ const DEFAULT_SECTIONS_BY_GRADE: Record<string, string[]> = {
   'Grade 10': ['Generosity', 'Honesty', 'Kindness', 'Perseverance', 'Wisdom'],
   'Grade 11': ['Almario', 'Amorsolo', 'Baltazar', 'Tolentino'],
   'Grade 12': ['Salcedo', 'Santos', 'Velasco', 'Velasquez'],
+};
+
+// Fallback section adviser mapping matching official school assignments in Supabase
+const FALLBACK_ADVISERS: Record<string, string> = {
+  'Grade 7___De Gracia': 'Mrs. Tapasao',
+  'Grade 7___Mendoza': 'Mrs. Baclayon',
+  'Grade 7___Paul Ong': 'Mrs. Manabat',
+  'Grade 7___Sayson': 'Mrs. Llanda',
+  'Grade 7___Quirante': 'Mrs. Codelan',
+  'Grade 7___Mendiola': 'Mr. Selim',
+  'Grade 7___Chiong': 'Mrs. Generale',
+  'Grade 8___Square': 'Twengcle Deguma',
+  'Grade 8___Antipolo': 'Ms. Alinsonorin',
+  'Grade 8___Banaba': 'Ms. Omambac',
+  'Grade 8___Kamagong': 'Mr. Padillo',
+  'Grade 8___Molave': 'Mrs. Rabanes',
+  'Grade 8___Narra': 'Mrs. Montoya',
+  'Grade 8___Yakal': 'Mrs. Balwit',
+  'Grade 8___Mahogany': 'Mr. Gonzaga',
+  'Grade 9___Cebu': 'Mrs. Taruc',
+  'Grade 9___Davao': 'Mr. Albores',
+  'Grade 9___Negros Occidental': 'Mrs. Ramas',
+  'Grade 9___Ilo-Ilo': 'Mrs. Ogaob',
+  'Grade 9___Palawan': 'Mrs. Rivera',
+  'Grade 9___Batangas': 'Mrs. Francisco',
+  'Grade 9___Rizal': 'Ms. Bo-ok',
+  'Grade 10___Generosity': 'Mrs. Paunel',
+  'Grade 10___Honesty': 'Mrs. Dela Torre',
+  'Grade 10___Kindness': 'Mr. Gentica',
+  'Grade 10___Perseverance': 'Mrs. Rimas',
+  'Grade 10___Wisdom': 'Mrs. Diaz',
+  'Grade 11___Amorsolo': 'SHS Faculty',
+  'Grade 11___Baltazar': 'SHS Faculty',
+  'Grade 11___Tolentino': 'SHS Faculty',
+  'Grade 11___Almario': 'SHS Faculty',
+  'Grade 12___Velasco': 'SHS Faculty',
+  'Grade 12___Santos': 'SHS Faculty',
+  'Grade 12___Salcedo': 'SHS Faculty',
+  'Grade 12___Velasquez': 'SHS Faculty',
 };
 
 const STUDENTS_CACHE_KEY = 'plsnhs_students_cache_v1';
@@ -540,6 +580,43 @@ export const AdminStudentsPage: React.FC = () => {
     return Array.from(list).sort();
   };
 
+  // Helper to resolve the adviser teacher for a given grade level and section name
+  const getSectionAdviser = (grade?: string | null, sectionName?: string | null): string | null => {
+    if (!sectionName || sectionName.toLowerCase() === 'unassigned') return null;
+    const cleanSec = sectionName.trim().toLowerCase();
+    const cleanG = grade ? String(grade).replace(/\D/g, '') : '';
+
+    // 1. Try matching from loaded DB sections (with grade level match)
+    const matchWithGrade = sections.find((s) => {
+      const sName = s.name?.trim().toLowerCase();
+      const sG = s.grade_level ? String(s.grade_level).replace(/\D/g, '') : '';
+      return sName === cleanSec && (!cleanG || !sG || sG === cleanG);
+    });
+    if (matchWithGrade?.adviser_name || matchWithGrade?.adviser) {
+      return (matchWithGrade.adviser_name || matchWithGrade.adviser)!.trim();
+    }
+
+    // 2. Try matching from loaded DB sections by name alone
+    const matchByName = sections.find((s) => s.name?.trim().toLowerCase() === cleanSec);
+    if (matchByName?.adviser_name || matchByName?.adviser) {
+      return (matchByName.adviser_name || matchByName.adviser)!.trim();
+    }
+
+    // 3. Fallback map lookup
+    if (grade && sectionName) {
+      const key = `${grade}___${sectionName}`;
+      if (FALLBACK_ADVISERS[key]) return FALLBACK_ADVISERS[key];
+    }
+    for (const [k, v] of Object.entries(FALLBACK_ADVISERS)) {
+      const [, sName] = k.split('___');
+      if (sName?.trim().toLowerCase() === cleanSec) {
+        return v;
+      }
+    }
+
+    return null;
+  };
+
   // Filtered & Sorted Students (ordered by Grade Level -> Section -> Last Name so students of a section are all in a row)
   const filteredStudents = useMemo(() => {
     const list = students.filter((s) => {
@@ -830,11 +907,14 @@ export const AdminStudentsPage: React.FC = () => {
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#1B2A4A] focus:outline-hidden"
               >
                 <option value="All">All Sections</option>
-                {availableSections.map((sec) => (
-                  <option key={sec} value={sec}>
-                    Section {sec}
-                  </option>
-                ))}
+                {availableSections.map((sec) => {
+                  const adv = getSectionAdviser(gradeFilter !== 'All' ? gradeFilter : undefined, sec);
+                  return (
+                    <option key={sec} value={sec}>
+                      Section {sec}{adv ? ` (Adviser: ${adv})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -885,11 +965,14 @@ export const AdminStudentsPage: React.FC = () => {
                 className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-hidden"
               >
                 <option value="">-- Assign to Section --</option>
-                {availableSections.map((sec) => (
-                  <option key={sec} value={sec}>
-                    Section {sec}
-                  </option>
-                ))}
+                {availableSections.map((sec) => {
+                  const adv = getSectionAdviser(gradeFilter !== 'All' ? gradeFilter : undefined, sec);
+                  return (
+                    <option key={sec} value={sec}>
+                      Section {sec}{adv ? ` (${adv})` : ''}
+                    </option>
+                  );
+                })}
               </select>
 
               <button
@@ -956,6 +1039,7 @@ export const AdminStudentsPage: React.FC = () => {
                     );
                     const isShsGroup = gradeNum >= 11;
                     const isLastGroup = gIdx === groupedStudentsBySection.length - 1;
+                    const groupAdviser = getSectionAdviser(group.grade, group.section);
 
                     return (
                       <React.Fragment key={group.key}>
@@ -972,6 +1056,27 @@ export const AdminStudentsPage: React.FC = () => {
                                   <Layers className="h-3.5 w-3.5 text-[#1B2A4A]" />
                                   Section {group.section}
                                 </span>
+                                {group.section && group.section.toLowerCase() !== 'unassigned' && (
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold shadow-2xs ${
+                                      groupAdviser
+                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                        : 'bg-amber-50 border-amber-300 text-amber-800'
+                                    }`}
+                                  >
+                                    <UserCheck
+                                      className={`h-3.5 w-3.5 ${
+                                        groupAdviser ? 'text-emerald-700' : 'text-amber-600'
+                                      }`}
+                                    />
+                                    <span>
+                                      Adviser:{' '}
+                                      <strong className="font-extrabold">
+                                        {groupAdviser || 'Unassigned'}
+                                      </strong>
+                                    </span>
+                                  </span>
+                                )}
                                 <span className="text-[11px] font-semibold text-slate-500">
                                   {isShsGroup ? 'Senior High School (SHS)' : 'Junior High School (JHS)'}
                                 </span>
@@ -1041,6 +1146,15 @@ export const AdminStudentsPage: React.FC = () => {
                                       </span>
                                     )}
                                 </div>
+                                {groupAdviser && (
+                                  <div
+                                    className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1 mt-0.5"
+                                    title={`Adviser Teacher: ${groupAdviser}`}
+                                  >
+                                    <UserCheck className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                                    <span className="truncate max-w-[140px]">{groupAdviser}</span>
+                                  </div>
+                                )}
                               </td>
 
                               {/* Status */}
@@ -1271,6 +1385,7 @@ export const AdminStudentsPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {gradeSections.map((secName) => {
                     const count = gradeStudents.filter((s) => s.section === secName).length;
+                    const secAdviser = getSectionAdviser(grade, secName);
                     return (
                       <button
                         key={secName}
@@ -1279,10 +1394,16 @@ export const AdminStudentsPage: React.FC = () => {
                           setSectionFilter(secName);
                           setViewMode('list');
                         }}
+                        title={secAdviser ? `Adviser: ${secAdviser}` : undefined}
                         className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-xs font-medium text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <Layers className="h-3 w-3 text-[#1B2A4A]" />
                         <span className="font-bold">{secName}</span>
+                        {secAdviser && (
+                          <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded">
+                            {secAdviser}
+                          </span>
+                        )}
                         <span className="ml-1 px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-bold">
                           {count}
                         </span>
@@ -1432,6 +1553,7 @@ export const AdminStudentsPage: React.FC = () => {
               const matchedDbSection = sections.find((s) => s.name === secName);
               const capacity = matchedDbSection?.capacity || 45;
               const grade = matchedDbSection?.grade_level || secStudents[0]?.grade_level || 'Grade 10';
+              const secAdviser = matchedDbSection?.adviser_name || matchedDbSection?.adviser || getSectionAdviser(grade, secName);
 
               return (
                 <div
@@ -1451,12 +1573,15 @@ export const AdminStudentsPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {matchedDbSection?.adviser && (
-                    <div className="text-xs text-slate-600 flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-slate-400" />
-                      <span>Adviser: <strong>{matchedDbSection.adviser}</strong></span>
-                    </div>
-                  )}
+                  <div className="text-xs text-slate-700 flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5">
+                    <UserCheck className={`h-3.5 w-3.5 shrink-0 ${secAdviser ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span>
+                      Adviser:{' '}
+                      <strong className={`font-bold ${secAdviser ? 'text-emerald-900' : 'text-slate-500 italic'}`}>
+                        {secAdviser || 'Not Assigned'}
+                      </strong>
+                    </span>
+                  </div>
 
                   {/* Student preview list */}
                   <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
@@ -1525,11 +1650,14 @@ export const AdminStudentsPage: React.FC = () => {
               >
                 <option value="">-- Choose a Section --</option>
                 <option value="Unassigned">⚠️ Mark as Unassigned</option>
-                {getSectionsForGrade(assigningStudent.grade_level || 'Grade 10').map((sec) => (
-                  <option key={sec} value={sec}>
-                    Section {sec}
-                  </option>
-                ))}
+                {getSectionsForGrade(assigningStudent.grade_level || 'Grade 10').map((sec) => {
+                  const adv = getSectionAdviser(assigningStudent.grade_level, sec);
+                  return (
+                    <option key={sec} value={sec}>
+                      Section {sec}{adv ? ` (Adviser: ${adv})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -1577,10 +1705,16 @@ export const AdminStudentsPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <span className="font-semibold text-slate-400">Assigned Section</span>
+                <span className="font-semibold text-slate-400">Assigned Section & Adviser</span>
                 <p className="font-bold text-slate-900 mt-0.5">
                   {selectedStudent.section || 'Unassigned'}
                 </p>
+                {getSectionAdviser(selectedStudent.grade_level, selectedStudent.section) && (
+                  <p className="text-xs text-emerald-800 font-semibold mt-0.5 flex items-center gap-1">
+                    <UserCheck className="h-3 w-3 text-emerald-600" />
+                    <span>Adviser: {getSectionAdviser(selectedStudent.grade_level, selectedStudent.section)}</span>
+                  </p>
+                )}
               </div>
               <div>
                 <span className="font-semibold text-slate-400">Gender</span>
@@ -1939,11 +2073,14 @@ export const AdminStudentsPage: React.FC = () => {
                   className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 focus:border-[#152e69] focus:outline-hidden"
                 >
                   <option value="Unassigned">⚠️ Unassigned</option>
-                  {getSectionsForGrade(editFormData.grade_level || 'Grade 10').map((sec) => (
-                    <option key={sec} value={sec}>
-                      Section {sec}
-                    </option>
-                  ))}
+                  {getSectionsForGrade(editFormData.grade_level || 'Grade 10').map((sec) => {
+                    const adv = getSectionAdviser(editFormData.grade_level, sec);
+                    return (
+                      <option key={sec} value={sec}>
+                        Section {sec}{adv ? ` (Adviser: ${adv})` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
