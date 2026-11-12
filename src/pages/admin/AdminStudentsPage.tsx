@@ -1146,15 +1146,6 @@ export const AdminStudentsPage: React.FC = () => {
                                       </span>
                                     )}
                                 </div>
-                                {groupAdviser && (
-                                  <div
-                                    className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1 mt-0.5"
-                                    title={`Adviser Teacher: ${groupAdviser}`}
-                                  >
-                                    <UserCheck className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
-                                    <span className="truncate max-w-[140px]">{groupAdviser}</span>
-                                  </div>
-                                )}
                               </td>
 
                               {/* Status */}
