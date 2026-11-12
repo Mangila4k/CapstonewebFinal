@@ -823,8 +823,8 @@ export const StudentGradesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* KPI Metrics Grid: Unified Quarterly Averages */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mt-6 pt-5 border-t border-slate-100">
+          {/* KPI Metrics Grid: Auto-adjusting for Laptops & Desktop Monitors */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mt-6 pt-5 border-t border-slate-100">
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 sm:p-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">General Average</span>
               <div className="flex items-baseline gap-1.5 mt-1">
