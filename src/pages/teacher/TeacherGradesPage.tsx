@@ -811,7 +811,7 @@ export const TeacherGradesPage: React.FC = () => {
   }, [subjects, selectedSubjectId]);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-36 max-w-7xl mx-auto">
+    <div className="space-y-6 animate-fade-in pb-36 w-full">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="min-w-0 flex-1">
