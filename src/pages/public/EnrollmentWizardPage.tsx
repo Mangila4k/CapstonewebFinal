@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   User,
@@ -21,12 +21,14 @@ import {
   Lock,
   Mail,
   MapPin,
+  Sparkles,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../../lib/supabase';
 import { useEnrollmentStatus } from '../../lib/enrollmentControlStore';
 import { Alert } from '../../components/common/Alert';
 import { ensureAuthenticatedSession } from '../../lib/studentDocumentsService';
+import { isLrnManualRequired, generateAutoLrn } from '../../lib/utils';
 import './enrollment_original.css';
 
 interface DocConfig {
@@ -95,6 +97,7 @@ export const EnrollmentWizardPage: React.FC = () => {
     lastName: '',
     firstName: '',
     middleName: '',
+    lrn: '',
     email: '',
     dob: '',
     age: '',
@@ -156,6 +159,34 @@ export const EnrollmentWizardPage: React.FC = () => {
   const activeRequirements = DOCUMENT_CONFIG.filter((doc) =>
     doc.applicableTypes.includes(formData.studentType)
   );
+
+  // LRN requirement logic:
+  // - Grade 7 & Transferees: entered manually (required 12 digits)
+  // - Grades 8 through 12: populated automatically by Placido L. Señor NHS system
+  const isLrnManual = isLrnManualRequired(formData.gradeLevel, formData.studentType);
+  const [lastManualMode, setLastManualMode] = useState<boolean>(isLrnManual);
+
+  useEffect(() => {
+    if (isLrnManual !== lastManualMode) {
+      setLastManualMode(isLrnManual);
+      if (isLrnManual) {
+        // Switched to Grade 7 or Transferee: clear LRN so applicant manually enters official 12-digit DepEd LRN
+        setFormData((prev) => ({ ...prev, lrn: '' }));
+      } else {
+        // Switched to continuing learner in Grades 8-12: auto-populate institutional LRN
+        const autoLrn = generateAutoLrn(
+          formData.email || `${formData.firstName}${formData.lastName}` || 'plsnhs'
+        );
+        setFormData((prev) => ({ ...prev, lrn: autoLrn }));
+      }
+    } else if (!isLrnManual && (!formData.lrn || formData.lrn.length !== 12 || !/^\d{12}$/.test(formData.lrn))) {
+      // Auto-populate if missing or invalid in auto mode
+      const autoLrn = generateAutoLrn(
+        formData.email || `${formData.firstName}${formData.lastName}` || 'plsnhs'
+      );
+      setFormData((prev) => ({ ...prev, lrn: autoLrn }));
+    }
+  }, [isLrnManual, lastManualMode, formData.gradeLevel, formData.studentType, formData.email, formData.firstName, formData.lastName, formData.lrn]);
 
   // Auto-calculate age from Date of Birth
   const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +260,32 @@ export const EnrollmentWizardPage: React.FC = () => {
       return;
     }
 
+    // Learner Reference Number (LRN) Validation
+    // - Grade 7 & Transferees: manual entry required (12 digits)
+    // - Grades 8 through 12: auto-populated institutional LRN
+    let cleanLrn = (formData.lrn || '').trim();
+    if (isLrnManual) {
+      if (!cleanLrn) {
+        setError(
+          formData.gradeLevel === 'Grade 7'
+            ? 'Please enter your 12-digit Learner Reference Number (LRN) for Grade 7 enrollment.'
+            : 'Please enter your 12-digit Learner Reference Number (LRN) as a Transferee student.'
+        );
+        return;
+      }
+      if (cleanLrn.length !== 12 || !/^\d{12}$/.test(cleanLrn)) {
+        setError('The Learner Reference Number (LRN) must be exactly 12 numeric digits.');
+        return;
+      }
+    } else {
+      if (!cleanLrn || cleanLrn.length !== 12 || !/^\d{12}$/.test(cleanLrn)) {
+        cleanLrn = generateAutoLrn(
+          formData.email || `${formData.firstName}${formData.lastName}` || 'plsnhs'
+        );
+        setFormData((prev) => ({ ...prev, lrn: cleanLrn }));
+      }
+    }
+
     if (!formData.guardianName.trim() || !formData.guardianContact.trim()) {
       setError('Please provide parent or guardian name and contact number.');
       return;
@@ -284,7 +341,8 @@ export const EnrollmentWizardPage: React.FC = () => {
       }
 
       // 2. Insert into Supabase enrollments table
-      const payload = {
+      const payload: Record<string, any> = {
+        lrn: cleanLrn,
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
         middle_name: formData.middleName.trim() || null,
@@ -324,6 +382,7 @@ export const EnrollmentWizardPage: React.FC = () => {
         good_moral_cert_url: uploadedDocUrls.good_moral_cert_url,
       };
 
+      let createdEnrollment: any = null;
       const { data, error: insertError } = await supabase
         .from('enrollments')
         .insert(payload)
@@ -331,14 +390,23 @@ export const EnrollmentWizardPage: React.FC = () => {
         .single();
 
       if (insertError) {
-        throw insertError;
-      }
+        // Graceful fallback if PostgreSQL 'enrollments' table doesn't have the 'lrn' column yet (Code 42703)
+        if (insertError.code === '42703' || String(insertError.message || '').toLowerCase().includes('lrn')) {
+          const { lrn: _omitLrn, ...safePayload } = payload;
+          const { data: retryData, error: retryErr } = await supabase
+            .from('enrollments')
+            .insert(safePayload)
+            .select()
+            .single();
 
-      const createdEnrollment = data || {
-        ...payload,
-        id: `local-${Date.now()}`,
-        created_at: new Date().toISOString(),
-      };
+          if (retryErr) throw retryErr;
+          createdEnrollment = retryData ? { ...retryData, lrn: cleanLrn } : { ...payload, lrn: cleanLrn };
+        } else {
+          throw insertError;
+        }
+      } else {
+        createdEnrollment = data ? { ...data, lrn: cleanLrn } : { ...payload, lrn: cleanLrn };
+      }
 
       // 3. Save all submitted documents to Supabase student_documents table
       await ensureAuthenticatedSession().catch(() => {});
@@ -466,6 +534,12 @@ export const EnrollmentWizardPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-slate-500">Learner Reference No. (LRN):</span>
+                  <span className="font-mono font-bold text-slate-900 tracking-wider">
+                    {submittedData.lrn || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-slate-500">Email:</span>
                   <span className="font-medium text-slate-900">{submittedData.email}</span>
                 </div>
@@ -504,6 +578,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                     lastName: '',
                     firstName: '',
                     middleName: '',
+                    lrn: '',
                     email: '',
                     dob: '',
                     age: '',
@@ -744,6 +819,76 @@ export const EnrollmentWizardPage: React.FC = () => {
                   <span>
                     Only Gmail accounts (<strong>@gmail.com</strong>) are accepted.
                   </span>
+                </small>
+              </div>
+
+              {/* Learner Reference Number (LRN) */}
+              <div className="enrollment-group">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5">
+                  <label className="mb-0">
+                    Learner Reference Number (LRN) <span>*</span>
+                  </label>
+                  {isLrnManual ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                      ✍️ Manual Entry ({formData.gradeLevel === 'Grade 7' ? 'Grade 7 Entrant' : 'Transferee'})
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                      <Sparkles className="h-3 w-3 text-emerald-600" />
+                      Auto-Populated ({formData.gradeLevel})
+                    </span>
+                  )}
+                </div>
+
+                <div className="enrollment-input-wrap relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={
+                      isLrnManual
+                        ? 'Enter 12-digit DepEd LRN (e.g., 119518123456)'
+                        : 'Generating institutional LRN...'
+                    }
+                    value={formData.lrn}
+                    readOnly={!isLrnManual}
+                    maxLength={12}
+                    onChange={(e) => {
+                      if (isLrnManual) {
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                        handleChange('lrn', digits);
+                      }
+                    }}
+                    required
+                    className={`font-mono tracking-wider font-semibold ${
+                      !isLrnManual
+                        ? 'bg-slate-100/90 text-slate-800 cursor-not-allowed select-all'
+                        : 'bg-white text-slate-900'
+                    }`}
+                  />
+                  {!isLrnManual && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-bold text-emerald-700 pointer-events-none">
+                      <Lock className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Institutional LRN</span>
+                    </div>
+                  )}
+                </div>
+
+                <small className="text-xs text-slate-500 mt-1.5 flex items-start gap-1.5">
+                  {isLrnManual ? (
+                    <>
+                      <span className="font-bold text-amber-700 shrink-0">DepEd Requirement:</span>
+                      <span>
+                        For <strong>{formData.gradeLevel === 'Grade 7' ? 'Grade 7 students' : 'Transferees'}</strong>, the 12-digit LRN must be entered manually from your Form 138 / SF9 Report Card or Elementary Certificate.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-bold text-emerald-700 shrink-0">DepEd Naga:</span>
+                      <span>
+                        Institutional LRN is <strong>automatically populated</strong> for continuing students in <strong>Grades 8 through 12</strong> (PLSNHS Division ID: 119518).
+                      </span>
+                    </>
+                  )}
                 </small>
               </div>
 
@@ -1055,6 +1200,42 @@ export const EnrollmentWizardPage: React.FC = () => {
                       {grade}
                     </div>
                   ))}
+                </div>
+
+                {/* LRN Mode Indicator Banner */}
+                <div
+                  className={`mt-3 rounded-2xl p-3.5 border transition-all ${
+                    isLrnManual
+                      ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                      : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-lg leading-none mt-0.5">{isLrnManual ? '✍️' : '⚡'}</span>
+                      <div>
+                        <p className="text-xs font-bold font-display">
+                          {isLrnManual
+                            ? `LRN Mode: Manual Entry Required (${formData.studentType === 'Transferee' ? 'Transferee' : formData.gradeLevel})`
+                            : `LRN Mode: Auto-Populated (${formData.gradeLevel})`}
+                        </p>
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                          {isLrnManual
+                            ? 'For Grade 7 entrants and transferees, the 12-digit DepEd LRN must be manually entered in the Personal Information section above.'
+                            : 'For continuing learners in Grades 8 through 12, the 12-digit LRN is automatically populated by the Placido L. Señor NHS system.'}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 border ${
+                        isLrnManual
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      }`}
+                    >
+                      {isLrnManual ? 'Manual LRN' : 'Auto LRN'}
+                    </span>
+                  </div>
                 </div>
               </div>
 

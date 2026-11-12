@@ -18,7 +18,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
-import { formatDate } from '../../lib/utils';
+import { formatDate, isLrnManualRequired, generateAutoLrn } from '../../lib/utils';
 import type { UserRole } from '../../types';
 
 interface AccountItem {
@@ -64,6 +64,7 @@ const ENROLL_INPUT_CLS =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden';
 
 const createEmptyEnrollmentForm = () => ({
+  lrn: '',
   middleName: '',
   suffix: '',
   dob: '',
@@ -224,8 +225,43 @@ export const AdminAccountsPage: React.FC = () => {
   const [enrollForm, setEnrollForm] = useState(createEmptyEnrollmentForm());
   const isStudentRole = form.role === 'student';
   const isSeniorHighGrade = enrollForm.gradeLevel === 'Grade 11' || enrollForm.gradeLevel === 'Grade 12';
+  const isEnrollLrnManual = isLrnManualRequired(enrollForm.gradeLevel, enrollForm.studentType);
+  const [lastAdminManualMode, setLastAdminManualMode] = useState<boolean>(isEnrollLrnManual);
   const updateEnroll = (field: keyof ReturnType<typeof createEmptyEnrollmentForm>, value: string) =>
     setEnrollForm((prev) => ({ ...prev, [field]: value }));
+
+  useEffect(() => {
+    if (!isStudentRole) return;
+    if (isEnrollLrnManual !== lastAdminManualMode) {
+      setLastAdminManualMode(isEnrollLrnManual);
+      if (isEnrollLrnManual) {
+        setEnrollForm((prev) => ({ ...prev, lrn: '' }));
+      } else {
+        const autoLrn = generateAutoLrn(
+          form.email || `${form.firstName}${form.lastName}` || 'plsnhs'
+        );
+        setEnrollForm((prev) => ({ ...prev, lrn: autoLrn }));
+      }
+    } else if (
+      !isEnrollLrnManual &&
+      (!enrollForm.lrn || enrollForm.lrn.length !== 12 || !/^\d{12}$/.test(enrollForm.lrn))
+    ) {
+      const autoLrn = generateAutoLrn(
+        form.email || `${form.firstName}${form.lastName}` || 'plsnhs'
+      );
+      setEnrollForm((prev) => ({ ...prev, lrn: autoLrn }));
+    }
+  }, [
+    isStudentRole,
+    isEnrollLrnManual,
+    lastAdminManualMode,
+    enrollForm.gradeLevel,
+    enrollForm.studentType,
+    form.email,
+    form.firstName,
+    form.lastName,
+    enrollForm.lrn,
+  ]);
 
   const fetchAccounts = async () => {
     setLoading(true);
@@ -270,6 +306,36 @@ export const AdminAccountsPage: React.FC = () => {
       return;
     }
 
+    let cleanAdminLrn = (enrollForm.lrn || '').trim();
+    if (isStudentRole) {
+      if (isEnrollLrnManual) {
+        if (!cleanAdminLrn) {
+          setNotice({
+            type: 'error',
+            message:
+              enrollForm.gradeLevel === 'Grade 7'
+                ? 'Please enter the 12-digit Learner Reference Number (LRN) for Grade 7 student.'
+                : 'Please enter the 12-digit Learner Reference Number (LRN) for Transferee student.',
+          });
+          return;
+        }
+        if (cleanAdminLrn.length !== 12 || !/^\d{12}$/.test(cleanAdminLrn)) {
+          setNotice({
+            type: 'error',
+            message: 'Student LRN must be exactly 12 numeric digits.',
+          });
+          return;
+        }
+      } else {
+        if (!cleanAdminLrn || cleanAdminLrn.length !== 12 || !/^\d{12}$/.test(cleanAdminLrn)) {
+          cleanAdminLrn = generateAutoLrn(
+            form.email || `${form.firstName}${form.lastName}` || 'plsnhs'
+          );
+          setEnrollForm((prev) => ({ ...prev, lrn: cleanAdminLrn }));
+        }
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -297,7 +363,8 @@ export const AdminAccountsPage: React.FC = () => {
       let enrollmentWarning = '';
       if (isStudentRole) {
         const finalStrand = isSeniorHighGrade ? enrollForm.strand : null;
-        const enrollmentPayload = {
+        const enrollmentPayload: Record<string, any> = {
+          lrn: cleanAdminLrn,
           first_name: payload.first_name,
           last_name: payload.last_name,
           middle_name: enrollForm.middleName.trim() || null,
@@ -324,6 +391,7 @@ export const AdminAccountsPage: React.FC = () => {
           status: 'Pending',
         };
 
+        let enrDataResult: any = null;
         const { data: enrData, error: enrError } = await supabase
           .from('enrollments')
           .insert(enrollmentPayload)
@@ -331,15 +399,35 @@ export const AdminAccountsPage: React.FC = () => {
           .single();
 
         if (enrError) {
-          enrollmentWarning = ` (Note: enrollment information could not be saved: ${enrError.message})`;
+          // Graceful fallback if PostgreSQL 'enrollments' table doesn't have the 'lrn' column yet (Code 42703)
+          if (enrError.code === '42703' || String(enrError.message || '').toLowerCase().includes('lrn')) {
+            const { lrn: _omitLrn, ...safeEnrPayload } = enrollmentPayload;
+            const { data: retryEnr, error: retryErr } = await supabase
+              .from('enrollments')
+              .insert(safeEnrPayload)
+              .select()
+              .single();
+
+            if (retryErr) {
+              enrollmentWarning = ` (Note: enrollment information could not be saved: ${retryErr.message})`;
+            } else {
+              enrDataResult = retryEnr ? { ...retryEnr, lrn: cleanAdminLrn } : { ...enrollmentPayload, lrn: cleanAdminLrn };
+            }
+          } else {
+            enrollmentWarning = ` (Note: enrollment information could not be saved: ${enrError.message})`;
+          }
         } else {
+          enrDataResult = enrData ? { ...enrData, lrn: cleanAdminLrn } : { ...enrollmentPayload, lrn: cleanAdminLrn };
+        }
+
+        if (enrDataResult) {
           try {
             await supabase.from('notifications').insert({
               title: 'New Student Enrollment Record',
               message: `Admin filed an enrollment record for ${payload.first_name} ${payload.last_name} – ${enrollForm.gradeLevel}${finalStrand ? ` (${finalStrand})` : ''} (${enrollForm.studentType}), awaiting verification.`,
               type: 'enrollment',
               role: 'registrar',
-              enrollment_id: enrData?.id || null,
+              enrollment_id: enrDataResult?.id || null,
             });
           } catch {
             // ignore
@@ -348,8 +436,8 @@ export const AdminAccountsPage: React.FC = () => {
           try {
             const rawCache = localStorage.getItem('plsnhs_enrollments_cache_v2');
             const parsedCache = rawCache ? JSON.parse(rawCache) : [];
-            if (Array.isArray(parsedCache) && enrData) {
-              localStorage.setItem('plsnhs_enrollments_cache_v2', JSON.stringify([enrData, ...parsedCache]));
+            if (Array.isArray(parsedCache)) {
+              localStorage.setItem('plsnhs_enrollments_cache_v2', JSON.stringify([enrDataResult, ...parsedCache]));
             }
             window.dispatchEvent(new Event('plsnhs-enrollment-updated'));
           } catch {
@@ -1226,6 +1314,50 @@ export const AdminAccountsPage: React.FC = () => {
                       placeholder="e.g., 2026-2027"
                       className={ENROLL_INPUT_CLS}
                     />
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className={ENROLL_LABEL_CLS}>
+                        Learner Reference Number (LRN) <span className="text-rose-500">*</span>
+                      </label>
+                      {isEnrollLrnManual ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                          ✍️ Manual Entry ({enrollForm.studentType === 'Transferee' ? 'Transferee' : enrollForm.gradeLevel})
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                          <Sparkles className="h-3 w-3 text-emerald-600" />
+                          Auto-Populated ({enrollForm.gradeLevel})
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={12}
+                      readOnly={!isEnrollLrnManual}
+                      value={enrollForm.lrn}
+                      onChange={(e) => {
+                        if (isEnrollLrnManual) {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                          updateEnroll('lrn', digits);
+                        }
+                      }}
+                      placeholder={
+                        isEnrollLrnManual
+                          ? 'Enter 12-digit DepEd LRN (e.g., 119518123456)'
+                          : 'Auto-populated institutional LRN...'
+                      }
+                      className={`${ENROLL_INPUT_CLS} font-mono tracking-wider font-semibold ${
+                        !isEnrollLrnManual ? 'bg-slate-100/90 text-slate-800 cursor-not-allowed select-all' : 'bg-white'
+                      }`}
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {isEnrollLrnManual
+                        ? 'DepEd Rule: Grade 7 and Transferee students require manual 12-digit LRN entry from Form 138/SF9.'
+                        : 'DepEd Rule: Grades 8–12 continuing students have their 12-digit LRN automatically populated.'}
+                    </p>
                   </div>
                   {isSeniorHighGrade && (
                     <div className="sm:col-span-3">
