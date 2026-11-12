@@ -6,7 +6,6 @@ import {
   Megaphone,
   CheckCheck,
   CheckCircle2,
-  RotateCcw,
   X,
   Calendar,
   Clock,
@@ -799,21 +798,21 @@ export const NotificationCenter: React.FC = () => {
                         handleOpenItem(item);
                       }
                     }}
-                    className={`group p-3 sm:p-3.5 transition-colors cursor-pointer select-none flex items-start gap-2.5 sm:gap-3 ${
+                    className={`group relative p-3 sm:p-3.5 transition-all duration-150 cursor-pointer select-none flex items-start gap-2.5 sm:gap-3 border-l-2 ${
                       !item.isRead
-                        ? 'bg-slate-50/90 hover:bg-slate-100/70'
-                        : 'bg-white hover:bg-slate-50/60'
+                        ? 'bg-blue-50/40 hover:bg-blue-50/70 border-l-[#152e69]'
+                        : 'bg-white hover:bg-slate-50/80 border-l-transparent'
                     }`}
                   >
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5 ${
                         !item.isRead
-                          ? 'bg-[#1B2A4A] text-white'
+                          ? 'bg-[#152e69] text-white shadow-2xs'
                           : 'bg-slate-100 text-slate-500'
                       }`}
                     >
                       {isUrgent ? (
-                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
                       ) : (
                         <Megaphone className="h-3.5 w-3.5" />
                       )}
@@ -824,13 +823,21 @@ export const NotificationCenter: React.FC = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
                           {item.senderRole || 'ADMINISTRATION'}
                         </span>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {formatTimeAgo(item.createdAt)}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] text-slate-400">
+                            {formatTimeAgo(item.createdAt)}
+                          </span>
+                          {!item.isRead && (
+                            <span
+                              className="h-2 w-2 rounded-full bg-blue-600 ring-2 ring-blue-100 shrink-0"
+                              title="Unread"
+                            />
+                          )}
+                        </div>
                       </div>
 
                       <h5
-                        className={`text-xs leading-snug group-hover:text-[#1B2A4A] transition-colors line-clamp-2 ${
+                        className={`text-xs leading-snug group-hover:text-[#152e69] transition-colors line-clamp-2 ${
                           !item.isRead
                             ? 'font-extrabold text-slate-900'
                             : 'font-semibold text-slate-700'
@@ -842,37 +849,6 @@ export const NotificationCenter: React.FC = () => {
                       <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
                         {item.content}
                       </p>
-
-                      <div className="pt-1 flex items-center justify-between">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-[10px] font-semibold ${
-                            !item.isRead ? 'text-[#1B2A4A]' : 'text-slate-400'
-                          }`}
-                        >
-                          {!item.isRead ? (
-                            <>
-                              <span className="h-1.5 w-1.5 rounded-full bg-[#1B2A4A]" />
-                              Unread
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                              Read
-                            </>
-                          )}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markItemReadStatus(item, !item.isRead);
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 cursor-pointer"
-                        >
-                          {!item.isRead ? 'Mark read' : 'Mark unread'}
-                        </button>
-                      </div>
                     </div>
                   </div>
                 );
@@ -1026,20 +1002,11 @@ export const NotificationCenter: React.FC = () => {
             )}
 
             {/* Footer Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => markItemReadStatus(selectedItem, !selectedItem.isRead)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                {selectedItem.isRead ? 'Mark as Unread' : 'Mark as Read'}
-              </button>
-
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setSelectedItem(null)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1B2A4A] px-4 py-2 text-xs font-bold text-white hover:bg-[#0f1c3f] cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1B2A4A] px-4 py-2 text-xs font-bold text-white hover:bg-[#0f1c3f] shadow-2xs transition-all cursor-pointer"
               >
                 <CheckCircle2 className="h-3.5 w-3.5 text-amber-400" />
                 Done Reading
