@@ -211,7 +211,7 @@ export const StudentDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6 animate-fade-in max-w-7xl mx-auto pb-10">
+    <div className="space-y-5 sm:space-y-6 animate-fade-in w-full pb-10">
       {/* Page Header - Clean & Aligned */}
       <div className="border-b border-slate-200 pb-4 sm:pb-5">
         <div className="flex items-start justify-between gap-3">

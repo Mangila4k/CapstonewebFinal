@@ -273,7 +273,7 @@ export const AdminProfilePage: React.FC = () => {
     'Unset Profile';
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in w-full pb-12">
       {/* Hidden File Input for Avatar */}
       <input
         ref={fileInputRef}

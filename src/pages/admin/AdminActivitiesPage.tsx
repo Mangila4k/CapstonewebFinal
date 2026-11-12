@@ -307,7 +307,7 @@ export const AdminActivitiesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-10">
+    <div className="space-y-6 animate-fade-in w-full pb-10">
       {/* Hidden file input for quick per-card photo upload */}
       <input
         ref={quickCardFileInputRef}

@@ -438,7 +438,7 @@ export const AdminAttendancePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-16">
+    <div className="space-y-6 animate-fade-in w-full pb-16">
       {/* 1. Header with DepEd Branding & Action Controls */}
       <div className="border-b border-slate-200 pb-4 sm:pb-5">
         <div className="flex items-start justify-between gap-3">

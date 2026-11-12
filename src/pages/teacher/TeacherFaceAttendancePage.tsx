@@ -349,7 +349,7 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in w-full pb-12">
       {/* Page Header */}
       <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="min-w-0 flex-1">

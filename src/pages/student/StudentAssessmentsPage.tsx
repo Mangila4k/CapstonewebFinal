@@ -408,7 +408,7 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-10">
+    <div className="space-y-6 animate-fade-in w-full pb-10">
       <input
         ref={fileInputRef}
         type="file"

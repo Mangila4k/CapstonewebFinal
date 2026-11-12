@@ -238,7 +238,7 @@ export const StudentProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in w-full pb-12">
       <input
         ref={fileInputRef}
         type="file"

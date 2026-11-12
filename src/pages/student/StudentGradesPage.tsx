@@ -612,7 +612,7 @@ export const StudentGradesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-16">
+    <div className="space-y-6 animate-fade-in w-full pb-16">
       {/* ================================================================= */}
       {/* PRINT CSS: Strictly engineered to fit on a SINGLE 8.5" x 11" PAGE  */}
       {/* ================================================================= */}

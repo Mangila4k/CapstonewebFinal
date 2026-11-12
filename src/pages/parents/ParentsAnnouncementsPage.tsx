@@ -267,7 +267,7 @@ export const ParentsAnnouncementsPage: React.FC = () => {
   const unreadCount = announcements.filter((a) => !readIds.includes(String(a.id))).length;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-16">
+    <div className="space-y-6 animate-fade-in w-full pb-16">
       {/* Header */}
       <div className="border-b border-slate-200 pb-5">
         <div className="flex items-start justify-between gap-3">

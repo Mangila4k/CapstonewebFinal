@@ -398,7 +398,7 @@ export const GuidanceReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16 animate-fade-in">
+    <div className="space-y-6 w-full pb-16 animate-fade-in">
       {/* Top Banner & Title - Screen Only */}
       <div className="border-b border-slate-200 pb-5 print:hidden">
         <div className="flex items-start justify-between gap-3">

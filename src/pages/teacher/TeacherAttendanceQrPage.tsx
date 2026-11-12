@@ -449,7 +449,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   const lateCount = scannedLogs.filter((l) => l.status === 'Late').length;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in w-full pb-12">
       {/* Header */}
       <div className="border-b border-slate-200 pb-5">
         <div className="flex items-start justify-between gap-3">
