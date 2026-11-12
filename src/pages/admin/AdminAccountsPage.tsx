@@ -711,55 +711,6 @@ export const AdminAccountsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Filter Pills / Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200/80">
-        <button
-          type="button"
-          onClick={() => setRoleFilter('all')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-            roleFilter === 'all'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <span>All User Categories</span>
-          <span
-            className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-              roleFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {accounts.length}
-          </span>
-        </button>
-
-        {CATEGORY_DEFINITIONS.map((cat) => {
-          const Icon = cat.icon;
-          const count = accounts.filter((a) => cat.roles.includes(a.role)).length;
-          const isActive = roleFilter === cat.key;
-          return (
-            <button
-              key={cat.key}
-              type="button"
-              onClick={() => setRoleFilter(cat.key)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                isActive
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span>{cat.label}</span>
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
