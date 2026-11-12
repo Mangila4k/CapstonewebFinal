@@ -556,8 +556,8 @@ export const DashboardLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Dashboard Content Body - Auto-adjusting Fluid Canvas */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-0 sm:px-1 lg:px-1.5 pt-2 sm:pt-3 pb-8 bg-slate-50/70 print:p-0 print:m-0 print:bg-white print:overflow-visible w-full min-w-0">
+        {/* Dashboard Content Body */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-8 bg-slate-50/70 print:p-0 print:m-0 print:bg-white print:overflow-visible">
           <div className="print:hidden">
             <NotificationCenter />
           </div>
