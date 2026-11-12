@@ -32,6 +32,7 @@ import { Alert } from '../../components/common/Alert';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
 import { formatDate } from '../../lib/utils';
+import { sendStudentApprovalEmail } from '../../lib/enrollmentEmailService';
 import type { Enrollment, Section } from '../../types';
 
 const ALL_GRADES = [
@@ -710,6 +711,17 @@ export const AdminEnrollmentsPage: React.FC = () => {
             role: 'registrar',
             enrollment_id: targetEnr.id,
           });
+
+          // Automatically send official email with username (Gmail) and temporary password (last name)
+          await sendStudentApprovalEmail({
+            toEmail: safeEmail,
+            firstName: safeFirstName,
+            lastName: safeLastName,
+            gradeLevel: normalizedGrade,
+            strand: targetEnr.strand,
+            sectionName: chosenSectionName,
+            studentId: resolvedStudentId,
+          });
         } catch (syncErr) {
           console.warn('Student masterlist sync note:', syncErr);
         }
@@ -719,7 +731,7 @@ export const AdminEnrollmentsPage: React.FC = () => {
         type: 'success',
         message:
           newStatus === 'Approved' && targetEnr
-            ? `${targetEnr.first_name} ${targetEnr.last_name} has been officially approved and enrolled into ${targetEnr.grade_level} - Section ${targetEnr.section || 'Wisdom'}!`
+            ? `Enrollment approved for ${targetEnr.first_name} ${targetEnr.last_name}! Login credentials sent to ${targetEnr.email || 'Gmail'} (Username: ${targetEnr.email || 'student Gmail'}, Temp Password: ${targetEnr.last_name}).`
             : `Enrollment application marked as ${newStatus}.`,
       });
 

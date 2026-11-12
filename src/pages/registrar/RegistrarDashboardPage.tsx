@@ -29,6 +29,7 @@ import { supabase } from '../../lib/supabase';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
 import { formatDate } from '../../lib/utils';
+import { sendStudentApprovalEmail } from '../../lib/enrollmentEmailService';
 import type { Enrollment } from '../../types';
 
 const REGISTRAR_DASH_QUEUE_KEY = 'plsnhs_registrar_dash_queue_v2';
@@ -324,6 +325,16 @@ export const RegistrarDashboardPage: React.FC = () => {
               .eq('id', enr.id);
           }
 
+          // Automatically send official email with username (Gmail) and temporary password (last name)
+          await sendStudentApprovalEmail({
+            toEmail: safeEmail,
+            firstName: safeFirstName,
+            lastName: safeLastName,
+            gradeLevel: enr.grade_level || 'Grade 10',
+            strand: enr.strand,
+            studentId,
+          });
+
           localStorage.removeItem('plsnhs_students_cache_v2');
           localStorage.removeItem('plsnhs_enrollments_cache_v2');
           localStorage.removeItem('plsnhs_registrar_reqs_cache_v2');
@@ -336,7 +347,7 @@ export const RegistrarDashboardPage: React.FC = () => {
         type: 'success',
         message:
           newStatus === 'Approved'
-            ? `${enr.first_name} ${enr.last_name} has been approved and added to the Student Masterlist!`
+            ? `Enrollment approved for ${enr.first_name} ${enr.last_name}! Login credentials sent to ${enr.email || 'Gmail'} (Username: ${enr.email || 'student Gmail'}, Temp Password: ${enr.last_name}).`
             : `Application for ${enr.first_name} ${enr.last_name} marked as Rejected.`,
       });
 

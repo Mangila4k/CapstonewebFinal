@@ -35,6 +35,7 @@ import { Modal } from '../../components/common/Modal';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
 import { formatDate } from '../../lib/utils';
+import { sendStudentApprovalEmail } from '../../lib/enrollmentEmailService';
 import type { Enrollment, ActivityLog } from '../../types';
 
 const ADMIN_DASH_ENR_KEY = 'plsnhs_admin_dash_enr_v2';
@@ -454,6 +455,16 @@ export const AdminDashboardPage: React.FC = () => {
               .eq('id', enr.id);
           }
 
+          // Automatically send official email with username (Gmail) and temporary password (last name)
+          await sendStudentApprovalEmail({
+            toEmail: safeEmail,
+            firstName: safeFirstName,
+            lastName: safeLastName,
+            gradeLevel: enr.grade_level || 'Grade 10',
+            strand: enr.strand,
+            studentId,
+          });
+
           localStorage.removeItem('plsnhs_students_cache_v2');
           localStorage.removeItem('plsnhs_enrollments_cache_v2');
           localStorage.removeItem('plsnhs_registrar_reqs_cache_v2');
@@ -466,7 +477,7 @@ export const AdminDashboardPage: React.FC = () => {
         type: 'success',
         message:
           newStatus === 'Approved'
-            ? `${enr.first_name} ${enr.last_name} has been approved and added to the Student Masterlist!`
+            ? `Enrollment approved for ${enr.first_name} ${enr.last_name}! Login credentials sent to ${enr.email || 'Gmail'} (Username: ${enr.email || 'student Gmail'}, Temp Password: ${enr.last_name}).`
             : `Application for ${enr.first_name} ${enr.last_name} marked as Rejected.`,
       });
 
