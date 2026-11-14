@@ -775,7 +775,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                       <h3 className="text-base sm:text-lg font-black text-slate-900 font-display tracking-tight">
                         Grade Level &amp; Academic Classification
                       </h3>
-                      <span className="hidden sm:inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                      <span className="hidden sm:inline-flex items-center rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-extrabold text-blue-800 shadow-xs shadow-blue-500/10">
                         Step 1 of 4
                       </span>
                     </div>
@@ -808,7 +808,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                       label: 'Old Student',
                       desc: 'Continuing PLSNHS Learner',
                       icon: <GraduationCap className="h-5 w-5" />,
-                      iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+                      iconBg: 'bg-sky-50 text-sky-600 border-sky-200',
                     },
                     {
                       id: 'Transferee',
@@ -826,14 +826,14 @@ export const EnrollmentWizardPage: React.FC = () => {
                         onClick={() => handleChange('studentType', type.id)}
                         className={`group relative flex flex-col items-start p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                           isActive
-                            ? 'border-emerald-600 bg-emerald-50/50 shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                            ? 'border-blue-600 bg-blue-50/60 shadow-md shadow-blue-500/20 ring-2 ring-blue-500 ring-offset-1'
                             : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs'
                         }`}
                       >
                         <div className="flex items-center justify-between w-full mb-2.5">
                           <div
                             className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all ${
-                              isActive ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs' : type.iconBg
+                              isActive ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/30' : type.iconBg
                             }`}
                           >
                             {React.cloneElement(type.icon, {
@@ -841,7 +841,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                             })}
                           </div>
                           {isActive ? (
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/30">
                               <Check className="h-3.5 w-3.5" />
                             </span>
                           ) : (
@@ -887,14 +887,14 @@ export const EnrollmentWizardPage: React.FC = () => {
                         onClick={() => handleChange('gradeLevel', item.grade)}
                         className={`group relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
                           isActive
-                            ? 'border-emerald-600 bg-emerald-50 text-emerald-950 shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                            ? 'border-blue-600 bg-blue-50 text-blue-950 shadow-md shadow-blue-500/20 ring-2 ring-blue-500 ring-offset-1'
                             : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 text-slate-700 shadow-2xs'
                         }`}
                       >
                         <span
                           className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md mb-1 ${
                             isActive
-                              ? 'bg-emerald-200/70 text-emerald-900'
+                              ? 'bg-blue-200/80 text-blue-950 font-black'
                               : isSHS
                               ? 'bg-amber-100/80 text-amber-900 border border-amber-200/60'
                               : 'bg-slate-100 text-slate-500'
@@ -906,7 +906,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                           {item.grade}
                         </span>
                         {isActive && (
-                          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white">
+                          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs shadow-blue-600/30">
                             <Check className="h-2.5 w-2.5" />
                           </span>
                         )}
@@ -920,7 +920,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                   className={`mt-3.5 rounded-2xl p-4 border transition-all ${
                     isLrnManual
                       ? 'bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-white border-amber-200/90 text-amber-950'
-                      : 'bg-gradient-to-r from-emerald-50/90 via-emerald-50/50 to-white border-emerald-200/90 text-emerald-950'
+                      : 'bg-gradient-to-r from-blue-50/90 via-sky-50/50 to-white border-blue-200/90 text-blue-950 shadow-xs shadow-blue-500/10'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -929,7 +929,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 ${
                           isLrnManual
                             ? 'bg-amber-100 text-amber-800 border-amber-300'
-                            : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : 'bg-blue-100 text-blue-700 border-blue-300 shadow-xs shadow-blue-500/10'
                         }`}
                       >
                         {isLrnManual ? <FileText className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
@@ -955,7 +955,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                       className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 border ${
                         isLrnManual
                           ? 'bg-amber-100 text-amber-900 border-amber-300'
-                          : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          : 'bg-blue-100 text-blue-900 border-blue-300'
                       }`}
                     >
                       {isLrnManual ? 'Manual LRN' : 'Auto-Populated'}
@@ -1013,20 +1013,20 @@ export const EnrollmentWizardPage: React.FC = () => {
                           onClick={() => handleChange('strand', st.code)}
                           className={`group relative flex flex-col items-start p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                             isActive
-                              ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                              ? 'border-blue-600 bg-blue-50/60 shadow-md shadow-blue-500/20 ring-2 ring-blue-500 ring-offset-1'
                               : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs'
                           }`}
                         >
                           <div className="flex items-center justify-between w-full mb-2">
                             <span
                               className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-                                isActive ? 'bg-emerald-200/80 text-emerald-950' : 'bg-slate-100 text-slate-600'
+                                isActive ? 'bg-blue-200/80 text-blue-950 font-black' : 'bg-slate-100 text-slate-600'
                               }`}
                             >
                               {st.badge}
                             </span>
                             {isActive ? (
-                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/30">
                                 <Check className="h-3 w-3" />
                               </span>
                             ) : (
@@ -1049,7 +1049,7 @@ export const EnrollmentWizardPage: React.FC = () => {
 
                   {/* TVL Specialization Sub-options */}
                   {formData.strand === 'TVL' && (
-                    <div className="mt-3.5 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 animate-fade-in">
+                    <div className="mt-3.5 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 animate-fade-in shadow-xs shadow-blue-500/10">
                       <div className="flex items-center gap-2 mb-2.5">
                         <Utensils className="h-4 w-4 text-[#1a225a]" />
                         <span className="text-xs font-black uppercase tracking-wider text-[#1a225a]">
@@ -1062,7 +1062,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                           onClick={() => handleChange('tvlSpecialization', 'TVL-Cookery')}
                           className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                             formData.tvlSpecialization === 'TVL-Cookery'
-                              ? 'border-emerald-600 bg-white shadow-xs ring-2 ring-emerald-600'
+                              ? 'border-blue-600 bg-white shadow-md shadow-blue-500/20 ring-2 ring-blue-500'
                               : 'border-slate-200 bg-white hover:border-slate-300'
                           }`}
                         >
@@ -1074,7 +1074,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                             <div className="text-xs text-slate-500">Food Preparation &amp; Culinary Arts</div>
                           </div>
                           {formData.tvlSpecialization === 'TVL-Cookery' && (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
                           )}
                         </button>
 
@@ -1083,7 +1083,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                           onClick={() => handleChange('tvlSpecialization', 'TVL-ICT')}
                           className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                             formData.tvlSpecialization === 'TVL-ICT'
-                              ? 'border-emerald-600 bg-white shadow-xs ring-2 ring-emerald-600'
+                              ? 'border-blue-600 bg-white shadow-md shadow-blue-500/20 ring-2 ring-blue-500'
                               : 'border-slate-200 bg-white hover:border-slate-300'
                           }`}
                         >
@@ -1095,7 +1095,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                             <div className="text-xs text-slate-500">Computer &amp; Information Tech</div>
                           </div>
                           {formData.tvlSpecialization === 'TVL-ICT' && (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
                           )}
                         </button>
                       </div>
@@ -1121,8 +1121,8 @@ export const EnrollmentWizardPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-900">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-900 shadow-xs shadow-blue-500/10">
+                      <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
                       S.Y. 2026–2027
                     </span>
                   </div>
