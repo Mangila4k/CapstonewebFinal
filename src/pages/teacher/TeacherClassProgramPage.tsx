@@ -29,6 +29,7 @@ export interface AdminSentTeacherScheduleFile {
   fileDataUrl?: string;
   schoolYear: string;
   semester: string;
+  targetGradeLevel?: string;
   recipientType: 'all' | 'selected';
   recipientTeacherNames: string[];
   sentBy: string;
@@ -47,6 +48,7 @@ export const DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES: AdminSentTeacherScheduleFile[
     fileType: 'PDF',
     schoolYear: 'S.Y. 2026–2027',
     semester: '1st & 2nd Semester',
+    targetGradeLevel: 'All Year Levels',
     recipientType: 'all',
     recipientTeacherNames: ['All Faculty Teachers'],
     sentBy: 'School Administrator • Office of the Principal',
@@ -62,12 +64,126 @@ export const DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES: AdminSentTeacherScheduleFile[
     fileType: 'PDF',
     schoolYear: 'S.Y. 2026–2027',
     semester: 'Full Academic Year',
+    targetGradeLevel: 'All Year Levels',
     recipientType: 'all',
     recipientTeacherNames: ['All Faculty Teachers'],
     sentBy: 'School Registrar & Admin Office',
     sentAt: 'Oct 25, 2026 • 02:15 PM',
     notes:
       'Master timetable of Junior High School (Grades 7–10) and Senior High School (Grades 11–12) teaching periods and room allocations.',
+  },
+  {
+    id: 'adm-sched-g7',
+    title: 'Grade 7 Faculty Teaching Load & Class Program',
+    fileName: 'PLSNHS_Grade7_Faculty_Schedule_Matrix_2026.pdf',
+    fileSize: '410 KB',
+    fileType: 'PDF',
+    schoolYear: 'S.Y. 2026–2027',
+    semester: '1st & 2nd Semester',
+    targetGradeLevel: 'Grade 7',
+    recipientType: 'selected',
+    recipientTeacherNames: [
+      'Mrs. Generale',
+      'Mrs. Tapasao',
+      'Mr. Selim',
+      'Mrs. Baclayon',
+      'Mrs. Manabat',
+      'Mrs. Codelan',
+      'Mrs. Llanda',
+    ],
+    sentBy: 'Office of the Principal • JHS Department',
+    sentAt: 'Oct 28, 2026 • 09:00 AM',
+    notes:
+      'Certified Grade 7 teaching assignments, class advisory programs, and academic rooms (Bldg A).',
+  },
+  {
+    id: 'adm-sched-g8',
+    title: 'Grade 8 Faculty Teaching Load & Class Program',
+    fileName: 'PLSNHS_Grade8_Faculty_Schedule_Matrix_2026.pdf',
+    fileSize: '435 KB',
+    fileType: 'PDF',
+    schoolYear: 'S.Y. 2026–2027',
+    semester: '1st & 2nd Semester',
+    targetGradeLevel: 'Grade 8',
+    recipientType: 'selected',
+    recipientTeacherNames: [
+      'Twengcle Deguma',
+      'Ms. Alinsonorin',
+      'Ms. Omambac',
+      'Mr. Padillo',
+      'Mr. Gonzaga',
+      'Mrs. Rabanes',
+      'Mrs. Montoya',
+      'Mrs. Balwit',
+    ],
+    sentBy: 'Office of the Principal • JHS Department',
+    sentAt: 'Oct 28, 2026 • 09:15 AM',
+    notes:
+      'Certified Grade 8 teaching programs, Science Lab schedules, and advisory room assignments (Bldg B).',
+  },
+  {
+    id: 'adm-sched-g9',
+    title: 'Grade 9 Faculty Teaching Load & Class Program',
+    fileName: 'PLSNHS_Grade9_Faculty_Schedule_Matrix_2026.pdf',
+    fileSize: '420 KB',
+    fileType: 'PDF',
+    schoolYear: 'S.Y. 2026–2027',
+    semester: '1st & 2nd Semester',
+    targetGradeLevel: 'Grade 9',
+    recipientType: 'selected',
+    recipientTeacherNames: [
+      'Mrs. Francisco',
+      'Mrs. Taruc',
+      'Mr. Albores',
+      'Mrs. Ogaob',
+      'Mrs. Ramas',
+      'Mrs. Rivera',
+      'Ms. Bo-ok',
+    ],
+    sentBy: 'Office of the Principal • JHS Department',
+    sentAt: 'Oct 28, 2026 • 09:30 AM',
+    notes:
+      'Certified Grade 9 teaching load, spiral science allocations, and advisory designations (Bldg C).',
+  },
+  {
+    id: 'adm-sched-g10',
+    title: 'Grade 10 Faculty Teaching Load & Class Program',
+    fileName: 'PLSNHS_Grade10_Faculty_Schedule_Matrix_2026.pdf',
+    fileSize: '450 KB',
+    fileType: 'PDF',
+    schoolYear: 'S.Y. 2026–2027',
+    semester: '1st & 2nd Semester',
+    targetGradeLevel: 'Grade 10',
+    recipientType: 'selected',
+    recipientTeacherNames: [
+      'Ryan Quiroga',
+      'Jherico Maurin',
+      'Mrs. Paunel',
+      'Mrs. Dela Torre',
+      'Mr. Gentica',
+      'Mrs. Rimas',
+      'Mrs. Diaz',
+    ],
+    sentBy: 'Office of the Principal • JHS Department',
+    sentAt: 'Oct 28, 2026 • 09:45 AM',
+    notes:
+      'Certified Grade 10 teaching schedule, Computer Lab hours, and JHS completion year advisory programs.',
+  },
+  {
+    id: 'adm-sched-shs',
+    title: 'Senior High School (Grades 11 & 12) Faculty Class Program & Strand Load',
+    fileName: 'PLSNHS_SHS_Faculty_Schedule_Matrix_2026.pdf',
+    fileSize: '490 KB',
+    fileType: 'PDF',
+    schoolYear: 'S.Y. 2026–2027',
+    semester: '1st & 2nd Semester',
+    targetGradeLevel: 'Grades 11 & 12 (SHS)',
+    recipientType: 'selected',
+    recipientTeacherNames: ['Teacher Santos', 'SHS Faculty'],
+    sentBy: 'Office of the Principal • SHS Department',
+    sentAt: 'Oct 28, 2026 • 10:00 AM',
+    notes:
+      'Official Senior High School teaching assignments across Academic (GAS, HUMSS, STEM) and TVL tracks.',
   },
 ];
 
@@ -1698,10 +1814,17 @@ export const TeacherClassProgramPage: React.FC = () => {
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-[#0f172a] px-2.5 py-1 text-[10px] font-bold text-white">
-                      <Calendar className="h-3 w-3 text-amber-400" />
-                      {file.schoolYear} • {file.semester}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-[#0f172a] px-2.5 py-1 text-[10px] font-bold text-white">
+                        <Calendar className="h-3 w-3 text-amber-400" />
+                        {file.schoolYear} • {file.semester}
+                      </span>
+                      {file.targetGradeLevel && (
+                        <span className="inline-flex items-center rounded-lg bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                          {file.targetGradeLevel}
+                        </span>
+                      )}
+                    </div>
                     <Badge variant="emerald" size="sm">
                       {file.fileType || 'PDF'} FILE
                     </Badge>

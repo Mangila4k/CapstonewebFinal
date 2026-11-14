@@ -27,6 +27,7 @@ import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
 import type { Section } from '../../types';
+export type { Section };
 import {
   uploadAndAttachTeacherSchedule,
   getTeacherAttachedScheduleMap,

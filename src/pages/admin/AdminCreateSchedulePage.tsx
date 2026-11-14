@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
@@ -14,6 +14,9 @@ import {
   UserCheck,
   Paperclip,
   ExternalLink,
+  GraduationCap,
+  Users,
+  Check,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -24,7 +27,13 @@ import {
   DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
   type AdminSentTeacherScheduleFile,
 } from '../teacher/TeacherClassProgramPage';
-import { loadCachedTeachers, type FacultyRecord } from './AdminTeachersPage';
+import {
+  loadCachedTeachers,
+  type FacultyRecord,
+  INITIAL_PLSNHS_SECTIONS,
+  SECTIONS_CACHE_KEY,
+  type Section,
+} from './AdminTeachersPage';
 import { uploadAndAttachTeacherSchedule } from '../../lib/teacherScheduleService';
 
 export const AdminCreateSchedulePage: React.FC = () => {
@@ -34,6 +43,21 @@ export const AdminCreateSchedulePage: React.FC = () => {
   const [isSendFileModalOpen, setIsSendFileModalOpen] = useState(false);
   const [viewingFile, setViewingFile] = useState<AdminSentTeacherScheduleFile | null>(null);
   const [teachersList, setTeachersList] = useState<FacultyRecord[]>(loadCachedTeachers);
+  const [sectionsList, setSectionsList] = useState<Section[]>(() => {
+    try {
+      const raw = localStorage.getItem(SECTIONS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_PLSNHS_SECTIONS;
+  });
+
+  const [selectedYearLevelFilter, setSelectedYearLevelFilter] = useState<string>('all');
+  const [recipientYearFilter, setRecipientYearFilter] = useState<string>('all');
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -57,8 +81,9 @@ export const AdminCreateSchedulePage: React.FC = () => {
     title: 'Official Faculty Teaching Load & Class Program (S.Y. 2026–2027)',
     schoolYear: 'S.Y. 2026–2027',
     semester: '1st & 2nd Semester',
+    targetGradeLevel: 'All Year Levels',
     recipientType: 'all' as 'all' | 'selected',
-    selectedTeachers: ['Ryan Quiroga'] as string[],
+    selectedTeachers: [] as string[],
     notes:
       'Please review, download, or print your official teaching schedule and room assignments for S.Y. 2026–2027.',
     fileName: '',
@@ -80,7 +105,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
     }
   }, [preselectedTeacher]);
 
-  // Sync teachers dynamically from database
+  // Sync teachers and sections dynamically from database
   useEffect(() => {
     supabase
       .from('users')
@@ -101,7 +126,115 @@ export const AdminCreateSchedulePage: React.FC = () => {
           setTeachersList(mapped);
         }
       });
+
+    supabase
+      .from('sections')
+      .select('*')
+      .order('grade_level', { ascending: true })
+      .order('name', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSectionsList(data);
+        }
+      });
   }, []);
+
+  const getTeacherYearLevelInfo = (t: FacultyRecord) => {
+    const fullName = `${t.first_name} ${t.last_name}`.trim();
+    const lowerName = fullName.toLowerCase();
+
+    // 1. Check sections advisory
+    const advSec = sectionsList.find((sec) => {
+      if (sec.adviser_id && (sec.adviser_id === t.id || sec.adviser_id === t.user_id)) return true;
+      if (sec.adviser_name && lowerName.includes(sec.adviser_name.toLowerCase())) return true;
+      if (sec.adviser_name && sec.adviser_name.toLowerCase().includes(lowerName)) return true;
+      return false;
+    });
+
+    if (advSec) {
+      const isSHS = advSec.grade_level === 'Grade 11' || advSec.grade_level === 'Grade 12';
+      return {
+        yearLevel: advSec.grade_level,
+        group: isSHS ? 'Grades 11 & 12 (SHS)' : advSec.grade_level,
+        sectionName: advSec.name,
+        badgeText: `${advSec.grade_level} • Section ${advSec.name}`,
+      };
+    }
+
+    // 2. Check specialization
+    const spec = (t.specialization || '').toLowerCase();
+    if (spec.includes('grade 7')) return { yearLevel: 'Grade 7', group: 'Grade 7', badgeText: 'Grade 7 Faculty' };
+    if (spec.includes('grade 8')) return { yearLevel: 'Grade 8', group: 'Grade 8', badgeText: 'Grade 8 Faculty' };
+    if (spec.includes('grade 9')) return { yearLevel: 'Grade 9', group: 'Grade 9', badgeText: 'Grade 9 Faculty' };
+    if (spec.includes('grade 10')) return { yearLevel: 'Grade 10', group: 'Grade 10', badgeText: 'Grade 10 Faculty' };
+    if (spec.includes('grade 11') || spec.includes('grade 12') || spec.includes('senior') || spec.includes('shs')) {
+      return { yearLevel: 'Grade 11/12', group: 'Grades 11 & 12 (SHS)', badgeText: 'Senior High School' };
+    }
+
+    // 3. Known teachers
+    if (lowerName.includes('deguma')) return { yearLevel: 'Grade 8', group: 'Grade 8', badgeText: 'Grade 8 • Section Square' };
+    if (lowerName.includes('quiroga') || lowerName.includes('maurin')) return { yearLevel: 'Grade 10', group: 'Grade 10', badgeText: 'Grade 10 Faculty' };
+    if (lowerName.includes('santos')) return { yearLevel: 'Senior High', group: 'Grades 11 & 12 (SHS)', badgeText: 'Senior High Faculty' };
+
+    return { yearLevel: 'General Faculty', group: 'General Faculty', badgeText: 'General Education' };
+  };
+
+  const teachersByYearLevel = useMemo(() => {
+    const groups: Record<string, FacultyRecord[]> = {
+      'Grade 7': [],
+      'Grade 8': [],
+      'Grade 9': [],
+      'Grade 10': [],
+      'Grades 11 & 12 (SHS)': [],
+      'General Faculty': [],
+    };
+
+    teachersList.forEach((t) => {
+      const info = getTeacherYearLevelInfo(t);
+      if (groups[info.group]) {
+        groups[info.group].push(t);
+      } else {
+        groups['General Faculty'].push(t);
+      }
+    });
+
+    return groups;
+  }, [teachersList, sectionsList]);
+
+  const filteredScheduleFiles = useMemo(() => {
+    if (selectedYearLevelFilter === 'all') return sentScheduleFiles;
+    return sentScheduleFiles.filter((file) => {
+      if (file.targetGradeLevel === selectedYearLevelFilter) return true;
+      if (file.title.toLowerCase().includes(selectedYearLevelFilter.toLowerCase())) return true;
+      if (file.recipientType === 'all') return true;
+      return false;
+    });
+  }, [sentScheduleFiles, selectedYearLevelFilter]);
+
+  const handleGradeLevelChange = (newGrade: string) => {
+    let newTitle = fileForm.title;
+    if (newGrade === 'All Year Levels') {
+      newTitle = 'Official Faculty Teaching Load & Class Program (S.Y. 2026–2027)';
+    } else {
+      newTitle = `Official ${newGrade} Faculty Teaching Load & Class Program (S.Y. 2026–2027)`;
+    }
+
+    const targetTeachers =
+      newGrade === 'All Year Levels'
+        ? []
+        : (teachersByYearLevel[newGrade] || []).map((t) => `${t.first_name} ${t.last_name}`.trim());
+
+    setFileForm((prev) => ({
+      ...prev,
+      targetGradeLevel: newGrade,
+      title: newTitle,
+      selectedTeachers: newGrade === 'All Year Levels' ? prev.selectedTeachers : targetTeachers,
+      recipientType: newGrade === 'All Year Levels' ? 'all' : 'selected',
+    }));
+    if (newGrade !== 'All Year Levels') {
+      setRecipientYearFilter(newGrade);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -135,11 +268,14 @@ export const AdminCreateSchedulePage: React.FC = () => {
       fileDataUrl: fileForm.fileDataUrl || undefined,
       schoolYear: fileForm.schoolYear,
       semester: fileForm.semester,
+      targetGradeLevel: fileForm.targetGradeLevel,
       recipientType: fileForm.recipientType,
       recipientTeacherNames:
         fileForm.recipientType === 'all'
           ? ['All Faculty Teachers']
-          : fileForm.selectedTeachers,
+          : fileForm.selectedTeachers.length > 0
+          ? fileForm.selectedTeachers
+          : ['All Faculty Teachers'],
       sentBy: 'School Administrator • Office of the Principal',
       sentAt: new Date().toLocaleString('en-US', {
         month: 'short',
@@ -576,21 +712,64 @@ export const AdminCreateSchedulePage: React.FC = () => {
             </h2>
           </div>
           <span className="text-[11px] font-semibold text-slate-500">
-            Synced directly to Teacher Portal &rarr; Class Program
+            Organized by Year Level &bull; Synced directly to Teacher Portal &rarr; Class Program
           </span>
         </div>
 
+        {/* Year Level Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase shrink-0">Year Level:</span>
+          {[
+            { id: 'all', label: 'All Year Levels' },
+            { id: 'Grade 7', label: 'Grade 7' },
+            { id: 'Grade 8', label: 'Grade 8' },
+            { id: 'Grade 9', label: 'Grade 9' },
+            { id: 'Grade 10', label: 'Grade 10' },
+            { id: 'Grades 11 & 12 (SHS)', label: 'Senior High (11–12)' },
+          ].map((tab) => {
+            const count = tab.id === 'all'
+              ? sentScheduleFiles.length
+              : sentScheduleFiles.filter((f) => {
+                  if (f.targetGradeLevel === tab.id) return true;
+                  if (f.title.toLowerCase().includes(tab.id.toLowerCase())) return true;
+                  return false;
+                }).length;
+            const isActive = selectedYearLevelFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedYearLevelFilter(tab.id)}
+                className={`rounded-lg px-3 py-1.5 font-bold whitespace-nowrap text-xs transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-700 text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {tab.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sentScheduleFiles.map((file) => (
+          {filteredScheduleFiles.map((file) => (
             <div
               key={file.id}
-              className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between gap-3"
+              className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between gap-3 shadow-2xs hover:border-emerald-300 transition-all"
             >
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant="emerald" size="sm">
-                    {file.fileType} SCHEDULE FILE
-                  </Badge>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant="emerald" size="sm">
+                      {file.fileType} SCHEDULE FILE
+                    </Badge>
+                    {file.targetGradeLevel && (
+                      <span className="inline-flex items-center rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">
+                        {file.targetGradeLevel}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[11px] text-slate-400 font-medium">{file.sentAt}</span>
                 </div>
                 <button
@@ -615,12 +794,20 @@ export const AdminCreateSchedulePage: React.FC = () => {
                     <span>{file.fileName} ({file.fileSize})</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-600">
-                  <span className="font-bold text-slate-700">Sent to:</span>{' '}
-                  {file.recipientType === 'all'
-                    ? 'All Faculty Teachers'
-                    : file.recipientTeacherNames.join(', ')}
-                </p>
+                <div className="text-[11px] text-slate-600 space-y-0.5">
+                  <p>
+                    <span className="font-bold text-slate-700">Target Year Level:</span>{' '}
+                    <span className="font-bold text-emerald-800">
+                      {file.targetGradeLevel || 'All Year Levels'}
+                    </span>
+                  </p>
+                  <p className="line-clamp-2">
+                    <span className="font-bold text-slate-700">Recipients:</span>{' '}
+                    {file.recipientType === 'all'
+                      ? 'All Faculty Teachers'
+                      : file.recipientTeacherNames.join(', ')}
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-between border-t border-slate-200/70 pt-2.5 text-[11px] gap-2">
@@ -675,8 +862,8 @@ export const AdminCreateSchedulePage: React.FC = () => {
         isOpen={isSendFileModalOpen}
         onClose={() => setIsSendFileModalOpen(false)}
         title="Send Official Schedule File to Teachers"
-        subtitle="Upload the official faculty class program file (PDF, Word, Excel, or Image) so teachers can view, print, or download it"
-        maxWidth="lg"
+        subtitle="Upload the official faculty class program file (PDF, Word, Excel, or Image) organized by year level"
+        maxWidth="2xl"
       >
         <form onSubmit={handleSendScheduleFileToTeachers} className="space-y-4">
           <div>
@@ -690,6 +877,30 @@ export const AdminCreateSchedulePage: React.FC = () => {
               onChange={(e) => setFileForm({ ...fileForm, title: e.target.value })}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:border-emerald-600 focus:bg-white focus:outline-hidden"
             />
+          </div>
+
+          {/* Target Year Level / Grade Level */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-700 uppercase">
+                Target Year Level / Grade Level <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[11px] font-semibold text-emerald-700">
+                Organizes schedule &amp; auto-selects recipient faculty
+              </span>
+            </div>
+            <select
+              value={fileForm.targetGradeLevel}
+              onChange={(e) => handleGradeLevelChange(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-hidden cursor-pointer"
+            >
+              <option value="All Year Levels">All Year Levels (General School-wide Program)</option>
+              <option value="Grade 7">Grade 7 Faculty &amp; Advisers</option>
+              <option value="Grade 8">Grade 8 Faculty &amp; Advisers</option>
+              <option value="Grade 9">Grade 9 Faculty &amp; Advisers</option>
+              <option value="Grade 10">Grade 10 Faculty &amp; Advisers</option>
+              <option value="Grades 11 & 12 (SHS)">Senior High School (Grades 11 &amp; 12 Faculty)</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -759,28 +970,61 @@ export const AdminCreateSchedulePage: React.FC = () => {
           </div>
 
           {/* Recipient Faculty Selection */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-700 uppercase">
-              Target Faculty Recipients
-            </label>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 uppercase">
+                Target Faculty Recipients
+              </label>
+              <span className="text-[11px] font-bold text-emerald-700">
+                {fileForm.recipientType === 'all'
+                  ? 'All Faculty Teachers (School-wide)'
+                  : `${fileForm.selectedTeachers.length} Teacher(s) Selected`}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setFileForm({ ...fileForm, recipientType: 'all' })}
-                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
+                onClick={() => setFileForm({ ...fileForm, recipientType: 'all', selectedTeachers: [] })}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer text-center ${
                   fileForm.recipientType === 'all'
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                All Faculty Teachers
+                All Faculty (All Levels)
               </button>
               <button
                 type="button"
-                onClick={() => setFileForm({ ...fileForm, recipientType: 'selected' })}
-                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
+                onClick={() => {
+                  const g = fileForm.targetGradeLevel !== 'All Year Levels' ? fileForm.targetGradeLevel : 'Grade 7';
+                  const tList = (teachersByYearLevel[g] || []).map((t) => `${t.first_name} ${t.last_name}`.trim());
+                  setFileForm({
+                    ...fileForm,
+                    recipientType: 'selected',
+                    selectedTeachers: tList,
+                  });
+                  setRecipientYearFilter(g);
+                }}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer text-center ${
                   fileForm.recipientType === 'selected'
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Organize by Year Level
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFileForm({
+                    ...fileForm,
+                    recipientType: 'selected',
+                  });
+                }}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer text-center ${
+                  fileForm.recipientType === 'selected' && fileForm.selectedTeachers.length > 0
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
@@ -789,25 +1033,116 @@ export const AdminCreateSchedulePage: React.FC = () => {
             </div>
 
             {fileForm.recipientType === 'selected' && (
-              <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2.5 grid grid-cols-2 gap-1.5">
-                {teachersList.map((t) => {
-                  const fullName = `${t.first_name} ${t.last_name}`.trim();
-                  const checked = fileForm.selectedTeachers.includes(fullName);
-                  return (
-                    <label
-                      key={t.id}
-                      className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleTeacherRecipient(fullName)}
-                        className="rounded text-emerald-700"
-                      />
-                      <span className="truncate">{fullName}</span>
-                    </label>
-                  );
-                })}
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                {/* Year Level Category Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase shrink-0">Filter:</span>
+                  {[
+                    { id: 'all', label: 'All Levels' },
+                    { id: 'Grade 7', label: 'Grade 7' },
+                    { id: 'Grade 8', label: 'Grade 8' },
+                    { id: 'Grade 9', label: 'Grade 9' },
+                    { id: 'Grade 10', label: 'Grade 10' },
+                    { id: 'Grades 11 & 12 (SHS)', label: 'Senior High' },
+                  ].map((tab) => {
+                    const count = tab.id === 'all'
+                      ? teachersList.length
+                      : (teachersByYearLevel[tab.id] || []).length;
+                    const isActive = recipientYearFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setRecipientYearFilter(tab.id)}
+                        className={`rounded-lg px-2.5 py-1 font-bold whitespace-nowrap text-[11px] transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-emerald-700 text-white shadow-2xs'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {tab.label} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Grouped Teachers by Year Level */}
+                <div className="max-h-60 overflow-y-auto space-y-3 pr-1">
+                  {Object.entries(teachersByYearLevel)
+                    .filter(([groupName]) => recipientYearFilter === 'all' || recipientYearFilter === groupName)
+                    .map(([groupName, teachersInGroup]) => {
+                      if (teachersInGroup.length === 0) return null;
+                      const allInGroupSelected = teachersInGroup.every((t) =>
+                        fileForm.selectedTeachers.includes(`${t.first_name} ${t.last_name}`.trim())
+                      );
+
+                      const toggleGroup = () => {
+                        const names = teachersInGroup.map((t) => `${t.first_name} ${t.last_name}`.trim());
+                        if (allInGroupSelected) {
+                          setFileForm((prev) => ({
+                            ...prev,
+                            selectedTeachers: prev.selectedTeachers.filter((n) => !names.includes(n)),
+                          }));
+                        } else {
+                          setFileForm((prev) => ({
+                            ...prev,
+                            selectedTeachers: Array.from(new Set([...prev.selectedTeachers, ...names])),
+                          }));
+                        }
+                      };
+
+                      return (
+                        <div key={groupName} className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                              <span className="text-xs font-black text-slate-900 uppercase">
+                                {groupName} Teachers ({teachersInGroup.length})
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={toggleGroup}
+                              className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                            >
+                              {allInGroupSelected ? 'Deselect All' : `Select All ${groupName}`}
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            {teachersInGroup.map((t) => {
+                              const fullName = `${t.first_name} ${t.last_name}`.trim();
+                              const isChecked = fileForm.selectedTeachers.includes(fullName);
+                              const info = getTeacherYearLevelInfo(t);
+                              return (
+                                <label
+                                  key={t.id}
+                                  className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 border text-xs font-medium cursor-pointer transition-colors ${
+                                    isChecked
+                                      ? 'border-emerald-300 bg-emerald-50/70 text-emerald-950 font-bold'
+                                      : 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100/70'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => toggleTeacherRecipient(fullName)}
+                                      className="rounded text-emerald-700 shrink-0"
+                                    />
+                                    <span className="truncate">{fullName}</span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-500 font-semibold truncate shrink-0 max-w-[120px]">
+                                    {info.badgeText}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             )}
           </div>
@@ -867,6 +1202,11 @@ export const AdminCreateSchedulePage: React.FC = () => {
                     <Badge variant="emerald" size="sm">
                       {viewingFile.fileType || 'PDF'}
                     </Badge>
+                    {viewingFile.targetGradeLevel && (
+                      <span className="inline-flex items-center rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">
+                        {viewingFile.targetGradeLevel}
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] text-slate-600 truncate mt-0.5">
                     {viewingFile.schoolYear} • {viewingFile.semester} • Sent to{' '}
