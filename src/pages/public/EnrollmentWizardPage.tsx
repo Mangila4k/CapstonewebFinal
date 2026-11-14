@@ -955,46 +955,31 @@ export const EnrollmentWizardPage: React.FC = () => {
 
               {/* Select Student Type */}
               <div className="enrollment-group">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                      <span>Student Classification</span>
-                      <span className="text-rose-500 font-bold">*</span>
-                    </label>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Select your enrollment status to configure your records lookup and required documents
-                    </p>
-                  </div>
-                  <span className="hidden sm:inline-flex text-[11px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
-                    Select 1 option
-                  </span>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Student Classification <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">Choose one that applies to you</span>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
                     {
                       id: 'New Student',
                       label: 'New Student',
-                      badge: 'Incoming Grade 7',
-                      desc: 'Elementary school graduate entering junior high school at PLSNHS.',
-                      tag: 'Manual LRN • Complete Credentials',
-                      icon: <UserPlus className="h-5 w-5" />,
+                      desc: 'Incoming Grade 7 from Elementary',
+                      icon: <UserPlus className="h-4.5 w-4.5" />,
                     },
                     {
                       id: 'Old Student',
                       label: 'Old Student',
-                      badge: 'Continuing Learner',
-                      desc: 'Returning Placido L. Señor NHS learner for Grades 8 through 12.',
-                      tag: 'LRN Auto-Match • Report Card Only',
-                      icon: <GraduationCap className="h-5 w-5" />,
+                      desc: 'Continuing PLSNHS Learner',
+                      icon: <GraduationCap className="h-4.5 w-4.5" />,
                     },
                     {
                       id: 'Transferee',
                       label: 'Transferee',
-                      badge: 'School Transfer',
-                      desc: 'Transferring from another secondary school or external division.',
-                      tag: 'Manual LRN • Form 137 / SF10 Required',
-                      icon: <School className="h-5 w-5" />,
+                      desc: 'From another Secondary School',
+                      icon: <School className="h-4.5 w-4.5" />,
                     },
                   ].map((type) => {
                     const isActive = formData.studentType === type.id;
@@ -1003,77 +988,38 @@ export const EnrollmentWizardPage: React.FC = () => {
                         key={type.id}
                         type="button"
                         onClick={() => handleStudentTypeChange(type.id)}
-                        className={`group relative flex flex-col justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer ${
+                        className={`group relative flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                           isActive
-                            ? 'border-[#1a225a] bg-white shadow-[0_0_0_4px_rgba(26,34,90,0.14)] ring-1 ring-[#1a225a]'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs hover:shadow-xs'
+                            ? 'border-[#1a225a] bg-white shadow-[0_0_0_4px_rgba(26,34,90,0.14)]'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs'
                         }`}
                       >
-                        {/* Top: Icon + Badge + Check Indicator */}
-                        <div className="flex items-start justify-between w-full mb-3.5">
+                        <div className="flex items-center justify-between w-full mb-2">
                           <div
-                            className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all ${
+                            className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all ${
                               isActive
                                 ? 'bg-[#1a225a] text-white border-[#1a225a] shadow-xs'
-                                : 'bg-slate-100 text-[#1a225a] border-slate-200/80 group-hover:bg-[#1a225a]/10 group-hover:border-[#1a225a]/20'
+                                : 'bg-slate-100 text-[#1a225a] border-slate-200/80 group-hover:bg-[#1a225a]/10'
                             }`}
                           >
                             {React.cloneElement(type.icon, {
-                              className: `h-5 w-5 ${isActive ? 'text-white' : 'text-[#1a225a]'} transition-colors`,
+                              className: `h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-[#1a225a]'}`,
                             })}
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border tracking-wider transition-colors ${
-                                isActive
-                                  ? 'bg-[#1a225a]/10 text-[#1a225a] border-[#1a225a]/25'
-                                  : 'bg-slate-100 text-slate-600 border-slate-200'
-                              }`}
-                            >
-                              {type.badge}
+                          {isActive ? (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1a225a] text-white shadow-xs">
+                              <Check className="h-3 w-3 stroke-[2.5]" />
                             </span>
-                            <div
-                              className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all ${
-                                isActive
-                                  ? 'border-[#1a225a] bg-[#1a225a] text-white shadow-2xs'
-                                  : 'border-slate-300 bg-white group-hover:border-slate-400'
-                              }`}
-                            >
-                              {isActive && <Check className="h-3 w-3 stroke-[3]" />}
-                            </div>
-                          </div>
+                          ) : (
+                            <span className="h-5 w-5 rounded-full border border-slate-300 bg-white group-hover:border-slate-400" />
+                          )}
                         </div>
-
-                        {/* Middle: Title & Description */}
-                        <div className="mb-3.5">
-                          <h4
-                            className={`text-base font-black tracking-tight leading-snug transition-colors ${
-                              isActive ? 'text-[#1a225a]' : 'text-slate-900 group-hover:text-[#1a225a]'
-                            }`}
-                          >
-                            {type.label}
-                          </h4>
-                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                            {type.desc}
-                          </p>
-                        </div>
-
-                        {/* Bottom: Requirement Policy Tag */}
-                        <div className="pt-2.5 border-t border-slate-100 w-full mt-auto">
-                          <span
-                            className={`inline-flex items-center gap-1.5 text-[10.5px] font-bold ${
-                              isActive ? 'text-[#1a225a]' : 'text-slate-500'
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                isActive ? 'bg-[#1a225a]' : 'bg-slate-300 group-hover:bg-slate-400'
-                              }`}
-                            />
-                            <span>{type.tag}</span>
-                          </span>
-                        </div>
+                        <span className={`text-sm font-extrabold leading-tight ${isActive ? 'text-[#1a225a]' : 'text-slate-800'}`}>
+                          {type.label}
+                        </span>
+                        <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                          {type.desc}
+                        </span>
                       </button>
                     );
                   })}
