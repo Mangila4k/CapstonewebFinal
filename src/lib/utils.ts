@@ -38,11 +38,13 @@ export function formatDateTime(dateString?: string | null): string {
 }
 
 /**
- * Determines whether LRN must be entered manually:
+ * Determines whether the student must complete all information manually:
  * - Grade 7 students (incoming from elementary school)
- * - Transferees (students transferring from other high schools)
+ * - Transferees (students transferring from another secondary school)
  *
- * For continuing learners in Grades 8 through 12, the LRN is auto-populated.
+ * For continuing learners in Grades 8 through 12, entering their 12-digit LRN
+ * automatically populates their Grade 7 school records, and they only need
+ * to provide their latest Report Card.
  */
 export function isLrnManualRequired(gradeLevel?: string, studentType?: string): boolean {
   const normalizedGrade = (gradeLevel || '').trim().toLowerCase();
@@ -50,6 +52,10 @@ export function isLrnManualRequired(gradeLevel?: string, studentType?: string): 
   if (normalizedGrade === 'grade 7' || normalizedGrade === '7') return true;
   if (normalizedType === 'transferee') return true;
   return false;
+}
+
+export function isGrade7OrTransferee(gradeLevel?: string, studentType?: string): boolean {
+  return isLrnManualRequired(gradeLevel, studentType);
 }
 
 /**

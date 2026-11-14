@@ -25,6 +25,8 @@ import {
   ShieldCheck,
   Calendar,
   Layers,
+  Search,
+  Loader2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../../lib/supabase';
@@ -122,8 +124,8 @@ export const EnrollmentWizardPage: React.FC = () => {
     guardianAddress: '',
 
     // Grade Level & Strand
-    studentType: 'New Student',
-    gradeLevel: 'Grade 11',
+    studentType: preselectedStrand ? 'Old Student' : 'New Student',
+    gradeLevel: preselectedStrand ? 'Grade 11' : 'Grade 7',
     strand: preselectedStrand || 'STEM',
     tvlSpecialization: 'TVL-Cookery',
     schoolYear: '2026-2027',
@@ -159,37 +161,191 @@ export const EnrollmentWizardPage: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const activeRequirements = DOCUMENT_CONFIG.filter((doc) =>
-    doc.applicableTypes.includes(formData.studentType)
-  );
+  // Two distinct enrollment pathways:
+  // 1. Grade 7 Entrants & Transferees:
+  //    - Required to complete all information manually and submit all entrance credentials.
+  // 2. Grades 8 through 12 Continuing Students:
+  //    - Only need to enter their 12-digit LRN (their Grade 7 information automatically appears).
+  //    - Only need to provide their latest Report Card.
+  const isContinuingGrade8To12 =
+    formData.gradeLevel !== 'Grade 7' && formData.studentType !== 'Transferee';
+  const isFreshOrTransfer = !isContinuingGrade8To12;
 
-  // LRN requirement logic:
-  // - Grade 7 & Transferees: entered manually (required 12 digits)
-  // - Grades 8 through 12: populated automatically by Placido L. Señor NHS system
-  const isLrnManual = isLrnManualRequired(formData.gradeLevel, formData.studentType);
-  const [lastManualMode, setLastManualMode] = useState<boolean>(isLrnManual);
+  // LRN Lookup and Grade 7 auto-fill state
+  const [lrnLookupLoading, setLrnLookupLoading] = useState(false);
+  const [lrnLookupStatus, setLrnLookupStatus] = useState<{
+    type: 'success' | 'warning' | 'error' | null;
+    message: string;
+    studentName?: string;
+  }>({ type: null, message: '' });
+  const [isAutoFilledFromGrade7, setIsAutoFilledFromGrade7] = useState(false);
 
-  useEffect(() => {
-    if (isLrnManual !== lastManualMode) {
-      setLastManualMode(isLrnManual);
-      if (isLrnManual) {
-        // Switched to Grade 7 or Transferee: clear LRN so applicant manually enters official 12-digit DepEd LRN
-        setFormData((prev) => ({ ...prev, lrn: '' }));
-      } else {
-        // Switched to continuing learner in Grades 8-12: auto-populate institutional LRN
-        const autoLrn = generateAutoLrn(
-          formData.email || `${formData.firstName}${formData.lastName}` || 'plsnhs'
-        );
-        setFormData((prev) => ({ ...prev, lrn: autoLrn }));
+  // Document requirements:
+  // - Continuing students (Grades 8-12): ONLY Report Card (Form 138 / SF9) is required
+  // - Grade 7 & Transferees: All entrance credentials are required
+  const activeRequirements = isContinuingGrade8To12
+    ? DOCUMENT_CONFIG.filter((doc) => doc.key === 'report_card')
+    : DOCUMENT_CONFIG;
+
+  // Grade level change handler
+  const handleGradeLevelChange = (newGrade: string) => {
+    let nextStudentType = formData.studentType;
+    if (newGrade === 'Grade 7') {
+      if (nextStudentType === 'Old Student') {
+        nextStudentType = 'New Student';
       }
-    } else if (!isLrnManual && (!formData.lrn || formData.lrn.length !== 12 || !/^\d{12}$/.test(formData.lrn))) {
-      // Auto-populate if missing or invalid in auto mode
-      const autoLrn = generateAutoLrn(
-        formData.email || `${formData.firstName}${formData.lastName}` || 'plsnhs'
-      );
-      setFormData((prev) => ({ ...prev, lrn: autoLrn }));
+      setIsAutoFilledFromGrade7(false);
+      setLrnLookupStatus({ type: null, message: '' });
+    } else {
+      // Continuing learners in Grades 8-12 default to Old Student unless marked as Transferee
+      if (nextStudentType === 'New Student') {
+        nextStudentType = 'Old Student';
+      }
     }
-  }, [isLrnManual, lastManualMode, formData.gradeLevel, formData.studentType, formData.email, formData.firstName, formData.lastName, formData.lrn]);
+    setFormData((prev) => ({
+      ...prev,
+      gradeLevel: newGrade,
+      studentType: nextStudentType,
+    }));
+  };
+
+  // Student type change handler
+  const handleStudentTypeChange = (newType: string) => {
+    if (newType === 'Transferee') {
+      setIsAutoFilledFromGrade7(false);
+      setLrnLookupStatus({ type: null, message: '' });
+    }
+    setFormData((prev) => ({
+      ...prev,
+      studentType: newType,
+    }));
+  };
+
+  // LRN Auto-Lookup: Queries Supabase and school archives for Grade 7 records
+  const handleLookupLrn = async (targetLrn?: string) => {
+    const cleanDigits = (targetLrn !== undefined ? targetLrn : formData.lrn || '').trim();
+    if (!cleanDigits) {
+      setLrnLookupStatus({
+        type: 'error',
+        message: 'Please enter your 12-digit Learner Reference Number (LRN).',
+      });
+      return;
+    }
+    if (cleanDigits.length !== 12 || !/^\d{12}$/.test(cleanDigits)) {
+      setLrnLookupStatus({
+        type: 'error',
+        message: 'The Learner Reference Number (LRN) must be exactly 12 numeric digits.',
+      });
+      return;
+    }
+
+    setLrnLookupLoading(true);
+    setLrnLookupStatus({ type: null, message: '' });
+
+    try {
+      // 1. Search students table by LRN
+      const { data: studentRecord } = await supabase
+        .from('students')
+        .select('*')
+        .eq('lrn', cleanDigits)
+        .maybeSingle();
+
+      // 2. Search enrollments table for matching Grade 7 / previous enrollment
+      let enrollRecord: any = null;
+      if (studentRecord?.id || studentRecord?.email || studentRecord?.enrollment_id) {
+        const filters: string[] = [];
+        if (studentRecord.id) filters.push(`student_id.eq.${studentRecord.id}`);
+        if (studentRecord.email) filters.push(`email.eq.${studentRecord.email}`);
+        if (studentRecord.enrollment_id) filters.push(`id.eq.${studentRecord.enrollment_id}`);
+
+        const { data: enrollData } = await supabase
+          .from('enrollments')
+          .select('*')
+          .or(filters.join(','))
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        enrollRecord = enrollData;
+      }
+
+      // 3. Fallback: check localStorage cache
+      if (!studentRecord && !enrollRecord) {
+        try {
+          const rawCache = localStorage.getItem('plsnhs_enrollments_cache_v2');
+          const parsed = rawCache ? JSON.parse(rawCache) : [];
+          if (Array.isArray(parsed)) {
+            const found = parsed.find(
+              (p: any) => p?.lrn === cleanDigits || p?.student_id === cleanDigits
+            );
+            if (found) enrollRecord = found;
+          }
+        } catch {}
+      }
+
+      if (studentRecord || enrollRecord) {
+        const s = studentRecord;
+        const e = enrollRecord;
+
+        const bDate = s?.date_of_birth || e?.dob || e?.date_of_birth || '';
+        let compAge = s?.age ? String(s.age) : e?.age ? String(e.age) : '';
+        if (!compAge && bDate) {
+          const birth = new Date(bDate);
+          const today = new Date();
+          let calculated = today.getFullYear() - birth.getFullYear();
+          const m = today.getMonth() - birth.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) calculated--;
+          if (calculated >= 0 && calculated <= 100) compAge = String(calculated);
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          lrn: cleanDigits,
+          lastName: s?.last_name || e?.last_name || prev.lastName,
+          firstName: s?.first_name || e?.first_name || prev.firstName,
+          middleName: s?.middle_name || e?.middle_name || prev.middleName || '',
+          email: s?.email || e?.email || prev.email,
+          dob: bDate || prev.dob,
+          age: compAge || prev.age,
+          birthplace: e?.birthplace || prev.birthplace || '',
+          gender: s?.gender || e?.gender || prev.gender || '',
+          nationality: s?.nationality || e?.nationality || prev.nationality || 'Filipino',
+          religion: s?.religion || e?.religion || prev.religion || '',
+          address: s?.address || e?.address || prev.address || '',
+
+          motherName: e?.mother_name || prev.motherName || '',
+          motherOccupation: e?.mother_occupation || prev.motherOccupation || '',
+          fatherName: e?.father_name || prev.fatherName || '',
+          fatherOccupation: e?.father_occupation || prev.fatherOccupation || '',
+          guardianName: e?.guardian_name || s?.parent_name || prev.guardianName || '',
+          guardianRelationship: e?.guardian_relationship || prev.guardianRelationship || 'Parent',
+          guardianContact: e?.guardian_contact || s?.parent_contact || prev.guardianContact || '',
+          guardianEmail: e?.guardian_email || s?.parent_email || prev.guardianEmail || '',
+          guardianAddress: e?.guardian_address || s?.address || prev.guardianAddress || '',
+        }));
+
+        setIsAutoFilledFromGrade7(true);
+        const displayName = `${s?.first_name || e?.first_name} ${s?.last_name || e?.last_name}`;
+        setLrnLookupStatus({
+          type: 'success',
+          studentName: displayName,
+          message: `Learner verified: ${displayName}. Information from your Grade 7 records has been automatically populated.`,
+        });
+      } else {
+        setLrnLookupStatus({
+          type: 'warning',
+          message: `LRN "${cleanDigits}" was not found in online archives. If your Grade 7 records were processed on paper, you may verify your 12 digits or enter your details manually below.`,
+        });
+      }
+    } catch (err) {
+      console.error('LRN lookup error:', err);
+      setLrnLookupStatus({
+        type: 'warning',
+        message: 'Could not connect to online records. You can manually enter your details below.',
+      });
+    } finally {
+      setLrnLookupLoading(false);
+    }
+  };
 
   // Auto-calculate age from Date of Birth
   const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,50 +404,61 @@ export const EnrollmentWizardPage: React.FC = () => {
       return;
     }
 
-    if (!formData.dob) {
-      setError('Please provide your Date of Birth.');
-      return;
-    }
-
-    if (!formData.gender) {
-      setError('Please select your gender.');
-      return;
-    }
-
-    if (!formData.address.trim()) {
-      setError('Please enter your home address.');
-      return;
-    }
-
     // Learner Reference Number (LRN) Validation
-    // - Grade 7 & Transferees: manual entry required (12 digits)
-    // - Grades 8 through 12: auto-populated institutional LRN
-    let cleanLrn = (formData.lrn || '').trim();
-    if (isLrnManual) {
-      if (!cleanLrn) {
-        setError(
-          formData.gradeLevel === 'Grade 7'
-            ? 'Please enter your 12-digit Learner Reference Number (LRN) for Grade 7 enrollment.'
-            : 'Please enter your 12-digit Learner Reference Number (LRN) as a Transferee student.'
-        );
-        return;
-      }
-      if (cleanLrn.length !== 12 || !/^\d{12}$/.test(cleanLrn)) {
-        setError('The Learner Reference Number (LRN) must be exactly 12 numeric digits.');
+    const cleanLrn = (formData.lrn || '').trim();
+    if (!cleanLrn) {
+      setError(
+        formData.gradeLevel === 'Grade 7'
+          ? 'Please enter your 12-digit Learner Reference Number (LRN) from elementary school.'
+          : formData.studentType === 'Transferee'
+          ? 'Please enter your 12-digit Learner Reference Number (LRN) as a Transferee student.'
+          : 'Please enter your 12-digit Learner Reference Number (LRN) to proceed.'
+      );
+      return;
+    }
+    if (cleanLrn.length !== 12 || !/^\d{12}$/.test(cleanLrn)) {
+      setError('The Learner Reference Number (LRN) must be exactly 12 numeric digits.');
+      return;
+    }
+
+    // Requirements per enrollment path:
+    // - Continuing students (Grades 8-12): Only Report Card (Form 138 / SF9) is required
+    // - Grade 7 & Transferees: Complete personal, guardian, and entrance documents required
+    if (isContinuingGrade8To12) {
+      if (!documents.report_card) {
+        setError('Please upload your latest Report Card (Form 138 / SF9) to complete your enrollment.');
         return;
       }
     } else {
-      if (!cleanLrn || cleanLrn.length !== 12 || !/^\d{12}$/.test(cleanLrn)) {
-        cleanLrn = generateAutoLrn(
-          formData.email || `${formData.firstName}${formData.lastName}` || 'plsnhs'
-        );
-        setFormData((prev) => ({ ...prev, lrn: cleanLrn }));
+      if (!formData.dob) {
+        setError('Please provide your Date of Birth.');
+        return;
       }
-    }
 
-    if (!formData.guardianName.trim() || !formData.guardianContact.trim()) {
-      setError('Please provide parent or guardian name and contact number.');
-      return;
+      if (!formData.gender) {
+        setError('Please select your gender.');
+        return;
+      }
+
+      if (!formData.address.trim()) {
+        setError('Please enter your home address.');
+        return;
+      }
+
+      if (!formData.guardianName.trim() || !formData.guardianContact.trim()) {
+        setError('Please provide parent or guardian name and contact number.');
+        return;
+      }
+
+      if (!documents.report_card) {
+        setError('Please upload your Form 138 / SF9 Report Card.');
+        return;
+      }
+
+      if (!documents.psa_birth_cert) {
+        setError('Please upload your PSA Birth Certificate.');
+        return;
+      }
     }
 
     const isSeniorHigh = formData.gradeLevel === 'Grade 11' || formData.gradeLevel === 'Grade 12';
@@ -823,7 +990,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                       <button
                         key={type.id}
                         type="button"
-                        onClick={() => handleChange('studentType', type.id)}
+                        onClick={() => handleStudentTypeChange(type.id)}
                         className={`group relative flex flex-col items-start p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                           isActive
                             ? 'border-[#1a225a] bg-white shadow-[0_0_0_4px_rgba(26,34,90,0.14)]'
@@ -884,7 +1051,7 @@ export const EnrollmentWizardPage: React.FC = () => {
                       <button
                         key={item.grade}
                         type="button"
-                        onClick={() => handleChange('gradeLevel', item.grade)}
+                        onClick={() => handleGradeLevelChange(item.grade)}
                         className={`group relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
                           isActive
                             ? 'border-[#1a225a] bg-white text-[#1a225a] shadow-[0_0_0_4px_rgba(26,34,90,0.14)]'
@@ -915,53 +1082,124 @@ export const EnrollmentWizardPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Professional LRN Mode Notice Banner */}
-                <div
-                  className={`mt-3.5 rounded-2xl p-4 border transition-all ${
-                    isLrnManual
-                      ? 'bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-white border-amber-200/90 text-amber-950'
-                      : 'bg-white border border-[#1a225a]/30 shadow-[0_0_0_4px_rgba(26,34,90,0.14)] text-slate-900'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 ${
-                          isLrnManual
-                            ? 'bg-amber-100 text-amber-800 border-amber-300'
-                            : 'bg-[#1a225a]/10 text-[#1a225a] border-[#1a225a]/20'
-                        }`}
-                      >
-                        {isLrnManual ? <FileText className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-xs font-black font-display tracking-tight text-slate-900">
-                            {isLrnManual
-                              ? `Learner Reference Number (LRN): Manual Entry Required (${
-                                  formData.studentType === 'Transferee' ? 'Transferee' : formData.gradeLevel
-                                })`
-                              : `Learner Reference Number (LRN): Institutional Auto-Match (${formData.gradeLevel})`}
+                {/* Pathway B: Grades 8-12 Continuing Students LRN Express Lookup */}
+                {isContinuingGrade8To12 ? (
+                  <div className="mt-3.5 rounded-2xl p-4 sm:p-5 border border-[#1a225a] bg-white shadow-[0_0_0_4px_rgba(26,34,90,0.14)] transition-all">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1a225a] text-white">
+                          <ShieldCheck className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black font-display tracking-tight text-slate-900 flex items-center gap-2">
+                            <span>Learner Reference Number (LRN) Express Auto-Match ({formData.gradeLevel})</span>
+                          </p>
+                          <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                            For continuing students in Grades 8–12: enter your 12-digit LRN below. Your information from Grade 7 will automatically appear, and you only need to provide your latest Report Card.
                           </p>
                         </div>
-                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                          {isLrnManual
-                            ? 'For incoming Grade 7 students and transferees from other schools, the 12-digit DepEd LRN must be manually entered in the Personal Information section below.'
-                            : 'For continuing Placido L. Señor NHS students (Grades 8–12), the 12-digit LRN is automatically verified and populated from official school records.'}
-                        </p>
                       </div>
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 border bg-[#1a225a] text-white border-[#1a225a] w-fit">
+                        <Sparkles className="h-3 w-3" />
+                        Auto-Match Active
+                      </span>
                     </div>
-                    <span
-                      className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 border ${
-                        isLrnManual
-                          ? 'bg-amber-100 text-amber-900 border-amber-300'
-                          : 'bg-[#1a225a] text-white border-[#1a225a]'
-                      }`}
-                    >
-                      {isLrnManual ? 'Manual LRN' : 'Auto-Populated'}
-                    </span>
+
+                    <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={12}
+                          placeholder="Enter 12-digit LRN (e.g., 120013160142)"
+                          value={formData.lrn}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                            handleChange('lrn', digits);
+                            if (digits.length === 12) {
+                              handleLookupLrn(digits);
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#1a225a] focus:bg-white focus:shadow-[0_0_0_4px_rgba(26,34,90,0.14)] focus:outline-none transition-all tracking-wider"
+                        />
+                        {formData.lrn && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-mono font-bold text-slate-400">
+                            {formData.lrn.length}/12
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleLookupLrn(formData.lrn)}
+                        disabled={lrnLookupLoading || formData.lrn.length !== 12}
+                        className="px-4 py-2.5 rounded-xl bg-[#1a225a] hover:bg-[#131b48] text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xs shrink-0 cursor-pointer"
+                      >
+                        {lrnLookupLoading ? (
+                          <>
+                            <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Finding Records...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="h-3.5 w-3.5" />
+                            <span>Find My Records</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* LRN Feedback Status */}
+                    {lrnLookupStatus.type && (
+                      <div
+                        className={`mt-3 p-3 rounded-xl text-xs flex items-start gap-2.5 border transition-all ${
+                          lrnLookupStatus.type === 'success'
+                            ? 'bg-emerald-50 text-emerald-950 border-emerald-300'
+                            : lrnLookupStatus.type === 'error'
+                            ? 'bg-rose-50 text-rose-950 border-rose-300'
+                            : 'bg-amber-50 text-amber-950 border-amber-300'
+                        }`}
+                      >
+                        {lrnLookupStatus.type === 'success' ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                        )}
+                        <div className="leading-relaxed">
+                          <strong>
+                            {lrnLookupStatus.type === 'success' ? 'Record Verified: ' : 'Notice: '}
+                          </strong>
+                          {lrnLookupStatus.message}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  /* Pathway A: Grade 7 & Transferees Manual Entry Notice */
+                  <div className="mt-3.5 rounded-2xl p-4 border border-amber-300 bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-white text-amber-950 transition-all">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 bg-amber-100 text-amber-800 border-amber-300">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black font-display tracking-tight text-slate-900">
+                            {formData.gradeLevel === 'Grade 7'
+                              ? 'Incoming Grade 7 Enrollment: Complete Information & Credentials Required'
+                              : 'Transferee Enrollment: Complete Information & Credentials Required'}
+                          </p>
+                          <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                            {formData.gradeLevel === 'Grade 7'
+                              ? 'Incoming Grade 7 students from elementary school are required to manually enter their 12-digit DepEd LRN (from their Form 138 / SF9 report card) and complete all personal, parent/guardian, and documentary credentials below.'
+                              : 'Students transferring from another secondary school are required to manually enter their 12-digit DepEd LRN and fill out all personal, parent/guardian, and documentary credentials for official placement.'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 border bg-amber-100 text-amber-900 border-amber-300">
+                        All Info Required
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Strand Selection (If Grade 11 or 12) */}
@@ -1136,6 +1374,20 @@ export const EnrollmentWizardPage: React.FC = () => {
                 <User /> Personal Information
               </h3>
 
+              {isAutoFilledFromGrade7 && (
+                <div className="mb-4 p-3.5 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>
+                      <strong>Grade 7 Records Auto-Loaded:</strong> Official student details have been retrieved from school archives. You may review or update contact information if needed.
+                    </span>
+                  </div>
+                  <span className="font-extrabold text-[10px] bg-emerald-700 text-white px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 w-fit">
+                    Grade 7 Auto-Filled
+                  </span>
+                </div>
+              )}
+
               {/* Full Name */}
               <div className="enrollment-group">
                 <label>
@@ -1199,64 +1451,71 @@ export const EnrollmentWizardPage: React.FC = () => {
                   <label className="mb-0">
                     Learner Reference Number (LRN) <span>*</span>
                   </label>
-                  {isLrnManual ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
-                      ✍️ Manual Entry ({formData.gradeLevel === 'Grade 7' ? 'Grade 7 Entrant' : 'Transferee'})
+                  {isContinuingGrade8To12 ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#1a225a]/10 text-[#1a225a] border border-[#1a225a]/20">
+                      <Sparkles className="h-3 w-3 text-[#1a225a]" />
+                      Grade 7 Auto-Match ({formData.gradeLevel})
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                      <Sparkles className="h-3 w-3 text-emerald-600" />
-                      Auto-Populated ({formData.gradeLevel})
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                      ✍️ Manual Entry ({formData.gradeLevel === 'Grade 7' ? 'Grade 7 Entrant' : 'Transferee'})
                     </span>
                   )}
                 </div>
 
-                <div className="enrollment-input-wrap relative">
+                <div className="enrollment-input-wrap relative flex items-center">
                   <input
                     type="text"
                     inputMode="numeric"
                     placeholder={
-                      isLrnManual
-                        ? 'Enter 12-digit DepEd LRN (e.g., 119518123456)'
-                        : 'Generating institutional LRN...'
+                      isContinuingGrade8To12
+                        ? 'Enter 12-digit LRN to auto-fill Grade 7 records'
+                        : 'Enter 12-digit DepEd LRN (e.g., 119518123456)'
                     }
                     value={formData.lrn}
-                    readOnly={!isLrnManual}
                     maxLength={12}
                     onChange={(e) => {
-                      if (isLrnManual) {
-                        const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
-                        handleChange('lrn', digits);
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                      handleChange('lrn', digits);
+                      if (isContinuingGrade8To12 && digits.length === 12) {
+                        handleLookupLrn(digits);
                       }
                     }}
                     required
-                    className={`font-mono tracking-wider font-semibold ${
-                      !isLrnManual
-                        ? 'bg-slate-100/90 text-slate-800 cursor-not-allowed select-all'
-                        : 'bg-white text-slate-900'
+                    className={`font-mono tracking-wider font-semibold bg-white text-slate-900 ${
+                      isContinuingGrade8To12 ? 'pr-24' : ''
                     }`}
                   />
-                  {!isLrnManual && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-bold text-emerald-700 pointer-events-none">
-                      <Lock className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Institutional LRN</span>
-                    </div>
+                  {isContinuingGrade8To12 && (
+                    <button
+                      type="button"
+                      onClick={() => handleLookupLrn(formData.lrn)}
+                      disabled={lrnLookupLoading || formData.lrn.length !== 12}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#1a225a] hover:bg-[#131b48] text-white text-[11px] font-bold flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {lrnLookupLoading ? (
+                        <span className="h-3 w-3 border border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Search className="h-3 w-3" />
+                      )}
+                      <span>Lookup</span>
+                    </button>
                   )}
                 </div>
 
                 <small className="text-xs text-slate-500 mt-1.5 flex items-start gap-1.5">
-                  {isLrnManual ? (
+                  {isContinuingGrade8To12 ? (
                     <>
-                      <span className="font-bold text-amber-700 shrink-0">DepEd Requirement:</span>
+                      <span className="font-bold text-[#1a225a] shrink-0">PLSNHS Express:</span>
                       <span>
-                        For <strong>{formData.gradeLevel === 'Grade 7' ? 'Grade 7 students' : 'Transferees'}</strong>, the 12-digit LRN must be entered manually from your Form 138 / SF9 Report Card or Elementary Certificate.
+                        For continuing learners in <strong>Grades 8 through 12</strong>, entering your 12-digit LRN automatically fills in your Grade 7 records.
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="font-bold text-emerald-700 shrink-0">DepEd Naga:</span>
+                      <span className="font-bold text-amber-700 shrink-0">DepEd Requirement:</span>
                       <span>
-                        Institutional LRN is <strong>automatically populated</strong> for continuing students in <strong>Grades 8 through 12</strong> (PLSNHS Division ID: 119518).
+                        For <strong>{formData.gradeLevel === 'Grade 7' ? 'incoming Grade 7 students' : 'Transferees'}</strong>, the 12-digit LRN must be entered manually from your Form 138 / SF9 Report Card.
                       </span>
                     </>
                   )}
@@ -1381,6 +1640,15 @@ export const EnrollmentWizardPage: React.FC = () => {
               <h3 className="enrollment-section-title">
                 <Users /> Parent/Guardian Information
               </h3>
+
+              {isAutoFilledFromGrade7 && (
+                <div className="mb-4 p-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 text-emerald-900 flex items-center gap-2 text-xs">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Parent and guardian information on file from Grade 7 admission has been automatically loaded.
+                  </span>
+                </div>
+              )}
 
               {/* Mother's Info */}
               <div className="enrollment-row-2">
@@ -1533,11 +1801,47 @@ export const EnrollmentWizardPage: React.FC = () => {
                 <span>Required Documents</span>
               </div>
 
-              {formData.studentType === 'Transferee' && (
-                <div className="transferee-info-banner">
+              {isContinuingGrade8To12 ? (
+                <div className="mb-4 p-4 rounded-2xl border border-[#1a225a]/30 bg-white shadow-[0_0_0_4px_rgba(26,34,90,0.14)] text-slate-900">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1a225a] text-white mt-0.5">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-[#1a225a] uppercase tracking-wider">
+                        Report Card Only Required (Grades 8–12 Continuing Students)
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                        As a continuing student of Placido L. Señor NHS, your <strong>2x2 Photo</strong>, <strong>Form 137 / SF10 Permanent Record</strong>, <strong>PSA Birth Certificate</strong>, and <strong>Good Moral Certificate</strong> are already permanently archived with the School Registrar from your Grade 7 admission.
+                      </p>
+                      <p className="text-xs font-bold text-[#1a225a] mt-1.5 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#1a225a]" />
+                        You only need to submit your latest <strong>Report Card (Form 138 / SF9)</strong> below.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : formData.studentType === 'Transferee' ? (
+                <div className="transferee-info-banner mb-4">
                   <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                   <div>
-                    <strong>Transferee Policy Notice:</strong> If a student is to be transferred, they must be removed from their previous roster and are treated as a new student. Complete credentials (Form 137, Report Card, Completion, PSA, Good Moral) are required for verification and section placement.
+                    <strong>Transferee Policy Notice:</strong> As a transferring student from another secondary school, complete credentials (Form 137, Report Card, Completion, PSA, Good Moral) are required for verification and section placement.
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-4 rounded-2xl border border-amber-300 bg-amber-50/80 text-amber-950">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-900 mt-0.5">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-amber-900 uppercase tracking-wider">
+                        Grade 7 Admission Credentials Required
+                      </h4>
+                      <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
+                        All official elementary entrance credentials must be uploaded for incoming Grade 7 student registration and DepEd sectioning.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
