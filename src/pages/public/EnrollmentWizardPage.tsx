@@ -21,6 +21,10 @@ import {
   Mail,
   MapPin,
   Sparkles,
+  Check,
+  ShieldCheck,
+  Calendar,
+  Layers,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../../lib/supabase';
@@ -760,82 +764,201 @@ export const EnrollmentWizardPage: React.FC = () => {
           <form onSubmit={handleSubmit} noValidate>
             {/* ====== 1. GRADE LEVEL & STRAND ====== */}
             <div className="enrollment-section">
-              <h3 className="enrollment-section-title">
-                <BookOpen /> Grade Level & Strand
-              </h3>
+              {/* Professional Section Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-4 mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0f172a] text-[#F5C518] shadow-xs">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 font-display tracking-tight">
+                        Grade Level &amp; Academic Classification
+                      </h3>
+                      <span className="hidden sm:inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                        Step 1 of 4
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Select your student classification, intended grade level, and senior high school academic track.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* Select Student Type */}
               <div className="enrollment-group">
-                <label>
-                  Select Student Type <span>*</span>
-                </label>
-                <div className="student-type-grid">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Student Classification <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">Choose one that applies to you</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
-                    { id: 'New Student', label: 'New Student', icon: <UserPlus className="h-5 w-5 text-blue-600" /> },
-                    { id: 'Old Student', label: 'Old Student', icon: <GraduationCap className="h-5 w-5 text-amber-600" /> },
-                    { id: 'Transferee', label: 'Transferee', icon: <School className="h-5 w-5 text-emerald-600" /> },
-                  ].map((type) => (
-                    <div
-                      key={type.id}
-                      onClick={() => handleChange('studentType', type.id)}
-                      className={`student-type-tile ${formData.studentType === type.id ? 'active' : ''}`}
-                    >
-                      {type.icon}
-                      <span className="tile-title">{type.label}</span>
-                    </div>
-                  ))}
+                    {
+                      id: 'New Student',
+                      label: 'New Student',
+                      desc: 'Incoming Grade 7 from Elementary',
+                      icon: <UserPlus className="h-5 w-5" />,
+                      iconBg: 'bg-blue-50 text-blue-600 border-blue-200',
+                    },
+                    {
+                      id: 'Old Student',
+                      label: 'Old Student',
+                      desc: 'Continuing PLSNHS Learner',
+                      icon: <GraduationCap className="h-5 w-5" />,
+                      iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+                    },
+                    {
+                      id: 'Transferee',
+                      label: 'Transferee',
+                      desc: 'From another Secondary School',
+                      icon: <School className="h-5 w-5" />,
+                      iconBg: 'bg-purple-50 text-purple-600 border-purple-200',
+                    },
+                  ].map((type) => {
+                    const isActive = formData.studentType === type.id;
+                    return (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => handleChange('studentType', type.id)}
+                        className={`group relative flex flex-col items-start p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                          isActive
+                            ? 'border-emerald-600 bg-emerald-50/50 shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-2.5">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all ${
+                              isActive ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs' : type.iconBg
+                            }`}
+                          >
+                            {React.cloneElement(type.icon, {
+                              className: `h-5 w-5 ${isActive ? 'text-white' : ''}`,
+                            })}
+                          </div>
+                          {isActive ? (
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs">
+                              <Check className="h-3.5 w-3.5" />
+                            </span>
+                          ) : (
+                            <span className="h-5 w-5 rounded-full border border-slate-300 bg-white group-hover:border-slate-400" />
+                          )}
+                        </div>
+                        <span className={`text-sm font-extrabold leading-tight ${isActive ? 'text-slate-950' : 'text-slate-800'}`}>
+                          {type.label}
+                        </span>
+                        <span className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          {type.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Applying for Grade Level */}
               <div className="enrollment-group">
-                <label>
-                  Applying for Grade Level <span>*</span>
-                </label>
-                <div className="grade-options-grid">
-                  {['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map((grade) => (
-                    <div
-                      key={grade}
-                      onClick={() => handleChange('gradeLevel', grade)}
-                      className={`grade-option-tile ${formData.gradeLevel === grade ? 'active' : ''}`}
-                    >
-                      {grade}
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Applying for Grade Level <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400">Junior High (Grades 7–10) • Senior High (Grades 11–12)</span>
                 </div>
 
-                {/* LRN Mode Indicator Banner */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                  {[
+                    { grade: 'Grade 7', level: 'JHS', desc: 'Junior High' },
+                    { grade: 'Grade 8', level: 'JHS', desc: 'Junior High' },
+                    { grade: 'Grade 9', level: 'JHS', desc: 'Junior High' },
+                    { grade: 'Grade 10', level: 'JHS', desc: 'Junior High' },
+                    { grade: 'Grade 11', level: 'SHS', desc: 'Senior High' },
+                    { grade: 'Grade 12', level: 'SHS', desc: 'Senior High' },
+                  ].map((item) => {
+                    const isActive = formData.gradeLevel === item.grade;
+                    const isSHS = item.level === 'SHS';
+                    return (
+                      <button
+                        key={item.grade}
+                        type="button"
+                        onClick={() => handleChange('gradeLevel', item.grade)}
+                        className={`group relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isActive
+                            ? 'border-emerald-600 bg-emerald-50 text-emerald-950 shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 text-slate-700 shadow-2xs'
+                        }`}
+                      >
+                        <span
+                          className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md mb-1 ${
+                            isActive
+                              ? 'bg-emerald-200/70 text-emerald-900'
+                              : isSHS
+                              ? 'bg-amber-100/80 text-amber-900 border border-amber-200/60'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {item.level}
+                        </span>
+                        <span className={`text-sm font-extrabold ${isActive ? 'text-slate-950' : 'text-slate-800'}`}>
+                          {item.grade}
+                        </span>
+                        {isActive && (
+                          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white">
+                            <Check className="h-2.5 w-2.5" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Professional LRN Mode Notice Banner */}
                 <div
-                  className={`mt-3 rounded-2xl p-3.5 border transition-all ${
+                  className={`mt-3.5 rounded-2xl p-4 border transition-all ${
                     isLrnManual
-                      ? 'bg-amber-50/80 border-amber-200 text-amber-950'
-                      : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                      ? 'bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-white border-amber-200/90 text-amber-950'
+                      : 'bg-gradient-to-r from-emerald-50/90 via-emerald-50/50 to-white border-emerald-200/90 text-emerald-950'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5">
-                      <span className="text-lg leading-none mt-0.5">{isLrnManual ? '✍️' : '⚡'}</span>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 ${
+                          isLrnManual
+                            ? 'bg-amber-100 text-amber-800 border-amber-300'
+                            : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        }`}
+                      >
+                        {isLrnManual ? <FileText className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+                      </div>
                       <div>
-                        <p className="text-xs font-bold font-display">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-xs font-black font-display tracking-tight text-slate-900">
+                            {isLrnManual
+                              ? `Learner Reference Number (LRN): Manual Entry Required (${
+                                  formData.studentType === 'Transferee' ? 'Transferee' : formData.gradeLevel
+                                })`
+                              : `Learner Reference Number (LRN): Institutional Auto-Match (${formData.gradeLevel})`}
+                          </p>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                           {isLrnManual
-                            ? `LRN Mode: Manual Entry Required (${formData.studentType === 'Transferee' ? 'Transferee' : formData.gradeLevel})`
-                            : `LRN Mode: Auto-Populated (${formData.gradeLevel})`}
-                        </p>
-                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                          {isLrnManual
-                            ? 'For Grade 7 entrants and transferees, the 12-digit DepEd LRN must be manually entered in the Personal Information section below.'
-                            : 'For continuing learners in Grades 8 through 12, the 12-digit LRN is automatically populated by the Placido L. Señor NHS system.'}
+                            ? 'For incoming Grade 7 students and transferees from other schools, the 12-digit DepEd LRN must be manually entered in the Personal Information section below.'
+                            : 'For continuing Placido L. Señor NHS students (Grades 8–12), the 12-digit LRN is automatically verified and populated from official school records.'}
                         </p>
                       </div>
                     </div>
                     <span
-                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 border ${
+                      className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shrink-0 border ${
                         isLrnManual
-                          ? 'bg-amber-100 text-amber-800 border-amber-300'
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                          : 'bg-emerald-100 text-emerald-900 border-emerald-300'
                       }`}
                     >
-                      {isLrnManual ? 'Manual LRN' : 'Auto LRN'}
+                      {isLrnManual ? 'Manual LRN' : 'Auto-Populated'}
                     </span>
                   </div>
                 </div>
@@ -844,79 +967,165 @@ export const EnrollmentWizardPage: React.FC = () => {
               {/* Strand Selection (If Grade 11 or 12) */}
               {isSeniorHigh && (
                 <div className="enrollment-group animate-fade-in">
-                  <label>
-                    Select Strand <span>*</span>
-                  </label>
-                  <div className="strand-options-grid">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Senior High School Track &amp; Strand <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">Select your specialization track</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {[
-                      { code: 'TVL', title: 'TVL', sub: 'Technical-Vocational-Livelihood Track' },
-                      { code: 'HUMSS', title: 'HUMSS', sub: 'Humanities and Social Sciences' },
-                      { code: 'GAS', title: 'GAS', sub: 'General Academic Strand' },
-                      { code: 'STEM', title: 'STEM', sub: 'Science, Technology, Engineering, Math' },
-                    ].map((st) => (
-                      <div
-                        key={st.code}
-                        onClick={() => handleChange('strand', st.code)}
-                        className={`strand-option-card ${formData.strand === st.code ? 'active' : ''}`}
-                      >
-                        <span className="strand-title">{st.title}</span>
-                        <span className="strand-sub">{st.sub}</span>
-                      </div>
-                    ))}
+                      {
+                        code: 'TVL',
+                        title: 'TVL Track',
+                        subtitle: 'Technical-Vocational-Livelihood',
+                        desc: 'Specialized skills in Cookery & ICT',
+                        badge: 'Vocational',
+                      },
+                      {
+                        code: 'HUMSS',
+                        title: 'HUMSS',
+                        subtitle: 'Humanities & Social Sciences',
+                        desc: 'Law, public service, education & communication',
+                        badge: 'Academic',
+                      },
+                      {
+                        code: 'GAS',
+                        title: 'GAS',
+                        subtitle: 'General Academic Strand',
+                        desc: 'Comprehensive multi-disciplinary preparation',
+                        badge: 'Academic',
+                      },
+                      {
+                        code: 'STEM',
+                        title: 'STEM',
+                        subtitle: 'Science, Tech, Engineering & Math',
+                        desc: 'Medicine, engineering, computing & research',
+                        badge: 'Academic',
+                      },
+                    ].map((st) => {
+                      const isActive = formData.strand === st.code;
+                      return (
+                        <button
+                          key={st.code}
+                          type="button"
+                          onClick={() => handleChange('strand', st.code)}
+                          className={`group relative flex flex-col items-start p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                            isActive
+                              ? 'border-emerald-600 bg-emerald-50/60 shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full mb-2">
+                            <span
+                              className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                                isActive ? 'bg-emerald-200/80 text-emerald-950' : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              {st.badge}
+                            </span>
+                            {isActive ? (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs">
+                                <Check className="h-3 w-3" />
+                              </span>
+                            ) : (
+                              <span className="h-4 w-4 rounded-full border border-slate-300 bg-white" />
+                            )}
+                          </div>
+                          <span className={`text-base font-black ${isActive ? 'text-slate-950' : 'text-slate-900'}`}>
+                            {st.title}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700 mt-0.5 leading-snug">
+                            {st.subtitle}
+                          </span>
+                          <span className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                            {st.desc}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* TVL Specialization Sub-options */}
                   {formData.strand === 'TVL' && (
-                    <div className="tvl-spec-box animate-fade-in">
-                      <div className="tvl-spec-box-title flex items-center gap-2">
+                    <div className="mt-3.5 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 animate-fade-in">
+                      <div className="flex items-center gap-2 mb-2.5">
                         <Utensils className="h-4 w-4 text-[#1a225a]" />
-                        <span>Select TVL Specialization *</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-[#1a225a]">
+                          Select TVL Specialization Track *
+                        </span>
                       </div>
-                      <div className="tvl-spec-grid">
-                        <div
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
                           onClick={() => handleChange('tvlSpecialization', 'TVL-Cookery')}
-                          className={`tvl-spec-tile flex items-center gap-2.5 ${
-                            formData.tvlSpecialization === 'TVL-Cookery' ? 'active' : ''
+                          className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            formData.tvlSpecialization === 'TVL-Cookery'
+                              ? 'border-emerald-600 bg-white shadow-xs ring-2 ring-emerald-600'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
                           }`}
                         >
-                          <Utensils className="h-4 w-4 text-amber-600" />
-                          <div>
-                            <div className="font-bold text-sm text-[#1a225a]">Cookery</div>
-                            <div className="text-xs text-slate-500">Food Prep & Culinary Arts</div>
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                            <Utensils className="h-5 w-5" />
                           </div>
-                        </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-extrabold text-sm text-slate-900">Cookery</div>
+                            <div className="text-xs text-slate-500">Food Preparation &amp; Culinary Arts</div>
+                          </div>
+                          {formData.tvlSpecialization === 'TVL-Cookery' && (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                          )}
+                        </button>
 
-                        <div
+                        <button
+                          type="button"
                           onClick={() => handleChange('tvlSpecialization', 'TVL-ICT')}
-                          className={`tvl-spec-tile flex items-center gap-2.5 ${
-                            formData.tvlSpecialization === 'TVL-ICT' ? 'active' : ''
+                          className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            formData.tvlSpecialization === 'TVL-ICT'
+                              ? 'border-emerald-600 bg-white shadow-xs ring-2 ring-emerald-600'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
                           }`}
                         >
-                          <Laptop className="h-4 w-4 text-blue-600" />
-                          <div>
-                            <div className="font-bold text-sm text-[#1a225a]">ICT</div>
-                            <div className="text-xs text-slate-500">Computer & Digital Tech</div>
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                            <Laptop className="h-5 w-5" />
                           </div>
-                        </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-extrabold text-sm text-slate-900">ICT</div>
+                            <div className="text-xs text-slate-500">Computer &amp; Information Tech</div>
+                          </div>
+                          {formData.tvlSpecialization === 'TVL-ICT' && (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                          )}
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* School Year */}
+              {/* School Year Banner */}
               <div className="enrollment-group mb-0">
-                <label>
-                  School Year <span>*</span>
-                </label>
-                <div className="enrollment-input-wrap">
-                  <input
-                    type="text"
-                    value={formData.schoolYear}
-                    onChange={(e) => handleChange('schoolYear', e.target.value)}
-                    placeholder="e.g., 2026-2027"
-                    required
-                  />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0f172a] text-[#F5C518]">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">
+                        Official Academic Term
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Enrollment is officially registered for School Year 2026–2027
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-900">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      S.Y. 2026–2027
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
