@@ -1799,9 +1799,23 @@ export const EnrollmentWizardPage: React.FC = () => {
 
             {/* ====== 4. REQUIRED DOCUMENTS ====== */}
             <div className="requirements-container">
-              <div className="requirements-title">
-                <Paperclip className="h-4 w-4 text-[#1a225a]" />
-                <span>Required Documents</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#1a225a] text-white shadow-xs">
+                    <Paperclip className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 tracking-tight font-display">
+                      Required Documents
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Upload clear digital copies or photos of your official school credentials
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full self-start sm:self-auto">
+                  {Object.values(documents).filter(Boolean).length} of {activeRequirements.length} uploaded
+                </span>
               </div>
 
               {isContinuingGrade8To12 ? (
@@ -1825,57 +1839,123 @@ export const EnrollmentWizardPage: React.FC = () => {
                   </div>
                 </div>
               ) : formData.studentType === 'Transferee' ? (
-                <div className="transferee-info-banner mb-4">
-                  <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                  <div>
-                    <strong>Transferee Policy Notice:</strong> As a transferring student from another secondary school, complete credentials (Form 137, Report Card, Completion, PSA, Good Moral) are required for verification and section placement.
+                <div className="mb-4 p-4 rounded-2xl border border-blue-200 bg-blue-50/70 text-blue-950">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white mt-0.5">
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-blue-900 uppercase tracking-wider">
+                        Transferee Policy Notice &amp; Required Credentials
+                      </h4>
+                      <p className="text-xs text-blue-900/90 mt-1 leading-relaxed">
+                        As a transferring student from another secondary school, complete credentials (Form 137, Report Card, Completion Certificate, PSA Birth Certificate, and Good Moral Certificate) are required for verification and section placement.
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="mb-4 p-4 rounded-2xl border border-amber-300 bg-amber-50/80 text-amber-950">
+                <div className="mb-4 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs text-slate-900">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-900 mt-0.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1a225a] text-white mt-0.5">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-amber-900 uppercase tracking-wider">
-                        Grade 7 Admission Credentials Required
-                      </h4>
-                      <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
-                        All official elementary entrance credentials must be uploaded for incoming Grade 7 student registration and DepEd sectioning.
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-black text-[#1a225a] uppercase tracking-wider">
+                          Grade 7 Admission Credentials Required
+                        </h4>
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#1a225a]/10 text-[#1a225a]">
+                          Elementary Completers
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                        All official elementary entrance credentials must be uploaded for incoming Grade 7 student registration, permanent record archiving, and DepEd sectioning.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Requirement Items */}
-              <div className="space-y-3.5">
+              {/* Requirement Items - Executive Row Format */}
+              <div className="space-y-2.5">
                 {activeRequirements.map((req) => {
                   const file = documents[req.key];
+                  const getReqIcon = () => {
+                    switch (req.key) {
+                      case 'two_by_two_picture':
+                        return <User className="h-4.5 w-4.5" />;
+                      case 'form_137':
+                        return <Layers className="h-4.5 w-4.5" />;
+                      case 'report_card':
+                        return <BookOpen className="h-4.5 w-4.5" />;
+                      case 'certificate_of_completion':
+                        return <GraduationCap className="h-4.5 w-4.5" />;
+                      case 'psa_birth_cert':
+                        return <ShieldCheck className="h-4.5 w-4.5" />;
+                      case 'good_moral_cert':
+                        return <FileText className="h-4.5 w-4.5" />;
+                      default:
+                        return <FileText className="h-4.5 w-4.5" />;
+                    }
+                  };
+
                   return (
-                    <div key={req.key} className="requirement-item">
-                      <div className="requirement-header">
-                        <div className="requirement-title-wrap">
-                          <FileText className="h-4 w-4 text-slate-700" />
-                          <span>{req.title}</span>
+                    <div
+                      key={req.key}
+                      className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all ${
+                        file
+                          ? 'border-emerald-300 bg-emerald-50/25'
+                          : 'border-slate-200 bg-white hover:border-[#1a225a]/40 hover:bg-slate-50/50 shadow-2xs'
+                      }`}
+                    >
+                      {/* Left: Icon + Title + Format Hint */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
+                            file
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-slate-100 text-[#1a225a] border-slate-200/80 group-hover:bg-[#1a225a]/10'
+                          }`}
+                        >
+                          {getReqIcon()}
                         </div>
-                        <span className="req-badge-required">REQUIRED</span>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-slate-900 leading-snug">
+                              {req.title}
+                            </h4>
+                            <span
+                              className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${
+                                file
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                              }`}
+                            >
+                              {file ? 'Uploaded' : 'Required'}
+                            </span>
+                          </div>
+                          <p className="text-[11.5px] text-slate-500 mt-0.5 truncate">
+                            {req.hint}
+                          </p>
+                        </div>
                       </div>
 
+                      {/* Right: Upload Trigger / Uploaded File Badge */}
                       {file ? (
-                        <div className="file-uploaded-preview">
-                          <div className="file-uploaded-info">
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                            <div className="min-w-0">
-                              <div className="file-uploaded-name" title={file.name}>
+                        <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 bg-white border border-emerald-200 rounded-xl px-3 py-1.5 shadow-2xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <div className="min-w-0 max-w-[140px] sm:max-w-[200px]">
+                              <div className="text-xs font-bold text-emerald-950 truncate" title={file.name}>
                                 {file.name}
                               </div>
-                              <div className="file-uploaded-size">{formatFileSize(file.size)}</div>
+                              <div className="text-[10px] text-emerald-700 font-semibold">{formatFileSize(file.size)}</div>
                             </div>
                           </div>
-                          <div className="file-uploaded-actions">
-                            <label className="file-change-btn">
+                          <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-2 shrink-0">
+                            <label className="text-[11px] font-bold text-[#1a225a] hover:underline cursor-pointer">
                               Change
                               <input
                                 type="file"
@@ -1891,15 +1971,17 @@ export const EnrollmentWizardPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleFileChange(req.key, null)}
-                              className="file-remove-btn"
+                              className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded-md cursor-pointer"
+                              title="Remove file"
                             >
-                              <Trash2 className="h-3.5 w-3.5 inline mr-1" />
-                              Remove
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <label className="file-upload-box block">
+                        <label className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:border-[#1a225a] hover:bg-[#1a225a] hover:text-white text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer shrink-0">
+                          <CloudUpload className="h-4 w-4" />
+                          <span>Upload File</span>
                           <input
                             type="file"
                             accept={req.accept}
@@ -1910,11 +1992,6 @@ export const EnrollmentWizardPage: React.FC = () => {
                               }
                             }}
                           />
-                          <div className="file-upload-box-icon">
-                            <CloudUpload className="h-5 w-5 text-slate-400" />
-                          </div>
-                          <p className="file-upload-label">Click to upload</p>
-                          <p className="file-upload-hint">{req.hint}</p>
                         </label>
                       )}
                     </div>
