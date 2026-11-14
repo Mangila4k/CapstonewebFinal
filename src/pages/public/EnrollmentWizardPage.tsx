@@ -7,7 +7,6 @@ import {
   Send,
   CheckCircle2,
   ArrowLeft,
-  RotateCcw,
   GraduationCap,
   School,
   UserPlus,
@@ -59,7 +58,7 @@ const DOCUMENT_CONFIG: DocConfig[] = [
     title: 'Report Card',
     hint: 'PDF, JPG, JPEG, or PNG',
     accept: '.pdf,image/jpeg,image/png,image/jpg',
-    applicableTypes: ['New Student', 'Transferee', 'Old Student', 'Repeater'],
+    applicableTypes: ['New Student', 'Transferee', 'Old Student'],
   },
   {
     key: 'certificate_of_completion',
@@ -774,7 +773,6 @@ export const EnrollmentWizardPage: React.FC = () => {
                   {[
                     { id: 'New Student', label: 'New Student', icon: <UserPlus className="h-5 w-5 text-blue-600" /> },
                     { id: 'Old Student', label: 'Old Student', icon: <GraduationCap className="h-5 w-5 text-amber-600" /> },
-                    { id: 'Repeater', label: 'Repeater', icon: <RotateCcw className="h-5 w-5 text-slate-700" /> },
                     { id: 'Transferee', label: 'Transferee', icon: <School className="h-5 w-5 text-emerald-600" /> },
                   ].map((type) => (
                     <div

@@ -49,7 +49,7 @@ interface CategoryDefinition {
 }
 
 const GRADE_LEVEL_OPTIONS = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
-const STUDENT_TYPE_OPTIONS = ['New Student', 'Old Student', 'Repeater', 'Transferee'];
+const STUDENT_TYPE_OPTIONS = ['New Student', 'Old Student', 'Transferee'];
 const STRAND_OPTIONS = [
   { code: 'STEM', label: 'STEM – Science, Technology, Engineering & Mathematics' },
   { code: 'HUMSS', label: 'HUMSS – Humanities & Social Sciences' },

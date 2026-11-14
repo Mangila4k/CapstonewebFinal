@@ -228,10 +228,10 @@
     line-height: 1.5;
 }
 
-/* ====== STUDENT TYPE SELECTOR (4 TILES) ====== */
+/* ====== STUDENT TYPE SELECTOR (3 TILES) ====== */
 .student-type-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
 }
 
