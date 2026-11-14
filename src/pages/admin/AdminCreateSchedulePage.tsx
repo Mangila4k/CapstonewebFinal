@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   Calendar,
@@ -11,7 +11,6 @@ import {
   Download,
   Eye,
   Printer,
-  UserCheck,
   Paperclip,
   ExternalLink,
   GraduationCap,
@@ -667,13 +666,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
               >
                 <Send className="h-4 w-4" /> Send Schedule File
               </button>
-
-              <Link
-                to="/admin/teachers"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <UserCheck className="h-4 w-4" /> Faculty Directory
-              </Link>
             </div>
             <PageHeaderNotificationSlot />
           </div>
@@ -688,12 +680,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
           >
             <Send className="h-4 w-4" /> Send Schedule File
           </button>
-          <Link
-            to="/admin/teachers"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
-          >
-            <UserCheck className="h-4 w-4" /> Faculty
-          </Link>
         </div>
       </div>
 
