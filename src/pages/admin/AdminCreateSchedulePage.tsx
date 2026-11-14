@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
   Calendar,
-  Plus,
-  Clock,
-  MapPin,
-  UserCheck,
-  BookOpen,
-  Layers,
-  GraduationCap,
   Send,
   Upload,
   FileText,
@@ -18,6 +11,8 @@ import {
   Download,
   Eye,
   Printer,
+  UserCheck,
+  Paperclip,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -35,9 +30,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const preselectedTeacher = searchParams.get('teacher');
 
-  const [schedules, setSchedules] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSendFileModalOpen, setIsSendFileModalOpen] = useState(false);
   const [teachersList, setTeachersList] = useState<FacultyRecord[]>(loadCachedTeachers);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
@@ -107,78 +99,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
           setTeachersList(mapped);
         }
       });
-  }, []);
-
-  const [form, setForm] = useState({
-    subject: 'General Mathematics',
-    grade_level: 'Grade 10',
-    section: 'Generosity',
-    teacher: 'Ryan Quiroga',
-    room: 'Rm 201 • Bldg A',
-    day: 'Monday - Friday',
-    timeStart: '07:30 AM',
-    timeEnd: '08:30 AM',
-  });
-
-  const fetchSchedules = async () => {
-    setLoading(true);
-    try {
-      const { data } = await supabase.from('schedules').select('*');
-      if (data && data.length > 0) {
-        setSchedules(data);
-      } else {
-        setSchedules([
-          {
-            id: 1,
-            subject: 'General Mathematics',
-            grade_level: 'Grade 10',
-            section: 'Generosity',
-            teacher: 'Ryan Quiroga',
-            room: 'Rm 201 • Bldg A',
-            day: 'Monday - Friday',
-            time: '07:30 AM - 08:30 AM',
-          },
-          {
-            id: 2,
-            subject: 'Pre-Calculus (Specialized)',
-            grade_level: 'Grade 10',
-            section: 'Wisdom',
-            teacher: 'Ryan Quiroga',
-            room: 'Math Lab • Bldg A',
-            day: 'Monday - Friday',
-            time: '08:30 AM - 09:30 AM',
-          },
-          {
-            id: 3,
-            subject: 'Mathematics 10',
-            grade_level: 'Grade 10',
-            section: 'Perseverance',
-            teacher: 'Ryan Quiroga',
-            room: 'Rm 105 • JHS Bldg',
-            day: 'Monday - Friday',
-            time: '10:00 AM - 11:00 AM',
-          },
-          {
-            id: 4,
-            subject: 'Science & Technology 8',
-            grade_level: 'Grade 8',
-            section: 'Square',
-            teacher: 'Twengcle Deguma',
-            room: 'Bldg B - Rm 207',
-            day: 'Monday - Friday',
-            time: '01:00 PM - 02:00 PM',
-          },
-        ]);
-      }
-    } catch (err) {
-      console.warn('Schedules error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSchedules();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -412,29 +332,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        subject: form.subject,
-        grade_level: form.grade_level,
-        section: form.section,
-        teacher: form.teacher,
-        room: form.room,
-        day: form.day,
-        time: `${form.timeStart} - ${form.timeEnd}`,
-      };
-
-      await supabase.from('schedules').insert([payload]);
-      setSchedules((prev) => [{ id: Date.now(), ...payload }, ...prev]);
-
-      setNotice({ type: 'success', message: 'Class schedule timetable slot added.' });
-      setIsModalOpen(false);
-    } catch (err: any) {
-      setNotice({ type: 'error', message: err.message || 'Failed to save schedule.' });
-    }
-  };
-
   const toggleTeacherRecipient = (teacherName: string) => {
     setFileForm((prev) => {
       const exists = prev.selectedTeachers.includes(teacherName);
@@ -470,13 +367,12 @@ export const AdminCreateSchedulePage: React.FC = () => {
                 <Send className="h-4 w-4" /> Send Schedule File
               </button>
 
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
+              <Link
+                to="/admin/teachers"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Plus className="h-4 w-4" /> Add Schedule Slot
-              </button>
+                <UserCheck className="h-4 w-4" /> Faculty Directory
+              </Link>
             </div>
             <PageHeaderNotificationSlot />
           </div>
@@ -486,18 +382,17 @@ export const AdminCreateSchedulePage: React.FC = () => {
         <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Add Slot
-          </button>
-          <button
-            type="button"
             onClick={() => setIsSendFileModalOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
           >
-            <Send className="h-4 w-4" /> Send File
+            <Send className="h-4 w-4" /> Send Schedule File
           </button>
+          <Link
+            to="/admin/teachers"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 transition-all cursor-pointer"
+          >
+            <UserCheck className="h-4 w-4" /> Faculty
+          </Link>
         </div>
       </div>
 
@@ -585,48 +480,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Timetable Slots Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {schedules.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-emerald-500 hover:shadow-md transition-all space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-md bg-[#0f172a] px-2.5 py-0.5 text-[11px] font-bold text-white">
-                  <GraduationCap className="h-3 w-3 text-amber-400" />
-                  {item.grade_level || 'Grade 10'}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                  <Layers className="h-3 w-3 text-emerald-600" />
-                  Section {item.section}
-                </span>
-              </div>
-              <span className="text-xs font-mono font-semibold text-slate-500">
-                {item.time}
-              </span>
-            </div>
-
-            <div>
-              <h3 className="text-base font-bold text-slate-900">{item.subject}</h3>
-              <p className="text-xs text-slate-500">{item.day || 'Monday - Friday'}</p>
-            </div>
-
-            <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
-              <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                <UserCheck className="h-3.5 w-3.5 text-emerald-700" />
-                <span>{item.teacher}</span>
-              </div>
-              <div className="flex items-center gap-1.5 font-medium text-emerald-800">
-                <MapPin className="h-3.5 w-3.5" />
-                <span>{item.room}</span>
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Send Official Schedule File to Teachers Modal */}
@@ -797,96 +650,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
             >
               <Send className="h-3.5 w-3.5" />
               Send Schedule File to Teacher(s)
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Add Timetable Slot Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Add Class Schedule Slot"
-        subtitle="Assign subject, Year Level, Section, room, and teacher"
-      >
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Subject</label>
-            <input
-              type="text"
-              required
-              value={form.subject}
-              onChange={(e) => setForm({ ...form, subject: e.target.value })}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                Year Level
-              </label>
-              <select
-                value={form.grade_level}
-                onChange={(e) => setForm({ ...form, grade_level: e.target.value })}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-              >
-                <option value="Grade 7">Grade 7</option>
-                <option value="Grade 8">Grade 8</option>
-                <option value="Grade 9">Grade 9</option>
-                <option value="Grade 10">Grade 10</option>
-                <option value="Grade 11">Grade 11</option>
-                <option value="Grade 12">Grade 12</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Section</label>
-              <input
-                type="text"
-                required
-                value={form.section}
-                onChange={(e) => setForm({ ...form, section: e.target.value })}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Teacher</label>
-              <input
-                type="text"
-                required
-                value={form.teacher}
-                onChange={(e) => setForm({ ...form, teacher: e.target.value })}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Room</label>
-              <input
-                type="text"
-                required
-                value={form.room}
-                onChange={(e) => setForm({ ...form, room: e.target.value })}
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:border-emerald-600 focus:outline-hidden"
-              />
-            </div>
-          </div>
-
-          <div className="pt-3 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-xl bg-emerald-700 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 cursor-pointer"
-            >
-              Save Schedule
             </button>
           </div>
         </form>
