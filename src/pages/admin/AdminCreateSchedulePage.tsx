@@ -57,7 +57,6 @@ export const AdminCreateSchedulePage: React.FC = () => {
   });
 
   const [selectedYearLevelFilter, setSelectedYearLevelFilter] = useState<string>('all');
-  const [recipientYearFilter, setRecipientYearFilter] = useState<string>('all');
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -201,6 +200,13 @@ export const AdminCreateSchedulePage: React.FC = () => {
     return groups;
   }, [teachersList, sectionsList]);
 
+  const displayedTeachers = useMemo(() => {
+    if (fileForm.targetGradeLevel === 'All Year Levels') {
+      return teachersList;
+    }
+    return teachersByYearLevel[fileForm.targetGradeLevel] || teachersList;
+  }, [fileForm.targetGradeLevel, teachersList, teachersByYearLevel]);
+
   const filteredScheduleFiles = useMemo(() => {
     if (selectedYearLevelFilter === 'all') return sentScheduleFiles;
     return sentScheduleFiles.filter((file) => {
@@ -221,19 +227,16 @@ export const AdminCreateSchedulePage: React.FC = () => {
 
     const targetTeachers =
       newGrade === 'All Year Levels'
-        ? []
+        ? teachersList.map((t) => `${t.first_name} ${t.last_name}`.trim())
         : (teachersByYearLevel[newGrade] || []).map((t) => `${t.first_name} ${t.last_name}`.trim());
 
     setFileForm((prev) => ({
       ...prev,
       targetGradeLevel: newGrade,
       title: newTitle,
-      selectedTeachers: newGrade === 'All Year Levels' ? prev.selectedTeachers : targetTeachers,
+      selectedTeachers: targetTeachers,
       recipientType: newGrade === 'All Year Levels' ? 'all' : 'selected',
     }));
-    if (newGrade !== 'All Year Levels') {
-      setRecipientYearFilter(newGrade);
-    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -977,12 +980,12 @@ export const AdminCreateSchedulePage: React.FC = () => {
               </label>
               <span className="text-[11px] font-bold text-emerald-700">
                 {fileForm.recipientType === 'all'
-                  ? 'All Faculty Teachers (School-wide)'
-                  : `${fileForm.selectedTeachers.length} Teacher(s) Selected`}
+                  ? 'All 30 Faculty Teachers'
+                  : `${fileForm.selectedTeachers.length} of ${displayedTeachers.length} Teacher(s) Selected`}
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setFileForm({ ...fileForm, recipientType: 'all', selectedTeachers: [] })}
@@ -992,19 +995,17 @@ export const AdminCreateSchedulePage: React.FC = () => {
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                All Faculty (All Levels)
+                All Faculty Teachers (30)
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  const g = fileForm.targetGradeLevel !== 'All Year Levels' ? fileForm.targetGradeLevel : 'Grade 7';
-                  const tList = (teachersByYearLevel[g] || []).map((t) => `${t.first_name} ${t.last_name}`.trim());
+                  const targetList = displayedTeachers.map((t) => `${t.first_name} ${t.last_name}`.trim());
                   setFileForm({
                     ...fileForm,
                     recipientType: 'selected',
-                    selectedTeachers: tList,
+                    selectedTeachers: targetList,
                   });
-                  setRecipientYearFilter(g);
                 }}
                 className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer text-center ${
                   fileForm.recipientType === 'selected'
@@ -1012,136 +1013,74 @@ export const AdminCreateSchedulePage: React.FC = () => {
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                Organize by Year Level
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFileForm({
-                    ...fileForm,
-                    recipientType: 'selected',
-                  });
-                }}
-                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer text-center ${
-                  fileForm.recipientType === 'selected' && fileForm.selectedTeachers.length > 0
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Specific Teacher(s) ({fileForm.selectedTeachers.length})
+                {fileForm.targetGradeLevel !== 'All Year Levels'
+                  ? `${fileForm.targetGradeLevel} Teachers (${fileForm.selectedTeachers.length})`
+                  : `Selected Teachers (${fileForm.selectedTeachers.length})`}
               </button>
             </div>
 
             {fileForm.recipientType === 'selected' && (
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-                {/* Year Level Category Filter Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase shrink-0">Filter:</span>
-                  {[
-                    { id: 'all', label: 'All Levels' },
-                    { id: 'Grade 7', label: 'Grade 7' },
-                    { id: 'Grade 8', label: 'Grade 8' },
-                    { id: 'Grade 9', label: 'Grade 9' },
-                    { id: 'Grade 10', label: 'Grade 10' },
-                    { id: 'Grades 11 & 12 (SHS)', label: 'Senior High' },
-                  ].map((tab) => {
-                    const count = tab.id === 'all'
-                      ? teachersList.length
-                      : (teachersByYearLevel[tab.id] || []).length;
-                    const isActive = recipientYearFilter === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setRecipientYearFilter(tab.id)}
-                        className={`rounded-lg px-2.5 py-1 font-bold whitespace-nowrap text-[11px] transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-emerald-700 text-white shadow-2xs'
-                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        {tab.label} ({count})
-                      </button>
-                    );
-                  })}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                    <span className="text-xs font-black text-slate-900 uppercase">
+                      {fileForm.targetGradeLevel !== 'All Year Levels'
+                        ? `${fileForm.targetGradeLevel} Teachers (${displayedTeachers.length})`
+                        : `Faculty Teachers (${displayedTeachers.length})`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allNames = displayedTeachers.map((t) => `${t.first_name} ${t.last_name}`.trim());
+                      const allSelected = allNames.every((n) => fileForm.selectedTeachers.includes(n));
+                      setFileForm((prev) => ({
+                        ...prev,
+                        selectedTeachers: allSelected
+                          ? prev.selectedTeachers.filter((n) => !allNames.includes(n))
+                          : Array.from(new Set([...prev.selectedTeachers, ...allNames])),
+                      }));
+                    }}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                  >
+                    {displayedTeachers.every((t) =>
+                      fileForm.selectedTeachers.includes(`${t.first_name} ${t.last_name}`.trim())
+                    )
+                      ? 'Deselect All'
+                      : 'Select All'}
+                  </button>
                 </div>
 
-                {/* Grouped Teachers by Year Level */}
-                <div className="max-h-60 overflow-y-auto space-y-3 pr-1">
-                  {Object.entries(teachersByYearLevel)
-                    .filter(([groupName]) => recipientYearFilter === 'all' || recipientYearFilter === groupName)
-                    .map(([groupName, teachersInGroup]) => {
-                      if (teachersInGroup.length === 0) return null;
-                      const allInGroupSelected = teachersInGroup.every((t) =>
-                        fileForm.selectedTeachers.includes(`${t.first_name} ${t.last_name}`.trim())
-                      );
-
-                      const toggleGroup = () => {
-                        const names = teachersInGroup.map((t) => `${t.first_name} ${t.last_name}`.trim());
-                        if (allInGroupSelected) {
-                          setFileForm((prev) => ({
-                            ...prev,
-                            selectedTeachers: prev.selectedTeachers.filter((n) => !names.includes(n)),
-                          }));
-                        } else {
-                          setFileForm((prev) => ({
-                            ...prev,
-                            selectedTeachers: Array.from(new Set([...prev.selectedTeachers, ...names])),
-                          }));
-                        }
-                      };
-
-                      return (
-                        <div key={groupName} className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
-                          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                              <span className="text-xs font-black text-slate-900 uppercase">
-                                {groupName} Teachers ({teachersInGroup.length})
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={toggleGroup}
-                              className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
-                            >
-                              {allInGroupSelected ? 'Deselect All' : `Select All ${groupName}`}
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                            {teachersInGroup.map((t) => {
-                              const fullName = `${t.first_name} ${t.last_name}`.trim();
-                              const isChecked = fileForm.selectedTeachers.includes(fullName);
-                              const info = getTeacherYearLevelInfo(t);
-                              return (
-                                <label
-                                  key={t.id}
-                                  className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 border text-xs font-medium cursor-pointer transition-colors ${
-                                    isChecked
-                                      ? 'border-emerald-300 bg-emerald-50/70 text-emerald-950 font-bold'
-                                      : 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100/70'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => toggleTeacherRecipient(fullName)}
-                                      className="rounded text-emerald-700 shrink-0"
-                                    />
-                                    <span className="truncate">{fullName}</span>
-                                  </div>
-                                  <span className="text-[10px] text-slate-500 font-semibold truncate shrink-0 max-w-[120px]">
-                                    {info.badgeText}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
+                <div className="max-h-56 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 pr-1">
+                  {displayedTeachers.map((t) => {
+                    const fullName = `${t.first_name} ${t.last_name}`.trim();
+                    const isChecked = fileForm.selectedTeachers.includes(fullName);
+                    const info = getTeacherYearLevelInfo(t);
+                    return (
+                      <label
+                        key={t.id}
+                        className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 border text-xs font-medium cursor-pointer transition-colors ${
+                          isChecked
+                            ? 'border-emerald-300 bg-emerald-50/70 text-emerald-950 font-bold'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleTeacherRecipient(fullName)}
+                            className="rounded text-emerald-700 shrink-0"
+                          />
+                          <span className="truncate">{fullName}</span>
                         </div>
-                      );
-                    })}
+                        <span className="text-[10px] text-slate-500 font-semibold truncate shrink-0 max-w-[130px]">
+                          {info.sectionName ? `Section ${info.sectionName}` : info.badgeText}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
