@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
@@ -14,12 +14,24 @@ import {
   CheckCircle2,
   X,
   Calendar,
+  Paperclip,
+  Upload,
+  FileText,
+  Download,
+  Eye,
+  Clock,
+  ArrowRight,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
 import type { Section } from '../../types';
+import {
+  uploadAndAttachTeacherSchedule,
+  getTeacherAttachedScheduleMap,
+  type AttachedScheduleInfo,
+} from '../../lib/teacherScheduleService';
 
 export interface FacultyRecord {
   id: string;
@@ -32,6 +44,10 @@ export interface FacultyRecord {
   specialization: string;
   phone?: string;
   status: 'Active' | 'Inactive';
+  teacher_load_url?: string | null;
+  teacher_load_name?: string | null;
+  teacher_load_file_type?: string | null;
+  teacher_load_updated_at?: string | null;
 }
 
 export const SECTIONS_CACHE_KEY = 'plsnhs_sections_cache_v3';
@@ -394,6 +410,7 @@ export function loadCachedTeachers(): FacultyRecord[] {
 export const AdminTeachersPage: React.FC = () => {
   const [teachers, setTeachers] = useState<FacultyRecord[]>(loadCachedTeachers);
   const [sections, setSections] = useState<Section[]>(loadCachedSections);
+  const [scheduleMap, setScheduleMap] = useState<Map<string, AttachedScheduleInfo>>(new Map());
   const [search, setSearch] = useState('');
   const [advisoryFilter, setAdvisoryFilter] = useState<'All' | 'Assigned' | 'Unassigned'>('All');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -406,6 +423,17 @@ export const AdminTeachersPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Attach Schedule Modal State
+  const [isAttachScheduleModalOpen, setIsAttachScheduleModalOpen] = useState(false);
+  const [selectedTeacherForSchedule, setSelectedTeacherForSchedule] = useState<FacultyRecord | null>(null);
+  const [scheduleFileInput, setScheduleFileInput] = useState<File | null>(null);
+  const [scheduleTitle, setScheduleTitle] = useState('Official Faculty Teaching Schedule & Class Program (S.Y. 2026–2027)');
+  const [scheduleSchoolYear, setScheduleSchoolYear] = useState('S.Y. 2026–2027');
+  const [scheduleSemester, setScheduleSemester] = useState('1st & 2nd Semester');
+  const [scheduleNotes, setScheduleNotes] = useState('Please review, download, or print your official teaching schedule and room assignments.');
+  const [isAttaching, setIsAttaching] = useState(false);
+  const scheduleFileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -414,6 +442,15 @@ export const AdminTeachersPage: React.FC = () => {
     password: '',
     advisorySectionId: '',
   });
+
+  const loadSchedules = async () => {
+    try {
+      const map = await getTeacherAttachedScheduleMap();
+      setScheduleMap(map);
+    } catch (e) {
+      console.warn('Error loading teacher schedule map:', e);
+    }
+  };
 
   const syncDataFromSupabase = async () => {
     try {
@@ -488,6 +525,10 @@ export const AdminTeachersPage: React.FC = () => {
             specialization: tRow?.specialization || existing?.specialization || 'General Education',
             phone: tRow?.phone || u.contact_number || existing?.phone || '',
             status: 'Active',
+            teacher_load_url: tRow?.teacher_load_url || existing?.teacher_load_url || null,
+            teacher_load_name: tRow?.teacher_load_name || existing?.teacher_load_name || null,
+            teacher_load_file_type: tRow?.teacher_load_file_type || existing?.teacher_load_file_type || null,
+            teacher_load_updated_at: tRow?.teacher_load_updated_at || existing?.teacher_load_updated_at || null,
           });
         });
 
@@ -499,6 +540,8 @@ export const AdminTeachersPage: React.FC = () => {
           // ignore
         }
       }
+
+      await loadSchedules();
     } catch (err) {
       console.warn('Background teacher/section sync warning:', err);
     }
@@ -506,7 +549,89 @@ export const AdminTeachersPage: React.FC = () => {
 
   useEffect(() => {
     syncDataFromSupabase();
+
+    const handleScheduleUpdate = () => {
+      loadSchedules();
+    };
+    window.addEventListener('plsnhs-schedule-files-updated', handleScheduleUpdate);
+    window.addEventListener('storage', handleScheduleUpdate);
+
+    return () => {
+      window.removeEventListener('plsnhs-schedule-files-updated', handleScheduleUpdate);
+      window.removeEventListener('storage', handleScheduleUpdate);
+    };
   }, []);
+
+  const openAttachScheduleModal = (t: FacultyRecord) => {
+    setSelectedTeacherForSchedule(t);
+    setScheduleFileInput(null);
+    const fullName = `${t.first_name} ${t.last_name}`.trim();
+    setScheduleTitle(`Official Faculty Teaching Schedule: ${fullName} (S.Y. 2026–2027)`);
+    setScheduleNotes(`Please review your official teaching schedule, section load, and room assignments for S.Y. 2026–2027.`);
+    setIsAttachScheduleModalOpen(true);
+  };
+
+  const handleAttachScheduleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTeacherForSchedule) {
+      setNotice({ type: 'error', message: 'Please select a teacher to attach the schedule file to.' });
+      return;
+    }
+    if (!scheduleFileInput) {
+      setNotice({ type: 'error', message: 'Please select a schedule document (PDF, Excel, Word, or Image) to upload.' });
+      return;
+    }
+
+    setIsAttaching(true);
+    try {
+      const fullName = `${selectedTeacherForSchedule.first_name} ${selectedTeacherForSchedule.last_name}`.trim();
+      const res = await uploadAndAttachTeacherSchedule({
+        teacherId: selectedTeacherForSchedule.user_id || selectedTeacherForSchedule.id,
+        teacherName: fullName,
+        teacherTableId: selectedTeacherForSchedule.teacher_table_id,
+        file: scheduleFileInput,
+        title: scheduleTitle,
+        schoolYear: scheduleSchoolYear,
+        semester: scheduleSemester,
+        notes: scheduleNotes,
+        uploadedBy: 'School Administrator • Office of the Principal',
+      });
+
+      if (res.success) {
+        setNotice({
+          type: 'success',
+          message: `Official teaching schedule file "${res.fileName}" successfully attached to ${fullName}! The teacher can now view, print, or download it under their Class Program.`,
+        });
+        setIsAttachScheduleModalOpen(false);
+        setScheduleFileInput(null);
+        await syncDataFromSupabase();
+      } else {
+        setNotice({
+          type: 'error',
+          message: res.error || 'Failed to attach schedule file.',
+        });
+      }
+    } catch (err: any) {
+      setNotice({
+        type: 'error',
+        message: err.message || 'An unexpected error occurred while attaching schedule file.',
+      });
+    } finally {
+      setIsAttaching(false);
+    }
+  };
+
+  const handleDownloadAttachedSchedule = (fileUrl: string, fileName: string) => {
+    if (!fileUrl) return;
+    const a = document.createElement('a');
+    a.href = fileUrl;
+    a.download = fileName || 'Official_Teacher_Schedule.pdf';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // Helper to find the section(s) a teacher advises
   const getTeacherAdvisorySections = (teacher: FacultyRecord): Section[] => {
@@ -861,6 +986,16 @@ export const AdminTeachersPage: React.FC = () => {
 
           <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
             <button
+              type="button"
+              onClick={() => {
+                setSelectedTeacherForSchedule(filteredTeachers[0] || null);
+                setIsAttachScheduleModalOpen(true);
+              }}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Paperclip className="h-4 w-4" /> Attach Schedule to Teacher
+            </button>
+            <button
               onClick={() => {
                 setForm({
                   firstName: '',
@@ -881,7 +1016,17 @@ export const AdminTeachersPage: React.FC = () => {
         </div>
 
         {/* Mobile Action Button Row */}
-        <div className="sm:hidden mt-3 flex items-center">
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedTeacherForSchedule(filteredTeachers[0] || null);
+              setIsAttachScheduleModalOpen(true);
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-amber-500 px-3 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer whitespace-nowrap"
+          >
+            <Paperclip className="h-4 w-4" /> Attach Schedule
+          </button>
           <button
             onClick={() => {
               setForm({
@@ -986,10 +1131,11 @@ export const AdminTeachersPage: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-3.5">Teacher / Faculty Member</th>
-                <th className="px-6 py-3.5">Assigned Advisory Section</th>
-                <th className="px-6 py-3.5">Email Address</th>
-                <th className="px-6 py-3.5 text-right">Assign Adviser / Actions</th>
+                <th className="px-5 py-3.5">Teacher / Faculty Member</th>
+                <th className="px-5 py-3.5">Assigned Advisory Section</th>
+                <th className="px-5 py-3.5">Teaching Schedule File</th>
+                <th className="px-5 py-3.5">Email Address</th>
+                <th className="px-5 py-3.5 text-right">Schedule &amp; Advisory Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
@@ -997,10 +1143,31 @@ export const AdminTeachersPage: React.FC = () => {
                 filteredTeachers.map((t) => {
                   const fullName = `${t.first_name} ${t.last_name}`.trim();
                   const advisories = getTeacherAdvisorySections(t);
+                  const attachedSchedule =
+                    scheduleMap.get(String(t.user_id || '')) ||
+                    scheduleMap.get(String(t.teacher_table_id || '')) ||
+                    scheduleMap.get(String(t.id)) ||
+                    scheduleMap.get(fullName.toLowerCase()) ||
+                    (t.teacher_load_url && t.teacher_load_name
+                      ? {
+                          id: t.id,
+                          fileName: t.teacher_load_name,
+                          fileUrl: t.teacher_load_url,
+                          fileType: t.teacher_load_file_type || 'PDF',
+                          title: 'Official Faculty Teaching Schedule',
+                          updatedAt: t.teacher_load_updated_at
+                            ? new Date(t.teacher_load_updated_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'Active',
+                        }
+                      : null);
 
                   return (
                     <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200">
                             {(t.first_name?.[0] || 'T').toUpperCase()}
@@ -1015,7 +1182,7 @@ export const AdminTeachersPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-4">
                         {advisories.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
                             {advisories.map((sec) => {
@@ -1040,23 +1207,88 @@ export const AdminTeachersPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="px-6 py-4 text-slate-600">
+                      {/* Attached Teaching Schedule Column */}
+                      <td className="px-5 py-4">
+                        {attachedSchedule ? (
+                          <div className="flex flex-col gap-1 max-w-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
+                                <FileText className="h-4 w-4" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className="truncate text-xs font-bold text-slate-900"
+                                  title={attachedSchedule.fileName}
+                                >
+                                  {attachedSchedule.fileName}
+                                </p>
+                                <p className="text-[10px] text-emerald-700 font-semibold">
+                                  {attachedSchedule.fileType || 'PDF'} •{' '}
+                                  {attachedSchedule.fileSize || attachedSchedule.updatedAt || 'Active'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDownloadAttachedSchedule(
+                                    attachedSchedule.fileUrl,
+                                    attachedSchedule.fileName
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                                title="View or download attached schedule file"
+                              >
+                                <Download className="h-3 w-3" /> View / Download
+                              </button>
+                              <span className="text-slate-300">•</span>
+                              <button
+                                type="button"
+                                onClick={() => openAttachScheduleModal(t)}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-900 hover:underline cursor-pointer"
+                                title="Replace or upload a new schedule file"
+                              >
+                                Replace
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-400">
+                              No Schedule Attached
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => openAttachScheduleModal(t)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-100 transition-all cursor-pointer whitespace-nowrap"
+                              title={`Attach schedule file to ${fullName}`}
+                            >
+                              <Paperclip className="h-3 w-3 text-amber-600" />
+                              Attach
+                            </button>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4 text-slate-600">
                         <div className="flex items-center gap-1.5">
                           <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                           <span>{t.email}</span>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-5 py-4 text-right">
                         <div className="inline-flex items-center justify-end gap-2">
-                          <Link
-                            to={`/admin/create-schedule?teacher=${encodeURIComponent(fullName)}`}
+                          <button
+                            type="button"
+                            onClick={() => openAttachScheduleModal(t)}
                             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-all cursor-pointer whitespace-nowrap"
-                            title={`Send or attach schedule file to ${fullName}`}
+                            title={`Attach schedule file to ${fullName}`}
                           >
-                            <Calendar className="h-3.5 w-3.5 text-amber-600" />
-                            Send Schedule
-                          </Link>
+                            <Paperclip className="h-3.5 w-3.5 text-amber-600" />
+                            {attachedSchedule ? 'Update Schedule' : 'Attach Schedule'}
+                          </button>
                           <button
                             type="button"
                             onClick={() => openAssignModal(t)}
@@ -1080,7 +1312,7 @@ export const AdminTeachersPage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     No teachers found matching your search.
                   </td>
                 </tr>
@@ -1406,6 +1638,207 @@ export const AdminTeachersPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+      {/* Modal: Attach Schedule File to Teacher */}
+      {isAttachScheduleModalOpen && (
+        <Modal
+          isOpen={isAttachScheduleModalOpen}
+          onClose={() => {
+            if (!isAttaching) {
+              setIsAttachScheduleModalOpen(false);
+              setScheduleFileInput(null);
+            }
+          }}
+          title="Attach Official Schedule File to Teacher"
+          subtitle="Upload official class timetable & teaching program document (PDF, Excel, Word, or Image)"
+          maxWidth="2xl"
+        >
+          <form onSubmit={handleAttachScheduleSubmit} className="space-y-4 text-xs">
+            {/* Target Teacher Selection / Card */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Faculty Teacher Recipient <span className="text-rose-500">*</span>
+              </label>
+              {selectedTeacherForSchedule ? (
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50/70">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 font-bold text-sm">
+                      {(selectedTeacherForSchedule.first_name?.[0] || 'T').toUpperCase()}
+                      {(selectedTeacherForSchedule.last_name?.[0] || '').toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-slate-900 text-sm">
+                        {selectedTeacherForSchedule.first_name} {selectedTeacherForSchedule.last_name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-slate-600">{selectedTeacherForSchedule.employee_id}</span>
+                        <span>•</span>
+                        <span>{selectedTeacherForSchedule.specialization}</span>
+                        <span>•</span>
+                        <span>{selectedTeacherForSchedule.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTeacherForSchedule(null)}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                  >
+                    Change Teacher
+                  </button>
+                </div>
+              ) : (
+                <select
+                  required
+                  value=""
+                  onChange={(e) => {
+                    const found = teachers.find((t) => t.id === e.target.value);
+                    if (found) setSelectedTeacherForSchedule(found);
+                  }}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
+                >
+                  <option value="">— Select Target Teacher —</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.first_name} {t.last_name} ({t.employee_id}) — {t.specialization}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* File Upload Zone */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Schedule Document File <span className="text-rose-500">*</span>
+              </label>
+              <input
+                ref={scheduleFileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setScheduleFileInput(file);
+                }}
+                className="hidden"
+              />
+              <div
+                onClick={() => scheduleFileInputRef.current?.click()}
+                className={`rounded-2xl border-2 border-dashed p-4 text-center transition-all cursor-pointer ${
+                  scheduleFileInput
+                    ? 'border-emerald-400 bg-emerald-50/60 hover:bg-emerald-50'
+                    : 'border-slate-300 bg-slate-50 hover:border-emerald-500 hover:bg-emerald-50/20'
+                }`}
+              >
+                <Upload className="mx-auto h-7 w-7 text-emerald-700 mb-1.5" />
+                {scheduleFileInput ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-extrabold text-emerald-900">
+                      {scheduleFileInput.name}
+                    </p>
+                    <p className="text-[11px] text-emerald-700">
+                      {Math.max(1, Math.round(scheduleFileInput.size / 1024))} KB •{' '}
+                      {scheduleFileInput.name.split('.').pop()?.toUpperCase()} Document
+                    </p>
+                    <p className="text-[11px] font-bold text-slate-500 pt-1">
+                      Click to choose a different file
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">
+                      Click to browse &amp; attach schedule file
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Accepts PDF, Microsoft Word (.docx), Excel (.xlsx), JPG, PNG
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Document Title */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Schedule Document Title
+              </label>
+              <input
+                type="text"
+                value={scheduleTitle}
+                onChange={(e) => setScheduleTitle(e.target.value)}
+                placeholder="e.g. Official Faculty Teaching Schedule & Class Program"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-medium focus:border-emerald-600 focus:bg-white focus:outline-hidden"
+              />
+            </div>
+
+            {/* School Year & Semester */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  School Year
+                </label>
+                <input
+                  type="text"
+                  value={scheduleSchoolYear}
+                  onChange={(e) => setScheduleSchoolYear(e.target.value)}
+                  placeholder="S.Y. 2026–2027"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-medium focus:border-emerald-600 focus:bg-white focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Semester / Grading Term
+                </label>
+                <input
+                  type="text"
+                  value={scheduleSemester}
+                  onChange={(e) => setScheduleSemester(e.target.value)}
+                  placeholder="1st & 2nd Semester"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-medium focus:border-emerald-600 focus:bg-white focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Remarks / Memo */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Admin Memo / Notes for Teacher
+              </label>
+              <textarea
+                rows={2}
+                value={scheduleNotes}
+                onChange={(e) => setScheduleNotes(e.target.value)}
+                placeholder="Notes, room assignment remarks, or instructions for the teacher..."
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 p-2.5 text-xs font-medium focus:border-emerald-600 focus:bg-white focus:outline-hidden resize-none"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isAttaching}
+                onClick={() => {
+                  setIsAttachScheduleModalOpen(false);
+                  setScheduleFileInput(null);
+                }}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isAttaching || !scheduleFileInput || !selectedTeacherForSchedule}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs flex items-center gap-1.5"
+              >
+                <Paperclip className="h-4 w-4" />
+                <span>
+                  {isAttaching ? 'Uploading & Attaching...' : 'Attach & Send Schedule'}
+                </span>
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>

@@ -988,31 +988,79 @@ export const TeacherClassProgramPage: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (!error && workloads && workloads.length > 0) {
-          const sbFiles: AdminSentTeacherScheduleFile[] = workloads.map((tw: any) => ({
-            id: `sb-tw-${tw.id}`,
-            title: tw.title || 'Official Faculty Class Program & Workload',
-            fileName: tw.file_name || 'Faculty_Teaching_Schedule.pdf',
-            fileSize: tw.file_size ? `${Math.round(tw.file_size / 1024)} KB` : '480 KB',
-            fileType: 'PDF',
-            fileDataUrl: tw.file_url,
-            schoolYear: 'S.Y. 2026–2027',
-            semester: 'Full Academic Year',
-            recipientType: 'all',
-            recipientTeacherNames: ['All Faculty Teachers'],
-            sentBy: tw.uploaded_by || 'Admin Office',
-            sentAt: new Date(tw.created_at).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-            notes: 'Official DepEd teaching assignment and class program document.',
-          }));
+          const sbFiles: AdminSentTeacherScheduleFile[] = workloads.map((tw: any) => {
+            const isPersonal = tw.teacher_id && user?.id && String(tw.teacher_id) === String(user.id);
+            return {
+              id: `sb-tw-${tw.id}`,
+              title: tw.title || 'Official Faculty Class Program & Workload',
+              fileName: tw.file_name || 'Faculty_Teaching_Schedule.pdf',
+              fileSize: tw.file_size ? `${Math.round(tw.file_size / 1024)} KB` : '480 KB',
+              fileType: tw.file_type?.includes('image') ? 'IMAGE' : 'PDF',
+              fileDataUrl: tw.file_url,
+              schoolYear: 'S.Y. 2026–2027',
+              semester: 'Full Academic Year',
+              recipientType: tw.teacher_id ? 'selected' : 'all',
+              recipientTeacherNames: isPersonal
+                ? [teacherName]
+                : tw.teacher_name
+                ? [tw.teacher_name]
+                : ['All Faculty Teachers'],
+              sentBy: tw.uploaded_by || 'Admin Office',
+              sentAt: new Date(tw.created_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              }),
+              notes: 'Official DepEd teaching assignment and class program document.',
+            };
+          });
 
           setAdminFiles((prev) => {
             const existingIds = new Set(prev.map((f) => f.id));
             const newFiles = sbFiles.filter((f) => !existingIds.has(f.id));
             return [...newFiles, ...prev];
           });
+        }
+
+        // Also query teachers table for direct teacher_load_url
+        if (user?.id) {
+          const { data: teacherRow } = await supabase
+            .from('teachers')
+            .select(
+              'teacher_load_url, teacher_load_name, teacher_load_file_type, teacher_load_updated_at'
+            )
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (teacherRow?.teacher_load_url && teacherRow?.teacher_load_name) {
+            const directFile: AdminSentTeacherScheduleFile = {
+              id: `direct-teacher-load-${user.id}`,
+              title: 'Official Faculty Teaching Schedule & Class Program',
+              fileName: teacherRow.teacher_load_name,
+              fileSize: '480 KB',
+              fileType: teacherRow.teacher_load_file_type || 'PDF',
+              fileDataUrl: teacherRow.teacher_load_url,
+              schoolYear: 'S.Y. 2026–2027',
+              semester: '1st & 2nd Semester',
+              recipientType: 'selected',
+              recipientTeacherNames: [teacherName],
+              sentBy: 'School Administrator • Office of the Principal',
+              sentAt: teacherRow.teacher_load_updated_at
+                ? new Date(teacherRow.teacher_load_updated_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : 'Recent',
+              notes:
+                'Official DepEd teaching assignment and schedule file attached by School Administration.',
+            };
+
+            setAdminFiles((prev) => [
+              directFile,
+              ...prev.filter((f) => f.id !== directFile.id),
+            ]);
+          }
         }
       } catch (err) {
         console.warn('Teacher workloads fetch warning:', err);
@@ -1024,19 +1072,20 @@ export const TeacherClassProgramPage: React.FC = () => {
       window.removeEventListener('storage', handleStorage as EventListener);
       window.removeEventListener('plsnhs-schedule-files-updated', handleStorage as EventListener);
     };
-  }, []);
+  }, [user, teacherName]);
 
   // Filter schedule files relevant to this logged-in teacher
   const myReceivedScheduleFiles = useMemo(() => {
     return adminFiles.filter((file) => {
       if (file.recipientType === 'all') return true;
+      if (user?.id && String(file.id).includes(String(user.id))) return true;
       return file.recipientTeacherNames.some(
         (name) =>
           name.toLowerCase().includes(teacherName.toLowerCase().split(' ')[0]) ||
           teacherName.toLowerCase().includes(name.toLowerCase().split(' ')[0])
       );
     });
-  }, [adminFiles, teacherName]);
+  }, [adminFiles, teacherName, user]);
 
   // Generate personalized teaching loads
   const teachingLoads = useMemo(() => {

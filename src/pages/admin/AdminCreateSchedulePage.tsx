@@ -29,6 +29,7 @@ import {
   type AdminSentTeacherScheduleFile,
 } from '../teacher/TeacherClassProgramPage';
 import { loadCachedTeachers, type FacultyRecord } from './AdminTeachersPage';
+import { uploadAndAttachTeacherSchedule } from '../../lib/teacherScheduleService';
 
 export const AdminCreateSchedulePage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -70,6 +71,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
     fileSize: '',
     fileType: 'PDF',
     fileDataUrl: '',
+    rawFile: null as File | null,
   });
 
   // Handle pre-selected teacher from query param (e.g., from Teachers page "Send Schedule" action)
@@ -192,12 +194,13 @@ export const AdminCreateSchedulePage: React.FC = () => {
         fileSize: `${sizeKb} KB`,
         fileType: ext,
         fileDataUrl: typeof reader.result === 'string' ? reader.result : '',
+        rawFile: file,
       }));
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSendScheduleFileToTeachers = (e: React.FormEvent) => {
+  const handleSendScheduleFileToTeachers = async (e: React.FormEvent) => {
     e.preventDefault();
     const newEntry: AdminSentTeacherScheduleFile = {
       id: `adm-sched-${Date.now()}`,
@@ -236,36 +239,60 @@ export const AdminCreateSchedulePage: React.FC = () => {
       // ignore
     }
 
-    // Persist to Supabase teacher_workloads
-    try {
-      let targetTeacherId: string | null = null;
-      if (newEntry.recipientType === 'selected' && fileForm.selectedTeachers.length > 0) {
-        const foundTeacher = teachersList.find((t) =>
-          fileForm.selectedTeachers.some((name) =>
-            `${t.first_name} ${t.last_name}`.toLowerCase().includes(name.toLowerCase())
-          )
+    // If a real file was uploaded, sync to Supabase storage & target teachers
+    if (fileForm.rawFile && fileForm.recipientType === 'selected') {
+      for (const tName of fileForm.selectedTeachers) {
+        const foundTeacher = teachersList.find(
+          (t) =>
+            `${t.first_name} ${t.last_name}`.toLowerCase().includes(tName.toLowerCase()) ||
+            tName.toLowerCase().includes(`${t.first_name} ${t.last_name}`.toLowerCase())
         );
-        if (foundTeacher) targetTeacherId = foundTeacher.user_id || foundTeacher.id;
+        if (foundTeacher) {
+          uploadAndAttachTeacherSchedule({
+            teacherId: foundTeacher.user_id || foundTeacher.id,
+            teacherName: `${foundTeacher.first_name} ${foundTeacher.last_name}`.trim(),
+            teacherTableId: foundTeacher.teacher_table_id,
+            file: fileForm.rawFile,
+            title: fileForm.title,
+            schoolYear: fileForm.schoolYear,
+            semester: fileForm.semester,
+            notes: fileForm.notes,
+            uploadedBy: 'School Administrator • Office of the Principal',
+          }).catch((err) => console.warn('Teacher attach schedule error:', err));
+        }
       }
+    } else {
+      // Persist to Supabase teacher_workloads
+      try {
+        let targetTeacherId: string | null = null;
+        if (newEntry.recipientType === 'selected' && fileForm.selectedTeachers.length > 0) {
+          const foundTeacher = teachersList.find((t) =>
+            fileForm.selectedTeachers.some((name) =>
+              `${t.first_name} ${t.last_name}`.toLowerCase().includes(name.toLowerCase())
+            )
+          );
+          if (foundTeacher) targetTeacherId = foundTeacher.user_id || foundTeacher.id;
+        }
 
-      supabase
-        .from('teacher_workloads')
-        .insert([
-          {
-            teacher_id: targetTeacherId,
-            file_name: newEntry.fileName,
-            file_url:
-              newEntry.fileDataUrl ||
-              'https://tuujlqrfyuazvbvoribz.supabase.co/storage/v1/object/public/teacher-schedules/faculty_load.pdf',
-            file_type: newEntry.fileType === 'PDF' ? 'application/pdf' : 'image/jpeg',
-            uploaded_by: 'Admin',
-          },
-        ])
-        .then(({ error }) => {
-          if (error) console.warn('Supabase teacher_workloads insert notice:', error);
-        });
-    } catch {
-      // ignore
+        supabase
+          .from('teacher_workloads')
+          .insert([
+            {
+              teacher_id: targetTeacherId,
+              file_name: newEntry.fileName,
+              file_url:
+                newEntry.fileDataUrl ||
+                'https://tuujlqrfyuazvbvoribz.supabase.co/storage/v1/object/public/teacher-schedules/faculty_load.pdf',
+              file_type: newEntry.fileType === 'PDF' ? 'application/pdf' : 'image/jpeg',
+              uploaded_by: 'Admin',
+            },
+          ])
+          .then(({ error }) => {
+            if (error) console.warn('Supabase teacher_workloads insert notice:', error);
+          });
+      } catch {
+        // ignore
+      }
     }
 
     // Log to activity_logs
