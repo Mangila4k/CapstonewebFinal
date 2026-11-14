@@ -13,6 +13,7 @@ import {
   Printer,
   UserCheck,
   Paperclip,
+  ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
@@ -31,6 +32,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
   const preselectedTeacher = searchParams.get('teacher');
 
   const [isSendFileModalOpen, setIsSendFileModalOpen] = useState(false);
+  const [viewingFile, setViewingFile] = useState<AdminSentTeacherScheduleFile | null>(null);
   const [teachersList, setTeachersList] = useState<FacultyRecord[]>(loadCachedTeachers);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
@@ -244,6 +246,185 @@ export const AdminCreateSchedulePage: React.FC = () => {
     setIsSendFileModalOpen(false);
   };
 
+  const generateScheduleDocHtml = (file: AdminSentTeacherScheduleFile) => {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${file.title}</title>
+  <style>
+    @page { size: 8.5in 11in; margin: 0.4in; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; color: #0f172a; margin: 20px; line-height: 1.4; font-size: 11px; }
+    .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; }
+    .header .rep { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin: 0 0 2px 0; }
+    .header .deped { font-size: 9.5px; font-weight: bold; margin: 0 0 2px 0; }
+    .header h1 { margin: 3px 0; font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a; }
+    .header .school-info { font-size: 9px; color: #334155; margin: 2px 0 0 0; }
+    .banner { background: #0f172a; color: #ffffff; text-align: center; padding: 5px 8px; font-weight: bold; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-radius: 4px; }
+    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    .meta-table td { padding: 4px 6px; border: 1px solid #cbd5e1; font-size: 10px; }
+    .meta-table .label { font-weight: bold; background: #f8fafc; width: 22%; color: #334155; }
+    .sched-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    .sched-table th { background: #f1f5f9; border: 1px solid #94a3b8; padding: 5px 4px; font-size: 9.5px; text-align: center; text-transform: uppercase; font-weight: bold; }
+    .sched-table td { border: 1px solid #cbd5e1; padding: 4px 6px; font-size: 9.5px; }
+    .sched-table td.center { text-align: center; }
+    .notes-box { padding: 8px 12px; border: 1px dashed #94a3b8; border-radius: 6px; background: #fafafa; font-size: 10px; margin-bottom: 18px; line-height: 1.45; }
+    .signoff { margin-top: 24px; display: flex; justify-content: space-between; font-size: 10px; }
+    .sig-line { width: 210px; border-top: 1px solid #000; margin-top: 36px; text-align: center; padding-top: 4px; font-size: 9.5px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p class="rep">Republic of the Philippines • Department of Education • Region VII, Central Visayas</p>
+    <p class="deped">Schools Division of Cebu Province • District of Boljoon</p>
+    <h1>PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</h1>
+    <p class="school-info">Langub, Boljoon, Cebu • DepEd School ID: <strong>303035</strong> • S.Y. 2026–2027</p>
+  </div>
+
+  <div class="banner">
+    ${file.title}
+  </div>
+
+  <table class="meta-table">
+    <tr>
+      <td class="label">Certified Document:</td>
+      <td><strong>${file.fileName}</strong> (${file.fileSize})</td>
+      <td class="label">School Year & Term:</td>
+      <td><strong>${file.schoolYear}</strong> • ${file.semester}</td>
+    </tr>
+    <tr>
+      <td class="label">Target Recipient:</td>
+      <td><strong>${file.recipientType === 'all' ? 'All Faculty Teachers (General Distribution)' : file.recipientTeacherNames.join(', ')}</strong></td>
+      <td class="label">Distribution Date:</td>
+      <td><strong>${file.sentAt}</strong></td>
+    </tr>
+    <tr>
+      <td class="label">Authorized By:</td>
+      <td>${file.sentBy}</td>
+      <td class="label">Document Status:</td>
+      <td><strong style="color: #047857;">Official DepEd Certified Active Load</strong></td>
+    </tr>
+  </table>
+
+  <table class="sched-table">
+    <thead>
+      <tr>
+        <th style="width: 35px;">No.</th>
+        <th style="width: 130px;">Time / Period</th>
+        <th style="width: 45px;">Mins</th>
+        <th style="width: 50px;">Days</th>
+        <th>Learning Area / Designated Subject</th>
+        <th style="width: 140px;">Grade & Section</th>
+        <th style="width: 110px;">Assigned Room</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="center">1</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">07:30 AM – 08:30 AM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>English Communication Arts</strong></td>
+        <td><strong>Grade 7 – Rizal</strong></td>
+        <td>Room 101 • Bldg A</td>
+      </tr>
+      <tr>
+        <td class="center">2</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">08:30 AM – 09:30 AM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>Mathematics & Analytical Thinking</strong></td>
+        <td><strong>Grade 8 – Bonifacio</strong></td>
+        <td>Room 102 • Bldg A</td>
+      </tr>
+      <tr style="background: #f8fafc; font-weight: bold;">
+        <td class="center">-</td>
+        <td class="center" style="font-family: monospace;">09:30 AM – 09:50 AM</td>
+        <td class="center">20</td>
+        <td class="center">M–F</td>
+        <td colspan="3" class="center" style="color: #64748b; font-style: italic;">RECESS & HEALTH BREAK</td>
+      </tr>
+      <tr>
+        <td class="center">3</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">09:50 AM – 10:50 AM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>General Integrated Science & Chemistry</strong></td>
+        <td><strong>Grade 9 – Mabini</strong></td>
+        <td>Science Lab 1</td>
+      </tr>
+      <tr>
+        <td class="center">4</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">10:50 AM – 11:50 AM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>Araling Panlipunan (Social Studies)</strong></td>
+        <td><strong>Grade 10 – Luna</strong></td>
+        <td>Room 201 • Bldg B</td>
+      </tr>
+      <tr style="background: #f8fafc; font-weight: bold;">
+        <td class="center">-</td>
+        <td class="center" style="font-family: monospace;">11:50 AM – 01:00 PM</td>
+        <td class="center">70</td>
+        <td class="center">M–F</td>
+        <td colspan="3" class="center" style="color: #64748b; font-style: italic;">NOON LUNCH BREAK & TEACHER PLANNING</td>
+      </tr>
+      <tr>
+        <td class="center">5</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">01:00 PM – 02:00 PM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>TLE / Information & Communications Tech</strong></td>
+        <td><strong>Grade 10 – Aguinaldo</strong></td>
+        <td>Computer Lab 1</td>
+      </tr>
+      <tr>
+        <td class="center">6</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">02:00 PM – 03:00 PM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>MAPEH (Music, Arts, PE & Health)</strong></td>
+        <td><strong>Grade 7 – Del Pilar</strong></td>
+        <td>Gymnasium / Rm 103</td>
+      </tr>
+      <tr>
+        <td class="center">7</td>
+        <td class="center" style="font-family: monospace; font-weight: bold;">03:00 PM – 04:00 PM</td>
+        <td class="center">60</td>
+        <td class="center">M–F</td>
+        <td><strong>Homeroom Guidance & Advisory Mentorship</strong></td>
+        <td><strong>Official Advisory Class</strong></td>
+        <td>Designated Advisory Rm</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="notes-box">
+    <strong>Administrative Memo & Directives:</strong><br />
+    ${file.notes || 'Official teaching assignments and class schedules are certified and active for School Year 2026–2027 pursuant to DepEd guidelines.'}
+  </div>
+
+  <div class="signoff">
+    <div>
+      <p style="margin: 0; font-size: 9.5px; color: #475569;">Prepared & Certified Correct:</p>
+      <div class="sig-line">
+        ADMINISTRATIVE OFFICER II / REGISTRAR<br />
+        <span style="font-weight: normal; font-size: 8.5px; color: #64748b;">Schedule & Records Committee</span>
+      </div>
+    </div>
+    <div>
+      <p style="margin: 0; font-size: 9.5px; color: #475569;">Approved by Authority of the Principal:</p>
+      <div class="sig-line">
+        OFFICE OF THE PRINCIPAL<br />
+        <span style="font-weight: normal; font-size: 8.5px; color: #64748b;">Placido L. Señor National High School</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+  };
+
   const handleDownloadFile = (file: AdminSentTeacherScheduleFile) => {
     if (file.fileDataUrl) {
       const a = document.createElement('a');
@@ -255,56 +436,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
       return;
     }
 
-    const docHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>${file.title}</title>
-  <style>
-    body { font-family: Arial, sans-serif; color: #0f172a; margin: 36px; }
-    .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 20px; }
-    .header h1 { margin: 4px 0; font-size: 18px; text-transform: uppercase; }
-    .header p { margin: 2px 0; font-size: 12px; color: #475569; }
-    .meta { display: flex; justify-content: space-between; margin-bottom: 18px; font-size: 13px; background: #f8fafc; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; }
-    .content { padding: 18px; border: 1px dashed #94a3b8; border-radius: 8px; background: #fafafa; font-size: 13px; line-height: 1.6; }
-    .signoff { margin-top: 40px; display: flex; justify-content: space-between; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <p>Republic of the Philippines • Department of Education</p>
-    <h1>Placido L. Señor National High School</h1>
-    <p><strong>${file.title}</strong> (${file.schoolYear} • ${file.semester})</p>
-  </div>
-  <div class="meta">
-    <div>
-      <p><strong>Recipients:</strong> ${file.recipientType === 'all' ? 'All Faculty Teachers' : file.recipientTeacherNames.join(', ')}</p>
-      <p><strong>Issued By:</strong> ${file.sentBy}</p>
-    </div>
-    <div>
-      <p><strong>Date Issued:</strong> ${file.sentAt}</p>
-      <p><strong>Official File:</strong> ${file.fileName} (${file.fileSize})</p>
-    </div>
-  </div>
-  <div class="content">
-    <p><strong>Administrative Notice & Instructions:</strong></p>
-    <p>${file.notes || 'Official teaching assignments and class schedules are certified and active for School Year 2026–2027.'}</p>
-  </div>
-  <div class="signoff">
-    <div>
-      <p><strong>Certified Correct:</strong></p>
-      <br /><br />
-      <p><u><strong>ADMINISTRATIVE OFFICE</strong></u><br />Placido L. Señor National High School</p>
-    </div>
-    <div>
-      <p><strong>Approved:</strong></p>
-      <br /><br />
-      <p><u><strong>OFFICE OF THE PRINCIPAL</strong></u><br />School Head / Principal</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
+    const docHtml = generateScheduleDocHtml(file);
     const blob = new Blob([docHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -317,7 +449,37 @@ export const AdminCreateSchedulePage: React.FC = () => {
   };
 
   const handlePrintFile = (file: AdminSentTeacherScheduleFile) => {
-    handleDownloadFile(file);
+    if (file.fileDataUrl && file.fileDataUrl.startsWith('http')) {
+      const win = window.open(file.fileDataUrl, '_blank');
+      win?.focus();
+      return;
+    }
+    const docHtml = generateScheduleDocHtml(file);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(docHtml);
+      doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        }, 1000);
+      }, 400);
+    }
+  };
+
+  const handleViewFile = (file: AdminSentTeacherScheduleFile) => {
+    setViewingFile(file);
   };
 
   const handleDeleteSentFile = (id: string) => {
@@ -431,11 +593,28 @@ export const AdminCreateSchedulePage: React.FC = () => {
                   </Badge>
                   <span className="text-[11px] text-slate-400 font-medium">{file.sentAt}</span>
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">{file.title}</h3>
-                <p className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" />
-                  {file.fileName} ({file.fileSize})
-                </p>
+                <button
+                  type="button"
+                  onClick={() => handleViewFile(file)}
+                  className="text-left group cursor-pointer w-full"
+                  title="Click to view schedule document"
+                >
+                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center justify-between gap-1.5">
+                    <span>{file.title}</span>
+                    <Eye className="h-3.5 w-3.5 text-emerald-600 shrink-0 opacity-80 group-hover:opacity-100" />
+                  </h3>
+                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => handleViewFile(file)}
+                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 hover:underline flex items-center gap-1.5 cursor-pointer text-left"
+                    title="Click to preview file"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                    <span>{file.fileName} ({file.fileSize})</span>
+                  </button>
+                </div>
                 <p className="text-[11px] text-slate-600">
                   <span className="font-bold text-slate-700">Sent to:</span>{' '}
                   {file.recipientType === 'all'
@@ -449,6 +628,15 @@ export const AdminCreateSchedulePage: React.FC = () => {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to Teacher Class Program
                 </span>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleViewFile(file)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors cursor-pointer shadow-2xs"
+                    title="View & Preview schedule document"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-emerald-700" />
+                    View
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadFile(file)}
@@ -654,6 +842,112 @@ export const AdminCreateSchedulePage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* View / Preview Official Schedule File Modal */}
+      {viewingFile && (
+        <Modal
+          isOpen={Boolean(viewingFile)}
+          onClose={() => setViewingFile(null)}
+          title={viewingFile.title}
+          subtitle={`Schedule Document • ${viewingFile.fileName} (${viewingFile.fileSize})`}
+          maxWidth="4xl"
+        >
+          <div className="space-y-4">
+            {/* Top Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-xs">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-black text-slate-900 truncate">
+                      {viewingFile.fileName}
+                    </span>
+                    <Badge variant="emerald" size="sm">
+                      {viewingFile.fileType || 'PDF'}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-slate-600 truncate mt-0.5">
+                    {viewingFile.schoolYear} • {viewingFile.semester} • Sent to{' '}
+                    <span className="font-bold text-slate-800">
+                      {viewingFile.recipientType === 'all'
+                        ? 'All Faculty Teachers'
+                        : viewingFile.recipientTeacherNames.join(', ')}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {viewingFile.fileDataUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const win = window.open(viewingFile.fileDataUrl, '_blank');
+                      win?.focus();
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
+                    title="Open in new window / tab"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 text-slate-600" />
+                    Open in Tab
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handlePrintFile(viewingFile)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
+                  title="Print schedule document"
+                >
+                  <Printer className="h-3.5 w-3.5 text-slate-700" />
+                  Print
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadFile(viewingFile)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-800 cursor-pointer shadow-2xs"
+                  title="Download schedule file"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </button>
+              </div>
+            </div>
+
+            {/* Document Viewer Frame / Container */}
+            <div className="rounded-2xl border border-slate-200 bg-slate-100 p-2 sm:p-4 max-h-[70vh] overflow-y-auto">
+              {viewingFile.fileDataUrl &&
+              (viewingFile.fileDataUrl.startsWith('data:image/') ||
+                /\.(png|jpe?g|webp|gif)$/i.test(viewingFile.fileName)) ? (
+                <div className="flex justify-center bg-white rounded-xl p-4 shadow-sm">
+                  <img
+                    src={viewingFile.fileDataUrl}
+                    alt={viewingFile.title}
+                    className="max-h-[62vh] object-contain rounded-lg"
+                  />
+                </div>
+              ) : viewingFile.fileDataUrl &&
+                (viewingFile.fileDataUrl.startsWith('data:application/pdf') ||
+                  viewingFile.fileDataUrl.startsWith('http')) ? (
+                <iframe
+                  src={viewingFile.fileDataUrl}
+                  title={viewingFile.title}
+                  className="w-full h-[65vh] rounded-xl border border-slate-300 bg-white shadow-xs"
+                />
+              ) : (
+                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm ring-1 ring-slate-200">
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: generateScheduleDocHtml(viewingFile),
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
