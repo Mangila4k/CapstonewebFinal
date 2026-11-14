@@ -89,9 +89,10 @@ export const PublicNavbar: React.FC = () => {
     }
   };
 
-  const isAuthPage =
+  const hideNavLinks =
     location.pathname.startsWith('/login') ||
-    location.pathname.startsWith('/forgot-password');
+    location.pathname.startsWith('/forgot-password') ||
+    location.pathname.startsWith('/enroll');
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#1B2A4A] shadow-md backdrop-blur-md">
@@ -118,7 +119,7 @@ export const PublicNavbar: React.FC = () => {
           </div>
         </Link>
 
-        {!isAuthPage && (
+        {!hideNavLinks && (
           <>
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
@@ -165,7 +166,7 @@ export const PublicNavbar: React.FC = () => {
       </div>
 
       {/* Mobile Drawer */}
-      {!isAuthPage && isOpen && (
+      {!hideNavLinks && isOpen && (
         <div className="md:hidden border-b border-white/10 bg-[#16223f] px-4 pt-3 pb-6 space-y-2 animate-fade-in shadow-xl text-white">
           {navLinks.map((item) => {
             const isActive = activeSection === item.name;
