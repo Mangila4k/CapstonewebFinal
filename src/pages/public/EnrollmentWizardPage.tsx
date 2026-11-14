@@ -961,25 +961,28 @@ export const EnrollmentWizardPage: React.FC = () => {
                   </label>
                   <span className="text-[11px] text-slate-400">Choose one that applies to you</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
                     {
                       id: 'New Student',
                       label: 'New Student',
-                      desc: 'Incoming Grade 7 from Elementary',
-                      icon: <UserPlus className="h-4.5 w-4.5" />,
+                      level: 'INCOMING G7',
+                      desc: 'From Elementary',
+                      icon: <UserPlus className="h-3.5 w-3.5" />,
                     },
                     {
                       id: 'Old Student',
                       label: 'Old Student',
-                      desc: 'Continuing PLSNHS Learner',
-                      icon: <GraduationCap className="h-4.5 w-4.5" />,
+                      level: 'GRADES 8–12',
+                      desc: 'Continuing Learner',
+                      icon: <GraduationCap className="h-3.5 w-3.5" />,
                     },
                     {
                       id: 'Transferee',
                       label: 'Transferee',
-                      desc: 'From another Secondary School',
-                      icon: <School className="h-4.5 w-4.5" />,
+                      level: 'CROSS-ENROLLEE',
+                      desc: 'From Another School',
+                      icon: <School className="h-3.5 w-3.5" />,
                     },
                   ].map((type) => {
                     const isActive = formData.studentType === type.id;
@@ -988,38 +991,34 @@ export const EnrollmentWizardPage: React.FC = () => {
                         key={type.id}
                         type="button"
                         onClick={() => handleStudentTypeChange(type.id)}
-                        className={`group relative flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                        className={`group relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
                           isActive
-                            ? 'border-[#1a225a] bg-white shadow-[0_0_0_4px_rgba(26,34,90,0.14)]'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 shadow-2xs'
+                            ? 'border-[#1a225a] bg-white text-[#1a225a] shadow-[0_0_0_4px_rgba(26,34,90,0.14)]'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 text-slate-700 shadow-2xs'
                         }`}
                       >
-                        <div className="flex items-center justify-between w-full mb-2">
-                          <div
-                            className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all ${
-                              isActive
-                                ? 'bg-[#1a225a] text-white border-[#1a225a] shadow-xs'
-                                : 'bg-slate-100 text-[#1a225a] border-slate-200/80 group-hover:bg-[#1a225a]/10'
-                            }`}
-                          >
-                            {React.cloneElement(type.icon, {
-                              className: `h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-[#1a225a]'}`,
-                            })}
-                          </div>
-                          {isActive ? (
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1a225a] text-white shadow-xs">
-                              <Check className="h-3 w-3 stroke-[2.5]" />
-                            </span>
-                          ) : (
-                            <span className="h-5 w-5 rounded-full border border-slate-300 bg-white group-hover:border-slate-400" />
-                          )}
+                        <span
+                          className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md mb-1 ${
+                            isActive
+                              ? 'bg-[#1a225a]/10 text-[#1a225a] font-black'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {type.level}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {React.cloneElement(type.icon, {
+                            className: `h-4 w-4 ${isActive ? 'text-[#1a225a]' : 'text-slate-500 group-hover:text-slate-700'}`,
+                          })}
+                          <span className={`text-sm font-extrabold ${isActive ? 'text-[#1a225a]' : 'text-slate-800'}`}>
+                            {type.label}
+                          </span>
                         </div>
-                        <span className={`text-sm font-extrabold leading-tight ${isActive ? 'text-[#1a225a]' : 'text-slate-800'}`}>
-                          {type.label}
-                        </span>
-                        <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                          {type.desc}
-                        </span>
+                        {isActive && (
+                          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1a225a] text-white shadow-2xs">
+                            <Check className="h-2.5 w-2.5" />
+                          </span>
+                        )}
                       </button>
                     );
                   })}
