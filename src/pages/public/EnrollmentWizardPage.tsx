@@ -759,7 +759,171 @@ export const EnrollmentWizardPage: React.FC = () => {
 
           {/* MAIN ENROLLMENT FORM */}
           <form onSubmit={handleSubmit} noValidate>
-            {/* ====== 1. PERSONAL INFORMATION ====== */}
+            {/* ====== 1. GRADE LEVEL & STRAND ====== */}
+            <div className="enrollment-section">
+              <h3 className="enrollment-section-title">
+                <BookOpen /> Grade Level & Strand
+              </h3>
+
+              {/* Select Student Type */}
+              <div className="enrollment-group">
+                <label>
+                  Select Student Type <span>*</span>
+                </label>
+                <div className="student-type-grid">
+                  {[
+                    { id: 'New Student', label: 'New Student', icon: <UserPlus className="h-5 w-5 text-blue-600" /> },
+                    { id: 'Old Student', label: 'Old Student', icon: <GraduationCap className="h-5 w-5 text-amber-600" /> },
+                    { id: 'Repeater', label: 'Repeater', icon: <RotateCcw className="h-5 w-5 text-slate-700" /> },
+                    { id: 'Transferee', label: 'Transferee', icon: <School className="h-5 w-5 text-emerald-600" /> },
+                  ].map((type) => (
+                    <div
+                      key={type.id}
+                      onClick={() => handleChange('studentType', type.id)}
+                      className={`student-type-tile ${formData.studentType === type.id ? 'active' : ''}`}
+                    >
+                      {type.icon}
+                      <span className="tile-title">{type.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Applying for Grade Level */}
+              <div className="enrollment-group">
+                <label>
+                  Applying for Grade Level <span>*</span>
+                </label>
+                <div className="grade-options-grid">
+                  {['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map((grade) => (
+                    <div
+                      key={grade}
+                      onClick={() => handleChange('gradeLevel', grade)}
+                      className={`grade-option-tile ${formData.gradeLevel === grade ? 'active' : ''}`}
+                    >
+                      {grade}
+                    </div>
+                  ))}
+                </div>
+
+                {/* LRN Mode Indicator Banner */}
+                <div
+                  className={`mt-3 rounded-2xl p-3.5 border transition-all ${
+                    isLrnManual
+                      ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                      : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-lg leading-none mt-0.5">{isLrnManual ? '✍️' : '⚡'}</span>
+                      <div>
+                        <p className="text-xs font-bold font-display">
+                          {isLrnManual
+                            ? `LRN Mode: Manual Entry Required (${formData.studentType === 'Transferee' ? 'Transferee' : formData.gradeLevel})`
+                            : `LRN Mode: Auto-Populated (${formData.gradeLevel})`}
+                        </p>
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                          {isLrnManual
+                            ? 'For Grade 7 entrants and transferees, the 12-digit DepEd LRN must be manually entered in the Personal Information section below.'
+                            : 'For continuing learners in Grades 8 through 12, the 12-digit LRN is automatically populated by the Placido L. Señor NHS system.'}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 border ${
+                        isLrnManual
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      }`}
+                    >
+                      {isLrnManual ? 'Manual LRN' : 'Auto LRN'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Strand Selection (If Grade 11 or 12) */}
+              {isSeniorHigh && (
+                <div className="enrollment-group animate-fade-in">
+                  <label>
+                    Select Strand <span>*</span>
+                  </label>
+                  <div className="strand-options-grid">
+                    {[
+                      { code: 'TVL', title: 'TVL', sub: 'Technical-Vocational-Livelihood Track' },
+                      { code: 'HUMSS', title: 'HUMSS', sub: 'Humanities and Social Sciences' },
+                      { code: 'GAS', title: 'GAS', sub: 'General Academic Strand' },
+                      { code: 'STEM', title: 'STEM', sub: 'Science, Technology, Engineering, Math' },
+                    ].map((st) => (
+                      <div
+                        key={st.code}
+                        onClick={() => handleChange('strand', st.code)}
+                        className={`strand-option-card ${formData.strand === st.code ? 'active' : ''}`}
+                      >
+                        <span className="strand-title">{st.title}</span>
+                        <span className="strand-sub">{st.sub}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* TVL Specialization Sub-options */}
+                  {formData.strand === 'TVL' && (
+                    <div className="tvl-spec-box animate-fade-in">
+                      <div className="tvl-spec-box-title flex items-center gap-2">
+                        <Utensils className="h-4 w-4 text-[#1a225a]" />
+                        <span>Select TVL Specialization *</span>
+                      </div>
+                      <div className="tvl-spec-grid">
+                        <div
+                          onClick={() => handleChange('tvlSpecialization', 'TVL-Cookery')}
+                          className={`tvl-spec-tile flex items-center gap-2.5 ${
+                            formData.tvlSpecialization === 'TVL-Cookery' ? 'active' : ''
+                          }`}
+                        >
+                          <Utensils className="h-4 w-4 text-amber-600" />
+                          <div>
+                            <div className="font-bold text-sm text-[#1a225a]">Cookery</div>
+                            <div className="text-xs text-slate-500">Food Prep & Culinary Arts</div>
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={() => handleChange('tvlSpecialization', 'TVL-ICT')}
+                          className={`tvl-spec-tile flex items-center gap-2.5 ${
+                            formData.tvlSpecialization === 'TVL-ICT' ? 'active' : ''
+                          }`}
+                        >
+                          <Laptop className="h-4 w-4 text-blue-600" />
+                          <div>
+                            <div className="font-bold text-sm text-[#1a225a]">ICT</div>
+                            <div className="text-xs text-slate-500">Computer & Digital Tech</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* School Year */}
+              <div className="enrollment-group mb-0">
+                <label>
+                  School Year <span>*</span>
+                </label>
+                <div className="enrollment-input-wrap">
+                  <input
+                    type="text"
+                    value={formData.schoolYear}
+                    onChange={(e) => handleChange('schoolYear', e.target.value)}
+                    placeholder="e.g., 2026-2027"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ====== 2. PERSONAL INFORMATION ====== */}
             <div className="enrollment-section">
               <h3 className="enrollment-section-title">
                 <User /> Personal Information
@@ -1005,7 +1169,7 @@ export const EnrollmentWizardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* ====== 2. PARENT/GUARDIAN INFORMATION ====== */}
+            {/* ====== 3. PARENT/GUARDIAN INFORMATION ====== */}
             <div className="enrollment-section">
               <h3 className="enrollment-section-title">
                 <Users /> Parent/Guardian Information
@@ -1149,170 +1313,6 @@ export const EnrollmentWizardPage: React.FC = () => {
                     placeholder="Street, Barangay, City/Municipality, Province"
                     value={formData.guardianAddress}
                     onChange={(e) => handleChange('guardianAddress', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ====== 3. GRADE LEVEL & STRAND ====== */}
-            <div className="enrollment-section">
-              <h3 className="enrollment-section-title">
-                <BookOpen /> Grade Level & Strand
-              </h3>
-
-              {/* Select Student Type */}
-              <div className="enrollment-group">
-                <label>
-                  Select Student Type <span>*</span>
-                </label>
-                <div className="student-type-grid">
-                  {[
-                    { id: 'New Student', label: 'New Student', icon: <UserPlus className="h-5 w-5 text-blue-600" /> },
-                    { id: 'Old Student', label: 'Old Student', icon: <GraduationCap className="h-5 w-5 text-amber-600" /> },
-                    { id: 'Repeater', label: 'Repeater', icon: <RotateCcw className="h-5 w-5 text-slate-700" /> },
-                    { id: 'Transferee', label: 'Transferee', icon: <School className="h-5 w-5 text-emerald-600" /> },
-                  ].map((type) => (
-                    <div
-                      key={type.id}
-                      onClick={() => handleChange('studentType', type.id)}
-                      className={`student-type-tile ${formData.studentType === type.id ? 'active' : ''}`}
-                    >
-                      {type.icon}
-                      <span className="tile-title">{type.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Applying for Grade Level */}
-              <div className="enrollment-group">
-                <label>
-                  Applying for Grade Level <span>*</span>
-                </label>
-                <div className="grade-options-grid">
-                  {['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map((grade) => (
-                    <div
-                      key={grade}
-                      onClick={() => handleChange('gradeLevel', grade)}
-                      className={`grade-option-tile ${formData.gradeLevel === grade ? 'active' : ''}`}
-                    >
-                      {grade}
-                    </div>
-                  ))}
-                </div>
-
-                {/* LRN Mode Indicator Banner */}
-                <div
-                  className={`mt-3 rounded-2xl p-3.5 border transition-all ${
-                    isLrnManual
-                      ? 'bg-amber-50/80 border-amber-200 text-amber-950'
-                      : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5">
-                      <span className="text-lg leading-none mt-0.5">{isLrnManual ? '✍️' : '⚡'}</span>
-                      <div>
-                        <p className="text-xs font-bold font-display">
-                          {isLrnManual
-                            ? `LRN Mode: Manual Entry Required (${formData.studentType === 'Transferee' ? 'Transferee' : formData.gradeLevel})`
-                            : `LRN Mode: Auto-Populated (${formData.gradeLevel})`}
-                        </p>
-                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                          {isLrnManual
-                            ? 'For Grade 7 entrants and transferees, the 12-digit DepEd LRN must be manually entered in the Personal Information section above.'
-                            : 'For continuing learners in Grades 8 through 12, the 12-digit LRN is automatically populated by the Placido L. Señor NHS system.'}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 border ${
-                        isLrnManual
-                          ? 'bg-amber-100 text-amber-800 border-amber-300'
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                      }`}
-                    >
-                      {isLrnManual ? 'Manual LRN' : 'Auto LRN'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Strand Selection (If Grade 11 or 12) */}
-              {isSeniorHigh && (
-                <div className="enrollment-group animate-fade-in">
-                  <label>
-                    Select Strand <span>*</span>
-                  </label>
-                  <div className="strand-options-grid">
-                    {[
-                      { code: 'TVL', title: 'TVL', sub: 'Technical-Vocational-Livelihood Track' },
-                      { code: 'HUMSS', title: 'HUMSS', sub: 'Humanities and Social Sciences' },
-                      { code: 'GAS', title: 'GAS', sub: 'General Academic Strand' },
-                      { code: 'STEM', title: 'STEM', sub: 'Science, Technology, Engineering, Math' },
-                    ].map((st) => (
-                      <div
-                        key={st.code}
-                        onClick={() => handleChange('strand', st.code)}
-                        className={`strand-option-card ${formData.strand === st.code ? 'active' : ''}`}
-                      >
-                        <span className="strand-title">{st.title}</span>
-                        <span className="strand-sub">{st.sub}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* TVL Specialization Sub-options */}
-                  {formData.strand === 'TVL' && (
-                    <div className="tvl-spec-box animate-fade-in">
-                      <div className="tvl-spec-box-title flex items-center gap-2">
-                        <Utensils className="h-4 w-4 text-[#1a225a]" />
-                        <span>Select TVL Specialization *</span>
-                      </div>
-                      <div className="tvl-spec-grid">
-                        <div
-                          onClick={() => handleChange('tvlSpecialization', 'TVL-Cookery')}
-                          className={`tvl-spec-tile flex items-center gap-2.5 ${
-                            formData.tvlSpecialization === 'TVL-Cookery' ? 'active' : ''
-                          }`}
-                        >
-                          <Utensils className="h-4 w-4 text-amber-600" />
-                          <div>
-                            <div className="font-bold text-sm text-[#1a225a]">Cookery</div>
-                            <div className="text-xs text-slate-500">Food Prep & Culinary Arts</div>
-                          </div>
-                        </div>
-
-                        <div
-                          onClick={() => handleChange('tvlSpecialization', 'TVL-ICT')}
-                          className={`tvl-spec-tile flex items-center gap-2.5 ${
-                            formData.tvlSpecialization === 'TVL-ICT' ? 'active' : ''
-                          }`}
-                        >
-                          <Laptop className="h-4 w-4 text-blue-600" />
-                          <div>
-                            <div className="font-bold text-sm text-[#1a225a]">ICT</div>
-                            <div className="text-xs text-slate-500">Computer & Digital Tech</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* School Year */}
-              <div className="enrollment-group mb-0">
-                <label>
-                  School Year <span>*</span>
-                </label>
-                <div className="enrollment-input-wrap">
-                  <input
-                    type="text"
-                    value={formData.schoolYear}
-                    onChange={(e) => handleChange('schoolYear', e.target.value)}
-                    placeholder="e.g., 2026-2027"
                     required
                   />
                 </div>
