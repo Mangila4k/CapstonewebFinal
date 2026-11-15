@@ -80,7 +80,11 @@ export const HomePage: React.FC = () => {
 
     loadActivities();
 
-    const handleActivitiesUpdate = () => {
+    const handleActivitiesUpdate = (e?: any) => {
+      if (e?.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        setActivities(e.detail);
+        return;
+      }
       try {
         const cached = localStorage.getItem('plsnhs_activities_cache');
         if (cached) {
@@ -105,12 +109,17 @@ export const HomePage: React.FC = () => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Supabase realtime channel
+    // Supabase realtime channel on app_settings (in publication for cross-device updates)
     const channel = supabase
-      .channel('public:activities:homepage')
+      .channel('app_settings_activities_realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'activities' },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'app_settings',
+          filter: 'key=eq.activities_updated_at',
+        },
         () => {
           loadActivities();
         }
@@ -142,6 +151,10 @@ export const HomePage: React.FC = () => {
     displayActivities.length > 6 && !showAllActivities
       ? displayActivities.slice(0, 6)
       : displayActivities;
+
+  const activeSelectedActivity = selectedActivity
+    ? activities.find((a) => String(a.id) === String(selectedActivity.id)) || selectedActivity
+    : null;
 
   return (
     <div className="original-homepage-container">
@@ -394,7 +407,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ACTIVITY DETAIL MODAL */}
-      {selectedActivity && (
+      {activeSelectedActivity && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-fade-in">
           <div className="relative w-full max-w-2xl rounded-3xl border border-white/15 bg-[#16214a] p-6 shadow-2xl text-white">
             <button
@@ -407,8 +420,8 @@ export const HomePage: React.FC = () => {
 
             <div className="overflow-hidden rounded-2xl border border-white/10 mb-4 max-h-96">
               <img
-                src={selectedActivity.image_url}
-                alt={selectedActivity.title}
+                src={activeSelectedActivity.image_url || '/pictures/logo sa skwelahan.png'}
+                alt={activeSelectedActivity.title}
                 className="w-full h-auto object-cover max-h-96"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/pictures/logo sa skwelahan.png';
@@ -418,16 +431,16 @@ export const HomePage: React.FC = () => {
 
             <div className="flex items-center gap-2 text-xs text-amber-400 font-semibold mb-2">
               <Calendar className="h-4 w-4" />
-              <span>{formatActivityDate(selectedActivity.created_at)}</span>
+              <span>{formatActivityDate(activeSelectedActivity.created_at)}</span>
             </div>
 
             <h3 className="text-xl sm:text-2xl font-black text-white font-display uppercase tracking-tight mb-3">
-              {selectedActivity.title}
+              {activeSelectedActivity.title}
             </h3>
 
             <p className="text-sm text-slate-300 leading-relaxed">
-              {selectedActivity.description && selectedActivity.description.trim().length > 0
-                ? selectedActivity.description
+              {activeSelectedActivity.description && activeSelectedActivity.description.trim().length > 0
+                ? activeSelectedActivity.description
                 : 'No additional details provided for this activity.'}
             </p>
 

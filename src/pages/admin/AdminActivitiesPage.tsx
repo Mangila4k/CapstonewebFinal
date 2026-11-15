@@ -98,10 +98,18 @@ const loadCachedActivities = (): ActivityItem[] => {
   return DEFAULT_ACTIVITIES;
 };
 
-const syncActivitiesCache = (items: ActivityItem[]) => {
+const syncActivitiesCache = async (items: ActivityItem[]) => {
   try {
     localStorage.setItem(ACTIVITIES_CACHE_KEY, JSON.stringify(items));
     window.dispatchEvent(new CustomEvent('plsnhs-activities-updated', { detail: items }));
+
+    // Notify across remote devices/sessions via Supabase app_settings (in realtime publication)
+    const now = new Date().toISOString();
+    await supabase.from('app_settings').upsert({
+      key: 'activities_updated_at',
+      value: now,
+      updated_at: now,
+    });
   } catch (err) {
     console.warn('Activities cache sync warning:', err);
   }
@@ -237,10 +245,10 @@ export const AdminActivitiesPage: React.FC = () => {
         .eq('id', target.id);
 
       const updated = activities.map((item) =>
-        item.id === target.id ? { ...item, image_url: uploadedUrl } : item
+        String(item.id) === String(target.id) ? { ...item, image_url: uploadedUrl } : item
       );
       setActivities(updated);
-      syncActivitiesCache(updated);
+      await syncActivitiesCache(updated);
 
       if (error) {
         console.warn('Supabase update notice:', error.message);
@@ -269,29 +277,44 @@ export const AdminActivitiesPage: React.FC = () => {
         finalImageUrl = await uploadActivityImage(selectedFile);
       }
 
+      // Preserve original timestamp if date did not change
+      let finalCreatedAt = new Date(form.date).toISOString();
+      if (editingActivity && editingActivity.created_at) {
+        try {
+          const originalDatePart = new Date(editingActivity.created_at).toISOString().split('T')[0];
+          if (form.date === originalDatePart) {
+            finalCreatedAt = editingActivity.created_at;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const payload: Record<string, any> = {
         title: form.title.trim(),
         description: form.description.trim(),
         image_url: finalImageUrl || '',
-        created_at: new Date(form.date).toISOString(),
+        created_at: finalCreatedAt,
       };
 
       if (editingActivity) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('activities')
           .update(payload)
-          .eq('id', editingActivity.id);
+          .eq('id', editingActivity.id)
+          .select()
+          .maybeSingle();
 
         if (error) {
-          // Update local state even if RLS or schema restricts
           console.warn('Update fallback:', error.message);
         }
+        const updatedPayload = data || payload;
         const updated = activities.map((item) =>
-          item.id === editingActivity.id ? { ...item, ...payload } : item
+          String(item.id) === String(editingActivity.id) ? { ...item, ...updatedPayload } : item
         );
         setActivities(updated);
-        syncActivitiesCache(updated);
-        setNotice({ type: 'success', message: 'Activity updated successfully.' });
+        await syncActivitiesCache(updated);
+        setNotice({ type: 'success', message: `Activity "${form.title}" updated successfully.` });
       } else {
         const { data, error } = await supabase
           .from('activities')
@@ -307,9 +330,9 @@ export const AdminActivitiesPage: React.FC = () => {
           id: `act_${Date.now()}`,
           ...payload,
         };
-        const updated = [newActivity, ...activities.filter((a) => a.id !== newActivity.id)];
+        const updated = [newActivity, ...activities.filter((a) => String(a.id) !== String(newActivity.id))];
         setActivities(updated);
-        syncActivitiesCache(updated);
+        await syncActivitiesCache(updated);
         setNotice({ type: 'success', message: 'Activity added successfully with photo.' });
       }
 
@@ -328,9 +351,9 @@ export const AdminActivitiesPage: React.FC = () => {
     if (!window.confirm(`Remove activity "${act.title}"?`)) return;
     try {
       await supabase.from('activities').delete().eq('id', act.id);
-      const updated = activities.filter((item) => item.id !== act.id);
+      const updated = activities.filter((item) => String(item.id) !== String(act.id));
       setActivities(updated);
-      syncActivitiesCache(updated);
+      await syncActivitiesCache(updated);
       setNotice({ type: 'success', message: `"${act.title}" removed.` });
     } catch (err: any) {
       setNotice({ type: 'error', message: err.message || 'Failed to delete activity.' });
