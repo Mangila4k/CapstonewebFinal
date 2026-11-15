@@ -100,3 +100,33 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   display: none !important;
   pointer-events: none !important;
 }
+
+/* Universal Print Rules: Strict isolation of printable records from screen workspace */
+@media print {
+  .no-print,
+  #hesChatbotContainer,
+  .hes-chatbot-launcher,
+  header,
+  aside,
+  nav,
+  button {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

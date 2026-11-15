@@ -805,8 +805,12 @@ export const RegistrarRequirementsPage: React.FC = () => {
           button,
           input,
           select,
-          .fixed.inset-0 {
+          .fixed {
             display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
           /* Reset page styling for pristine black/white print output */
@@ -815,10 +819,12 @@ export const RegistrarRequirementsPage: React.FC = () => {
             margin: 10mm 12mm 12mm 12mm;
           }
 
-          body {
+          html, body {
             background: #ffffff !important;
             color: #000000 !important;
             font-size: 8pt !important;
+            margin: 0 !important;
+            padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -826,11 +832,8 @@ export const RegistrarRequirementsPage: React.FC = () => {
           /* Ensure the dedicated print container is visible and full width */
           .print-only {
             display: block !important;
+            visibility: visible !important;
             width: 100% !important;
-          }
-
-          .screen-only {
-            display: none !important;
           }
 
           table {
@@ -869,12 +872,15 @@ export const RegistrarRequirementsPage: React.FC = () => {
         @media screen {
           .print-only {
             display: none !important;
+            visibility: hidden !important;
           }
         }
       `}</style>
 
-      {/* 1. Institutional DepEd Header */}
-      <div className="no-print border-b border-slate-200 pb-4 sm:pb-5">
+      {/* Screen Only Interactive Workspace Container */}
+      <div className="no-print space-y-6">
+        {/* 1. Institutional DepEd Header */}
+        <div className="border-b border-slate-200 pb-4 sm:pb-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 space-y-1">
             <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
@@ -1486,9 +1492,10 @@ export const RegistrarRequirementsPage: React.FC = () => {
           <span>{saving ? 'Verifying...' : 'Batch Verify All'}</span>
         </button>
       </div>
+      </div>
 
       {/* Official DepEd Printable Register (Only visible during print / PDF export) */}
-      <div className="print-only hidden space-y-4 font-serif">
+      <div className="print-only space-y-4 font-serif">
         {/* Institutional DepEd Header */}
         <div className="text-center space-y-0.5 border-b-2 border-black pb-3">
           <p className="text-[9pt] uppercase tracking-wider font-bold text-black">
