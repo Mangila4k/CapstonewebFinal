@@ -258,6 +258,8 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
   // Modal / Inspection state
   const [selectedStudent, setSelectedStudent] = useState<StudentWithRequirements | null>(null);
+  // Bond paper format state: Short (8.5" x 11") or Long (8.5" x 13")
+  const [paperSize, setPaperSize] = useState<'short' | 'long'>('short');
   const [modalForm, setModalForm] = useState<{
     form_138_status: DocStatus;
     psa_birth_status: DocStatus;
@@ -778,12 +780,13 @@ export const RegistrarRequirementsPage: React.FC = () => {
     );
   };
 
-  // Professional DepEd Documentary Print Handler
+  // Professional DepEd Bond Paper Print Handler
   const handlePrint = () => {
     const prevTitle = document.title;
     const scopeLabel = gradeFilter !== 'all' ? `_${gradeFilter.replace(/\s+/g, '')}` : '';
     const sectionLabel = sectionFilter !== 'all' ? `_Sec-${sectionFilter.replace(/\s+/g, '')}` : '';
-    document.title = `PLSNHS_DepEd_Documentary_Compliance_Audit_Register_SY2026-2027${scopeLabel}${sectionLabel}`;
+    const paperLabel = paperSize === 'long' ? '_LongBond-8.5x13' : '_ShortBond-8.5x11';
+    document.title = `PLSNHS_DepEd_Documentary_Compliance_Audit_Register_SY2026-2027${scopeLabel}${sectionLabel}${paperLabel}`;
     window.print();
     setTimeout(() => {
       document.title = prevTitle;
@@ -792,8 +795,13 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      {/* Official DepEd Publication Print Styles */}
+      {/* Official DepEd Publication Bond Paper Print Styles */}
       <style>{`
+        @page {
+          size: ${paperSize === 'long' ? '8.5in 13in' : 'letter'} portrait;
+          margin: 0.35in 0.45in 0.35in 0.45in;
+        }
+
         @media print {
           /* Suppress all interactive UI, navbars, sidebars, modals, floating buttons, and chatbot */
           .no-print,
@@ -813,54 +821,68 @@ export const RegistrarRequirementsPage: React.FC = () => {
             padding: 0 !important;
           }
 
-          /* Reset page styling for pristine black/white print output */
-          @page {
-            size: A4 portrait;
-            margin: 10mm 12mm 12mm 12mm;
-          }
-
           html, body {
             background: #ffffff !important;
-            color: #000000 !important;
+            color: #0f172a !important;
             font-size: 8pt !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
             margin: 0 !important;
             padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
-          /* Ensure the dedicated print container is visible and full width */
-          .print-only {
+          /* Exact bond paper container sizing */
+          .print-bond-paper {
             display: block !important;
             visibility: visible !important;
             width: 100% !important;
+            max-width: ${paperSize === 'long' ? '7.7in' : '7.6in'} !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
           }
 
-          table {
+          .official-table {
             border-collapse: collapse !important;
             width: 100% !important;
+            table-layout: fixed !important;
           }
 
-          th, td {
-            border: 1px solid #000000 !important;
-            padding: 3.5px 5px !important;
+          thead {
+            display: table-header-group !important;
+          }
+
+          tfoot {
+            display: table-footer-group !important;
+          }
+
+          .official-table th, .official-table td {
+            border: 1px solid #1e293b !important;
+            padding: 3.5px 4.5px !important;
             font-size: 7.2pt !important;
-            color: #000000 !important;
+            line-height: 1.25 !important;
+            color: #0f172a !important;
           }
 
-          th {
+          .official-table th {
             background-color: #f1f5f9 !important;
             font-weight: 800 !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.04em !important;
+            letter-spacing: 0.03em !important;
             -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
           .print-section-header {
             background-color: #f3f4f6 !important;
             font-weight: 800 !important;
-            font-size: 7.8pt !important;
+            font-size: 7.6pt !important;
             -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
           }
 
           tr {
@@ -870,6 +892,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
         }
 
         @media screen {
+          .print-bond-paper,
           .print-only {
             display: none !important;
             visibility: hidden !important;
@@ -892,6 +915,34 @@ export const RegistrarRequirementsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            {/* Bond Paper Format Selector */}
+            <div className="hidden sm:inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setPaperSize('short')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  paperSize === 'short'
+                    ? 'bg-[#152e69] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Standard Short Bond Paper (8.5 in × 11 in / Letter)"
+              >
+                Short Bond (8.5&quot;×11&quot;)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperSize('long')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  paperSize === 'long'
+                    ? 'bg-[#152e69] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Standard Long Bond Paper (8.5 in × 13 in / Folio)"
+              >
+                Long Bond (8.5&quot;×13&quot;)
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={handleExportCSV}
@@ -903,30 +954,54 @@ export const RegistrarRequirementsPage: React.FC = () => {
             <button
               type="button"
               onClick={handlePrint}
-              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
-              title="Print Official DepEd Documentary Verification Sheet"
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-4 text-xs font-bold text-white shadow-2xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+              title="Print official report on standard bond paper"
             >
-              <Printer className="h-4 w-4 text-slate-500" /> Print Sheet
+              <Printer className="h-4 w-4 text-[#F5C518]" /> Print Sheet
             </button>
             <PageHeaderNotificationSlot />
           </div>
         </div>
 
         {/* Mobile Action Button Row */}
-        <div className="sm:hidden mt-3 flex items-center gap-2">
+        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
+          <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setPaperSize('short')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                paperSize === 'short'
+                  ? 'bg-[#152e69] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Short Bond
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaperSize('long')}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                paperSize === 'long'
+                  ? 'bg-[#152e69] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Long Bond
+            </button>
+          </div>
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#152e69] px-3.5 text-xs font-bold text-white shadow-2xs hover:bg-[#0f1f4b] transition-all cursor-pointer"
           >
-            <Printer className="h-4 w-4 text-slate-500" /> Print Sheet
+            <Printer className="h-4 w-4 text-[#F5C518]" /> Print Sheet
           </button>
         </div>
       </div>
@@ -1461,6 +1536,32 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
       {/* Official Action Controls (Bottom Aligned) */}
       <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
+        {/* Bond Paper Format Selector */}
+        <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setPaperSize('short')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              paperSize === 'short'
+                ? 'bg-[#152e69] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Short Bond (8.5&quot;×11&quot;)
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaperSize('long')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              paperSize === 'long'
+                ? 'bg-[#152e69] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Long Bond (8.5&quot;×13&quot;)
+          </button>
+        </div>
+
         <button
           onClick={handleExportCSV}
           className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
@@ -1472,10 +1573,10 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
         <button
           onClick={handlePrint}
-          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-          title="Print Official DepEd Documentary Verification Sheet"
+          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-2xs hover:shadow-md transition-all cursor-pointer active:scale-98"
+          title="Print official report on standard bond paper"
         >
-          <Printer className="h-4 w-4 text-slate-500" />
+          <Printer className="h-4 w-4 text-[#F5C518]" />
           <span>Print Sheet</span>
         </button>
 
@@ -1494,78 +1595,115 @@ export const RegistrarRequirementsPage: React.FC = () => {
       </div>
       </div>
 
-      {/* Official DepEd Printable Register (Only visible during print / PDF export) */}
-      <div className="print-only space-y-4 font-serif">
-        {/* Institutional DepEd Header */}
-        <div className="text-center space-y-0.5 border-b-2 border-black pb-3">
-          <p className="text-[9pt] uppercase tracking-wider font-bold text-black">
-            Republic of the Philippines
-          </p>
-          <p className="text-[10pt] uppercase tracking-wider font-extrabold font-serif text-black">
-            Department of Education
-          </p>
-          <p className="text-[8pt] text-black">
-            Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
-          </p>
-          <h2 className="text-[12pt] font-black uppercase tracking-tight text-black pt-1">
-            PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
-          </h2>
-          <p className="text-[7.5pt] text-black">
-            Langtad, City of Naga, Cebu · School ID: 303035
-          </p>
-          <h3 className="text-[10.5pt] font-extrabold uppercase pt-2 tracking-wide font-sans text-black">
+      {/* =========================================================================
+          OFFICIAL PRINT-ONLY DEPED BOND PAPER DOCUMENT (Short 8.5"x11" or Long 8.5"x13")
+          Strictly hidden on screen, automatically rendered on window.print() / Ctrl+P
+          ========================================================================= */}
+      <div className="print-bond-paper print-only space-y-3 font-sans">
+        {/* Official DepEd Philippines Letterhead Header */}
+        <div className="flex items-center justify-between pb-1">
+          {/* Left: School Official Seal / Logo */}
+          <div className="w-16 flex items-center justify-center shrink-0">
+            <img
+              src="/pictures/logo sa skwelahan.png"
+              alt="PLSNHS Seal"
+              className="h-16 w-16 object-contain rounded-full shadow-2xs"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
+
+          {/* Center: Official Government Institution Hierarchy */}
+          <div className="text-center flex-1 px-3">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-slate-700 leading-tight font-serif">
+              Republic of the Philippines
+            </p>
+            <h2 className="text-[13px] uppercase font-bold tracking-wider text-slate-950 leading-tight mt-0.5 font-serif">
+              Department of Education
+            </h2>
+            <p className="text-[9.5px] font-medium text-slate-700 leading-tight">
+              Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
+            </p>
+            <h1 className="text-[14px] font-black tracking-wide text-slate-950 uppercase mt-0.5 font-serif">
+              PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
+            </h1>
+            <p className="text-[9px] text-slate-600 leading-tight mt-0.5">
+              Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
+            </p>
+          </div>
+
+          {/* Right: DepEd Matatag / Official Logo */}
+          <div className="w-16 flex items-center justify-center shrink-0">
+            <img
+              src="/pictures/deped_matatag_banner.png"
+              alt="DepEd Matatag"
+              className="h-11 w-auto object-contain"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Official DepEd Double Line Accent (Thick + Thin Rule) */}
+        <div className="border-b-2 border-slate-900 mt-1"></div>
+        <div className="border-b border-slate-900 mt-[2px] mb-2"></div>
+
+        {/* Document Title & Reference Metadata */}
+        <div className="text-center py-0.5 space-y-0.5">
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-950 font-display">
             OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER
           </h3>
-          <p className="text-[7.5pt] text-black font-sans">
-            DepEd Basic Education Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · School Year 2026–2027
+          <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wide">
+            School Year 2026–2027
+          </p>
+          <p className="text-[8.5px] text-slate-500 italic">
+            Standard DepEd Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · Reconciled with LIS
           </p>
         </div>
 
-        {/* Audit Parameters & Statistics Summary Grid */}
-        <div className="grid grid-cols-4 gap-2 text-[7.5pt] font-sans border-b border-black pb-2 text-black">
-          <div>
-            <strong className="block text-black">School Name &amp; ID:</strong>
-            <span>Placido L. Señor NHS (303035)</span>
+        {/* Institutional Statistical Indicators Summary Bar */}
+        <div className="rounded-md border border-slate-300 bg-slate-50/70 py-1.5 px-3 grid grid-cols-4 divide-x divide-slate-200 text-center text-slate-900">
+          <div className="px-2">
+            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Total Audited Learners</span>
+            <span className="text-xs font-black text-slate-950 font-display block mt-0.5">{filteredStudents.length} Learners</span>
           </div>
-          <div>
-            <strong className="block text-black">Audited Scope:</strong>
-            <span className="font-bold">
+          <div className="px-2">
+            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Target Scope</span>
+            <span className="text-[10px] font-bold text-slate-950 block mt-0.5 truncate">
               {gradeFilter === 'all' ? 'All Year Levels' : gradeFilter}
-              {sectionFilter === 'all' ? ' · All Sections' : ` · Section ${sectionFilter}`}
+              {sectionFilter === 'all' ? '' : ` · ${sectionFilter}`}
             </span>
           </div>
-          <div>
-            <strong className="block text-black">Date Generated:</strong>
-            <span>
-              {new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+          <div className="px-2">
+            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Date Generated</span>
+            <span className="text-[10px] font-bold text-slate-900 mt-0.5 block">
+              {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          <div>
-            <strong className="block text-black">Compliance Index:</strong>
-            <span className="font-bold">
-              {stats.completeCount} / {filteredStudents.length} Complete ({stats.overallRate}%)
+          <div className="px-2">
+            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Compliance Index</span>
+            <span className="text-xs font-black text-emerald-800 font-display block mt-0.5">
+              {stats.completeCount} / {filteredStudents.length} ({stats.overallRate}%)
             </span>
           </div>
         </div>
 
         {/* Official Printable Table */}
         <div className="w-full">
-          <table className="w-full text-left text-[7.2pt] border-collapse border border-black font-sans">
+          <table className="official-table w-full text-left text-xs border-collapse border border-slate-900 table-fixed">
             <thead>
-              <tr className="bg-slate-100 uppercase border-b border-black text-[7pt]">
-                <th className="border border-black px-1.5 py-1 text-center w-7">#</th>
-                <th className="border border-black px-2 py-1">Learner Full Name (Last, First, Middle)</th>
-                <th className="border border-black px-1.5 py-1 text-center font-mono w-24">LRN</th>
-                <th className="border border-black px-2 py-1 w-28">Grade &amp; Section</th>
-                <th className="border border-black px-1.5 py-1 text-center w-20">Form 138 (SF9)</th>
-                <th className="border border-black px-1.5 py-1 text-center w-20">PSA Birth Cert</th>
-                <th className="border border-black px-1.5 py-1 text-center w-20">Good Moral</th>
-                <th className="border border-black px-1.5 py-1 text-center w-16">2x2 Photo</th>
-                <th className="border border-black px-2 py-1 text-center w-24">Compliance</th>
+              <tr className="bg-slate-100 uppercase border-b-2 border-slate-900 text-[7pt] text-slate-950">
+                <th className="border border-slate-900 px-1 py-1 text-center w-[4%]">#</th>
+                <th className="border border-slate-900 px-2 py-1 w-[27%]">Learner Full Name (Last, First, Middle)</th>
+                <th className="border border-slate-900 px-1 py-1 text-center font-mono w-[14%]">LRN</th>
+                <th className="border border-slate-900 px-1.5 py-1 text-center w-[13%]">Grade &amp; Section</th>
+                <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">Form 138 (SF9)</th>
+                <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">PSA Birth Cert</th>
+                <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">Good Moral</th>
+                <th className="border border-slate-900 px-1 py-1 text-center w-[7.5%]">2x2 Photo</th>
+                <th className="border border-slate-900 px-1.5 py-1 text-center w-[9%]">Compliance</th>
               </tr>
             </thead>
             <tbody>
@@ -1579,8 +1717,8 @@ export const RegistrarRequirementsPage: React.FC = () => {
                   return (
                     <React.Fragment key={`print-${group.key}`}>
                       {/* Section Header Row */}
-                      <tr className="bg-slate-100 font-bold text-[7.5pt] print-section-header">
-                        <td colSpan={9} className="border border-black px-2 py-1">
+                      <tr className="bg-slate-100 font-bold text-[7.6pt] print-section-header">
+                        <td colSpan={9} className="border border-slate-900 px-2 py-1">
                           <div className="flex items-center justify-between">
                             <span>
                               {group.grade.toUpperCase()} — SECTION {group.section.toUpperCase()}
@@ -1598,20 +1736,20 @@ export const RegistrarRequirementsPage: React.FC = () => {
                         const comp = getCompleteness(student);
                         return (
                           <tr key={`print-row-${student.id}`} className="text-[7.2pt]">
-                            <td className="border border-black px-1.5 py-1 text-center font-mono">
+                            <td className="border border-slate-900 px-1 py-1 text-center font-mono text-slate-700">
                               {idx + 1}
                             </td>
-                            <td className="border border-black px-2 py-1 font-bold">
+                            <td className="border border-slate-900 px-2 py-1 font-bold text-slate-950 truncate">
                               {student.last_name}, {student.first_name}{' '}
                               {student.middle_name ? student.middle_name[0] + '.' : ''}
                             </td>
-                            <td className="border border-black px-1.5 py-1 text-center font-mono font-bold">
+                            <td className="border border-slate-900 px-1 py-1 text-center font-mono font-bold text-slate-950">
                               {student.lrn || '—'}
                             </td>
-                            <td className="border border-black px-2 py-1">
+                            <td className="border border-slate-900 px-1.5 py-1 text-center text-slate-900 truncate">
                               {student.grade_level || group.grade} - {group.section}
                             </td>
-                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
                               {student.form_138_status === 'verified'
                                 ? '✓ Verified'
                                 : student.form_138_status === 'submitted'
@@ -1620,7 +1758,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 ? 'Waived'
                                 : 'Missing'}
                             </td>
-                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
                               {student.psa_birth_status === 'verified'
                                 ? '✓ Verified'
                                 : student.psa_birth_status === 'submitted'
@@ -1629,7 +1767,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 ? 'Waived'
                                 : 'Missing'}
                             </td>
-                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
                               {student.good_moral_status === 'verified'
                                 ? '✓ Verified'
                                 : student.good_moral_status === 'submitted'
@@ -1638,7 +1776,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 ? 'Waived'
                                 : 'Missing'}
                             </td>
-                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
                               {student.two_by_two_status === 'verified'
                                 ? '✓ Verified'
                                 : student.two_by_two_status === 'submitted'
@@ -1647,7 +1785,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 ? 'Waived'
                                 : 'Missing'}
                             </td>
-                            <td className="border border-black px-2 py-1 text-center font-bold">
+                            <td className="border border-slate-900 px-1.5 py-1 text-center font-bold text-slate-950">
                               {comp.isFullyCompliant
                                 ? 'COMPLETE (4/4)'
                                 : `DEFICIENT (${comp.score}/4)`}
@@ -1660,7 +1798,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="border border-black px-4 py-6 text-center text-slate-500">
+                  <td colSpan={9} className="border border-slate-900 px-4 py-6 text-center text-slate-500">
                     No student records match the active criteria.
                   </td>
                 </tr>
@@ -1670,22 +1808,39 @@ export const RegistrarRequirementsPage: React.FC = () => {
         </div>
 
         {/* DepEd Sign-Off & Attestation Block */}
-        <div className="grid grid-cols-2 gap-12 pt-8 text-[8pt] font-sans border-t border-black mt-6">
-          <div className="text-center space-y-10">
-            <p className="text-left text-black font-semibold">Prepared and Audited by:</p>
-            <div className="border-t border-black w-64 mx-auto pt-1 font-bold uppercase text-black">
-              SCHOOL REGISTRAR / RECORDS OFFICER
-              <span className="block text-[7pt] font-normal text-slate-700">Office of the School Registrar</span>
+        <div className="grid grid-cols-2 gap-8 pt-4 text-xs text-center border-t border-slate-300 mt-4">
+          {/* Signatory 1: Registrar */}
+          <div className="flex flex-col items-center">
+            <p className="text-[9.5px] font-semibold text-slate-700 mb-7 uppercase tracking-wider">
+              Prepared &amp; Audited by:
+            </p>
+            <div className="border-b-2 border-slate-900 w-52 pb-0.5 font-black text-slate-950 uppercase text-[10px]">
+              MARIA ELENA R. REGISTRAR
             </div>
+            <p className="text-[9px] font-bold text-slate-900 mt-1">School Registrar II</p>
+            <p className="text-[8px] text-slate-600">LIS &amp; Student Records In-Charge</p>
           </div>
 
-          <div className="text-center space-y-10">
-            <p className="text-left text-black font-semibold">Verified, Attested and Noted by:</p>
-            <div className="border-t border-black w-64 mx-auto pt-1 font-bold uppercase text-black">
-              SCHOOL PRINCIPAL / HEAD TEACHER
-              <span className="block text-[7pt] font-normal text-slate-700">Placido L. Señor National High School</span>
+          {/* Signatory 2: Principal */}
+          <div className="flex flex-col items-center">
+            <p className="text-[9.5px] font-semibold text-slate-700 mb-7 uppercase tracking-wider">
+              Certified Correct &amp; Approved by:
+            </p>
+            <div className="border-b-2 border-slate-900 w-52 pb-0.5 font-black text-slate-950 uppercase text-[10px]">
+              JUSTINE MANGILA, EdD
             </div>
+            <p className="text-[9px] font-bold text-slate-900 mt-1">Secondary School Principal II</p>
+            <p className="text-[8px] text-slate-600">School Head / Authorized Official</p>
           </div>
+        </div>
+
+        {/* Document Verification & Security Tracking Footer */}
+        <div className="pt-2 border-t border-slate-300 flex items-center justify-between text-[8px] text-slate-600 leading-tight">
+          <span>Placido L. Señor National High School · DepEd School ID: 303035 · Langtad, City of Naga, Cebu</span>
+          <span className="font-mono">Doc Ref: PLSNHS-REG-DOC-2026-004 · Security Hash Verified</span>
+          <span className="font-bold text-slate-800">
+            {paperSize === 'long' ? 'Long Bond Paper (8.5" × 13")' : 'Short Bond Paper (8.5" × 11")'}
+          </span>
         </div>
       </div>
 
