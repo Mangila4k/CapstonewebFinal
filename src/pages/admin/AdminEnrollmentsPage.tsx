@@ -1262,7 +1262,7 @@ export const AdminEnrollmentsPage: React.FC = () => {
                                   {enr.first_name} {enr.last_name}
                                 </div>
                                 <div className="text-[10.5px] text-slate-400 font-mono truncate max-w-xs sm:max-w-md">
-                                  LRN: {enr.lrn || 'N/A'} · {enr.email}
+                                  LRN: {enr.lrn || 'N/A'}
                                 </div>
                               </td>
 
