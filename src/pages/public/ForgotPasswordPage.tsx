@@ -270,6 +270,23 @@ export const ForgotPasswordPage: React.FC = () => {
           : 'https://placido-enrollment.vercel.app';
 
       let emailSent = false;
+
+      // Ensure user account is registered in Supabase Auth so resetPasswordForEmail will send
+      try {
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password: `Plsnhs_${Math.random().toString(36).substring(2, 10)}!`,
+          options: {
+            data: {
+              first_name: matchedUser.first_name || '',
+              last_name: matchedUser.last_name || '',
+            },
+          },
+        });
+      } catch {
+        // User may already exist in auth.users
+      }
+
       try {
         const { error: authErr } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: `${appOrigin}/forgot-password`,
