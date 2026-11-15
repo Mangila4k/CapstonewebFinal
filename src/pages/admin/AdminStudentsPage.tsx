@@ -1122,9 +1122,6 @@ export const AdminStudentsPage: React.FC = () => {
                                 <div className="font-bold text-slate-900 text-[13px]">
                                   {s.last_name}, {s.first_name} {s.middle_name || ''}
                                 </div>
-                                <div className="text-[10px] text-slate-400 font-normal">
-                                  {s.email || 'No email registered'}
-                                </div>
                               </td>
 
                               {/* LRN */}
