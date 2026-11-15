@@ -11,8 +11,20 @@ import './homepage_original.css';
 
 export const HomePage: React.FC = () => {
   const { isOpen: isEnrollmentOpen } = useEnrollmentStatus();
-  const [activities, setActivities] = useState<ActivityType[]>([]);
+  const [activities, setActivities] = useState<ActivityType[]>(() => {
+    try {
+      const cached = localStorage.getItem('plsnhs_activities_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
+  const [showAllActivities, setShowAllActivities] = useState(false);
 
   // Exact fallback activities matching the database and reference screenshot
   const defaultActivities: ActivityType[] = [
@@ -48,21 +60,69 @@ export const HomePage: React.FC = () => {
         const { data, error } = await supabase
           .from('activities')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(6);
+          .order('created_at', { ascending: false });
 
         if (!error && data && data.length > 0) {
           setActivities(data);
+          try {
+            localStorage.setItem('plsnhs_activities_cache', JSON.stringify(data));
+          } catch {
+            // ignore
+          }
         } else {
-          setActivities(defaultActivities);
+          setActivities((prev) => (prev.length > 0 ? prev : defaultActivities));
         }
       } catch (err) {
         console.warn('Could not fetch activities from Supabase:', err);
-        setActivities(defaultActivities);
+        setActivities((prev) => (prev.length > 0 ? prev : defaultActivities));
       }
     }
 
     loadActivities();
+
+    const handleActivitiesUpdate = () => {
+      try {
+        const cached = localStorage.getItem('plsnhs_activities_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setActivities(parsed);
+          }
+        }
+      } catch {
+        // ignore
+      }
+      loadActivities();
+    };
+
+    window.addEventListener('plsnhs-activities-updated', handleActivitiesUpdate);
+    window.addEventListener('storage', handleActivitiesUpdate);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadActivities();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Supabase realtime channel
+    const channel = supabase
+      .channel('public:activities:homepage')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'activities' },
+        () => {
+          loadActivities();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('plsnhs-activities-updated', handleActivitiesUpdate);
+      window.removeEventListener('storage', handleActivitiesUpdate);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const formatActivityDate = (dateStr: string) => {
@@ -78,6 +138,10 @@ export const HomePage: React.FC = () => {
   };
 
   const displayActivities = activities.length > 0 ? activities : defaultActivities;
+  const visibleActivities =
+    displayActivities.length > 6 && !showAllActivities
+      ? displayActivities.slice(0, 6)
+      : displayActivities;
 
   return (
     <div className="original-homepage-container">
@@ -119,7 +183,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="activities-grid">
-            {displayActivities.slice(0, 3).map((act) => (
+            {visibleActivities.map((act) => (
               <div
                 key={act.id}
                 onClick={() => setSelectedActivity(act)}
@@ -129,7 +193,7 @@ export const HomePage: React.FC = () => {
                 <div style={{ height: '320px', position: 'relative', background: '#0d112d', overflow: 'hidden' }}>
                   {/* Activity Image */}
                   <img
-                    src={act.image_url}
+                    src={act.image_url || '/pictures/logo sa skwelahan.png'}
                     alt={act.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
                     className="hover:scale-105"
@@ -226,6 +290,21 @@ export const HomePage: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {displayActivities.length > 6 && (
+            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowAllActivities(!showAllActivities)}
+                className="rounded-full border border-amber-400/40 bg-amber-400/10 px-6 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 hover:text-white transition-all cursor-pointer inline-flex items-center gap-2"
+              >
+                <i className={showAllActivities ? 'fas fa-chevron-up' : 'fas fa-chevron-down'}></i>
+                {showAllActivities
+                  ? 'Show Less'
+                  : `View All School Activities (${displayActivities.length})`}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

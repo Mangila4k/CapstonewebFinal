@@ -83,8 +83,32 @@ const fileToCompressedDataUrl = (file: File, maxWidth = 1200, quality = 0.82): P
     reader.readAsDataURL(file);
   });
 
+export const ACTIVITIES_CACHE_KEY = 'plsnhs_activities_cache';
+
+const loadCachedActivities = (): ActivityItem[] => {
+  try {
+    const cached = localStorage.getItem(ACTIVITIES_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_ACTIVITIES;
+};
+
+const syncActivitiesCache = (items: ActivityItem[]) => {
+  try {
+    localStorage.setItem(ACTIVITIES_CACHE_KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent('plsnhs-activities-updated', { detail: items }));
+  } catch (err) {
+    console.warn('Activities cache sync warning:', err);
+  }
+};
+
 export const AdminActivitiesPage: React.FC = () => {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>(loadCachedActivities);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -117,12 +141,13 @@ export const AdminActivitiesPage: React.FC = () => {
 
       if (!error && data && data.length > 0) {
         setActivities(data);
+        syncActivitiesCache(data);
       } else {
-        setActivities(DEFAULT_ACTIVITIES);
+        setActivities((prev) => (prev.length > 0 ? prev : DEFAULT_ACTIVITIES));
       }
     } catch (err) {
       console.warn('Activities error:', err);
-      setActivities(DEFAULT_ACTIVITIES);
+      setActivities((prev) => (prev.length > 0 ? prev : DEFAULT_ACTIVITIES));
     } finally {
       setLoading(false);
     }
@@ -211,9 +236,11 @@ export const AdminActivitiesPage: React.FC = () => {
         .update({ image_url: uploadedUrl })
         .eq('id', target.id);
 
-      setActivities((prev) =>
-        prev.map((item) => (item.id === target.id ? { ...item, image_url: uploadedUrl } : item))
+      const updated = activities.map((item) =>
+        item.id === target.id ? { ...item, image_url: uploadedUrl } : item
       );
+      setActivities(updated);
+      syncActivitiesCache(updated);
 
       if (error) {
         console.warn('Supabase update notice:', error.message);
@@ -259,11 +286,11 @@ export const AdminActivitiesPage: React.FC = () => {
           // Update local state even if RLS or schema restricts
           console.warn('Update fallback:', error.message);
         }
-        setActivities((prev) =>
-          prev.map((item) =>
-            item.id === editingActivity.id ? { ...item, ...payload } : item
-          )
+        const updated = activities.map((item) =>
+          item.id === editingActivity.id ? { ...item, ...payload } : item
         );
+        setActivities(updated);
+        syncActivitiesCache(updated);
         setNotice({ type: 'success', message: 'Activity updated successfully.' });
       } else {
         const { data, error } = await supabase
@@ -276,11 +303,13 @@ export const AdminActivitiesPage: React.FC = () => {
           throw new Error(error.message);
         }
 
-        if (data) {
-          setActivities((prev) => [data, ...prev]);
-        } else {
-          fetchActivities();
-        }
+        const newActivity = data || {
+          id: `act_${Date.now()}`,
+          ...payload,
+        };
+        const updated = [newActivity, ...activities.filter((a) => a.id !== newActivity.id)];
+        setActivities(updated);
+        syncActivitiesCache(updated);
         setNotice({ type: 'success', message: 'Activity added successfully with photo.' });
       }
 
@@ -299,7 +328,9 @@ export const AdminActivitiesPage: React.FC = () => {
     if (!window.confirm(`Remove activity "${act.title}"?`)) return;
     try {
       await supabase.from('activities').delete().eq('id', act.id);
-      setActivities((prev) => prev.filter((item) => item.id !== act.id));
+      const updated = activities.filter((item) => item.id !== act.id);
+      setActivities(updated);
+      syncActivitiesCache(updated);
       setNotice({ type: 'success', message: `"${act.title}" removed.` });
     } catch (err: any) {
       setNotice({ type: 'error', message: err.message || 'Failed to delete activity.' });

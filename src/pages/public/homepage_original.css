@@ -165,7 +165,7 @@ html {
 
 .original-homepage-container .activities-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 2rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -173,7 +173,15 @@ html {
 
 @media (max-width: 992px) {
     .original-homepage-container .activities-grid {
-        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .original-homepage-container .activities-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
     }
 }
 
