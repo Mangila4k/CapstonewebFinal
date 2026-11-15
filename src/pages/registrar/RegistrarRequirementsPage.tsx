@@ -778,10 +778,103 @@ export const RegistrarRequirementsPage: React.FC = () => {
     );
   };
 
+  // Professional DepEd Documentary Print Handler
+  const handlePrint = () => {
+    const prevTitle = document.title;
+    const scopeLabel = gradeFilter !== 'all' ? `_${gradeFilter.replace(/\s+/g, '')}` : '';
+    const sectionLabel = sectionFilter !== 'all' ? `_Sec-${sectionFilter.replace(/\s+/g, '')}` : '';
+    document.title = `PLSNHS_DepEd_Documentary_Compliance_Audit_Register_SY2026-2027${scopeLabel}${sectionLabel}`;
+    window.print();
+    setTimeout(() => {
+      document.title = prevTitle;
+    }, 1000);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
+      {/* Official DepEd Publication Print Styles */}
+      <style>{`
+        @media print {
+          /* Suppress all interactive UI, navbars, sidebars, modals, floating buttons, and chatbot */
+          .no-print,
+          #hesChatbotContainer,
+          .hes-chatbot-launcher,
+          header,
+          aside,
+          nav,
+          button,
+          input,
+          select,
+          .fixed.inset-0 {
+            display: none !important;
+          }
+
+          /* Reset page styling for pristine black/white print output */
+          @page {
+            size: A4 portrait;
+            margin: 10mm 12mm 12mm 12mm;
+          }
+
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-size: 8pt !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          /* Ensure the dedicated print container is visible and full width */
+          .print-only {
+            display: block !important;
+            width: 100% !important;
+          }
+
+          .screen-only {
+            display: none !important;
+          }
+
+          table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+          }
+
+          th, td {
+            border: 1px solid #000000 !important;
+            padding: 3.5px 5px !important;
+            font-size: 7.2pt !important;
+            color: #000000 !important;
+          }
+
+          th {
+            background-color: #f1f5f9 !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.04em !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+
+          .print-section-header {
+            background-color: #f3f4f6 !important;
+            font-weight: 800 !important;
+            font-size: 7.8pt !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+
+          tr {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+        }
+
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* 1. Institutional DepEd Header */}
-      <div className="border-b border-slate-200 pb-4 sm:pb-5">
+      <div className="no-print border-b border-slate-200 pb-4 sm:pb-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 space-y-1">
             <h1 className="text-xl sm:text-3xl font-extrabold text-[#0f172a] font-display tracking-tight leading-snug">
@@ -801,12 +894,20 @@ export const RegistrarRequirementsPage: React.FC = () => {
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
             </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer active:scale-98"
+              title="Print Official DepEd Documentary Verification Sheet"
+            >
+              <Printer className="h-4 w-4 text-slate-500" /> Print Sheet
+            </button>
             <PageHeaderNotificationSlot />
           </div>
         </div>
 
         {/* Mobile Action Button Row */}
-        <div className="sm:hidden mt-3 flex items-center">
+        <div className="sm:hidden mt-3 flex items-center gap-2">
           <button
             type="button"
             onClick={handleExportCSV}
@@ -814,19 +915,28 @@ export const RegistrarRequirementsPage: React.FC = () => {
           >
             <FileSpreadsheet className="h-4 w-4 text-emerald-700" /> Export CSV
           </button>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            <Printer className="h-4 w-4 text-slate-500" /> Print Sheet
+          </button>
         </div>
       </div>
 
       {notice && (
-        <Alert
-          type={notice.type}
-          message={notice.message}
-          onClose={() => setNotice(null)}
-        />
+        <div className="no-print">
+          <Alert
+            type={notice.type}
+            message={notice.message}
+            onClose={() => setNotice(null)}
+          />
+        </div>
       )}
 
       {/* KPI Stat Cards (6 Live Executive Tiles) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="no-print grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Compliance Rate */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between text-slate-400">
@@ -930,7 +1040,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
       </div>
 
       {/* Control Bar: Filters, Search & View Modes */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
+      <div className="no-print rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Grade / Year Level Filter */}
           <div>
@@ -1058,7 +1168,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
       </div>
 
       {/* Main Documentary Audit Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+      <div className="no-print overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
@@ -1355,7 +1465,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => window.print()}
+          onClick={handlePrint}
           className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
           title="Print Official DepEd Documentary Verification Sheet"
         >
@@ -1375,6 +1485,201 @@ export const RegistrarRequirementsPage: React.FC = () => {
           )}
           <span>{saving ? 'Verifying...' : 'Batch Verify All'}</span>
         </button>
+      </div>
+
+      {/* Official DepEd Printable Register (Only visible during print / PDF export) */}
+      <div className="print-only hidden space-y-4 font-serif">
+        {/* Institutional DepEd Header */}
+        <div className="text-center space-y-0.5 border-b-2 border-black pb-3">
+          <p className="text-[9pt] uppercase tracking-wider font-bold text-black">
+            Republic of the Philippines
+          </p>
+          <p className="text-[10pt] uppercase tracking-wider font-extrabold font-serif text-black">
+            Department of Education
+          </p>
+          <p className="text-[8pt] text-black">
+            Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
+          </p>
+          <h2 className="text-[12pt] font-black uppercase tracking-tight text-black pt-1">
+            PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
+          </h2>
+          <p className="text-[7.5pt] text-black">
+            Langtad, City of Naga, Cebu · School ID: 303035
+          </p>
+          <h3 className="text-[10.5pt] font-extrabold uppercase pt-2 tracking-wide font-sans text-black">
+            OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER
+          </h3>
+          <p className="text-[7.5pt] text-black font-sans">
+            DepEd Basic Education Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · School Year 2026–2027
+          </p>
+        </div>
+
+        {/* Audit Parameters & Statistics Summary Grid */}
+        <div className="grid grid-cols-4 gap-2 text-[7.5pt] font-sans border-b border-black pb-2 text-black">
+          <div>
+            <strong className="block text-black">School Name &amp; ID:</strong>
+            <span>Placido L. Señor NHS (303035)</span>
+          </div>
+          <div>
+            <strong className="block text-black">Audited Scope:</strong>
+            <span className="font-bold">
+              {gradeFilter === 'all' ? 'All Year Levels' : gradeFilter}
+              {sectionFilter === 'all' ? ' · All Sections' : ` · Section ${sectionFilter}`}
+            </span>
+          </div>
+          <div>
+            <strong className="block text-black">Date Generated:</strong>
+            <span>
+              {new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+          <div>
+            <strong className="block text-black">Compliance Index:</strong>
+            <span className="font-bold">
+              {stats.completeCount} / {filteredStudents.length} Complete ({stats.overallRate}%)
+            </span>
+          </div>
+        </div>
+
+        {/* Official Printable Table */}
+        <div className="w-full">
+          <table className="w-full text-left text-[7.2pt] border-collapse border border-black font-sans">
+            <thead>
+              <tr className="bg-slate-100 uppercase border-b border-black text-[7pt]">
+                <th className="border border-black px-1.5 py-1 text-center w-7">#</th>
+                <th className="border border-black px-2 py-1">Learner Full Name (Last, First, Middle)</th>
+                <th className="border border-black px-1.5 py-1 text-center font-mono w-24">LRN</th>
+                <th className="border border-black px-2 py-1 w-28">Grade &amp; Section</th>
+                <th className="border border-black px-1.5 py-1 text-center w-20">Form 138 (SF9)</th>
+                <th className="border border-black px-1.5 py-1 text-center w-20">PSA Birth Cert</th>
+                <th className="border border-black px-1.5 py-1 text-center w-20">Good Moral</th>
+                <th className="border border-black px-1.5 py-1 text-center w-16">2x2 Photo</th>
+                <th className="border border-black px-2 py-1 text-center w-24">Compliance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groupedStudentsBySection.length > 0 ? (
+                groupedStudentsBySection.map((group) => {
+                  const groupAdviser = getSectionAdviser(group.grade, group.section);
+                  const compliantCount = group.items.filter(
+                    (st) => getCompleteness(st).isFullyCompliant
+                  ).length;
+
+                  return (
+                    <React.Fragment key={`print-${group.key}`}>
+                      {/* Section Header Row */}
+                      <tr className="bg-slate-100 font-bold text-[7.5pt] print-section-header">
+                        <td colSpan={9} className="border border-black px-2 py-1">
+                          <div className="flex items-center justify-between">
+                            <span>
+                              {group.grade.toUpperCase()} — SECTION {group.section.toUpperCase()}
+                              {groupAdviser ? ` · CLASS ADVISER: ${groupAdviser.toUpperCase()}` : ''}
+                            </span>
+                            <span>
+                              {group.items.length} {group.items.length === 1 ? 'Learner' : 'Learners'} · {compliantCount} Complete
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Student Rows */}
+                      {group.items.map((student, idx) => {
+                        const comp = getCompleteness(student);
+                        return (
+                          <tr key={`print-row-${student.id}`} className="text-[7.2pt]">
+                            <td className="border border-black px-1.5 py-1 text-center font-mono">
+                              {idx + 1}
+                            </td>
+                            <td className="border border-black px-2 py-1 font-bold">
+                              {student.last_name}, {student.first_name}{' '}
+                              {student.middle_name ? student.middle_name[0] + '.' : ''}
+                            </td>
+                            <td className="border border-black px-1.5 py-1 text-center font-mono font-bold">
+                              {student.lrn || '—'}
+                            </td>
+                            <td className="border border-black px-2 py-1">
+                              {student.grade_level || group.grade} - {group.section}
+                            </td>
+                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                              {student.form_138_status === 'verified'
+                                ? '✓ Verified'
+                                : student.form_138_status === 'submitted'
+                                ? 'Submitted'
+                                : student.form_138_status === 'waived'
+                                ? 'Waived'
+                                : 'Missing'}
+                            </td>
+                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                              {student.psa_birth_status === 'verified'
+                                ? '✓ Verified'
+                                : student.psa_birth_status === 'submitted'
+                                ? 'Submitted'
+                                : student.psa_birth_status === 'waived'
+                                ? 'Waived'
+                                : 'Missing'}
+                            </td>
+                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                              {student.good_moral_status === 'verified'
+                                ? '✓ Verified'
+                                : student.good_moral_status === 'submitted'
+                                ? 'Submitted'
+                                : student.good_moral_status === 'waived'
+                                ? 'Waived'
+                                : 'Missing'}
+                            </td>
+                            <td className="border border-black px-1.5 py-1 text-center font-bold text-[6.5pt] uppercase">
+                              {student.two_by_two_status === 'verified'
+                                ? '✓ Verified'
+                                : student.two_by_two_status === 'submitted'
+                                ? 'Submitted'
+                                : student.two_by_two_status === 'waived'
+                                ? 'Waived'
+                                : 'Missing'}
+                            </td>
+                            <td className="border border-black px-2 py-1 text-center font-bold">
+                              {comp.isFullyCompliant
+                                ? 'COMPLETE (4/4)'
+                                : `DEFICIENT (${comp.score}/4)`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={9} className="border border-black px-4 py-6 text-center text-slate-500">
+                    No student records match the active criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* DepEd Sign-Off & Attestation Block */}
+        <div className="grid grid-cols-2 gap-12 pt-8 text-[8pt] font-sans border-t border-black mt-6">
+          <div className="text-center space-y-10">
+            <p className="text-left text-black font-semibold">Prepared and Audited by:</p>
+            <div className="border-t border-black w-64 mx-auto pt-1 font-bold uppercase text-black">
+              SCHOOL REGISTRAR / RECORDS OFFICER
+              <span className="block text-[7pt] font-normal text-slate-700">Office of the School Registrar</span>
+            </div>
+          </div>
+
+          <div className="text-center space-y-10">
+            <p className="text-left text-black font-semibold">Verified, Attested and Noted by:</p>
+            <div className="border-t border-black w-64 mx-auto pt-1 font-bold uppercase text-black">
+              SCHOOL PRINCIPAL / HEAD TEACHER
+              <span className="block text-[7pt] font-normal text-slate-700">Placido L. Señor National High School</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Document Audit & Inspection Modal (Rendered via Portal so it is always centered in the active viewport) */}
