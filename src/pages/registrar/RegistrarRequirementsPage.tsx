@@ -1374,34 +1374,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
-            {/* Bond Paper Format Selector */}
-            <div className="hidden sm:inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => setPaperSize('short')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  paperSize === 'short'
-                    ? 'bg-[#152e69] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Standard Short Bond Paper (8.5 in × 11 in / Letter)"
-              >
-                Short Bond (8.5&quot;×11&quot;)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaperSize('long')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  paperSize === 'long'
-                    ? 'bg-[#152e69] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Standard Long Bond Paper (8.5 in × 13 in / Folio)"
-              >
-                Long Bond (8.5&quot;×13&quot;)
-              </button>
-            </div>
-
             <button
               type="button"
               onClick={handleExportCSV}
@@ -1424,30 +1396,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
         {/* Mobile Action Button Row */}
         <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
-          <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setPaperSize('short')}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                paperSize === 'short'
-                  ? 'bg-[#152e69] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Short Bond
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaperSize('long')}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                paperSize === 'long'
-                  ? 'bg-[#152e69] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Long Bond
-            </button>
-          </div>
           <button
             type="button"
             onClick={handleExportCSV}
@@ -2007,32 +1955,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
       {/* Official Action Controls (Bottom Aligned) */}
       <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
-        {/* Bond Paper Format Selector */}
-        <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setPaperSize('short')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              paperSize === 'short'
-                ? 'bg-[#152e69] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Short Bond (8.5&quot;×11&quot;)
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaperSize('long')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              paperSize === 'long'
-                ? 'bg-[#152e69] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Long Bond (8.5&quot;×13&quot;)
-          </button>
-        </div>
-
         <button
           onClick={handleExportCSV}
           className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
