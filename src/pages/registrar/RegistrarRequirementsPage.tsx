@@ -821,38 +821,27 @@ export const RegistrarRequirementsPage: React.FC = () => {
       day: 'numeric',
     });
 
-    const rowsHtml = groupsToPrint
-      .map((group) => {
+    const statusLabel = (status: DocStatus) => {
+      if (status === 'verified') return '<span class="status-verified">✓ Verified</span>';
+      if (status === 'submitted') return '<span class="status-submitted">Submitted</span>';
+      if (status === 'waived') return '<span class="status-waived">Waived</span>';
+      return '<span class="status-missing">Missing</span>';
+    };
+
+    // Render strictly ONE section per sheet of bond paper
+    const sheetsHtml = groupsToPrint
+      .map((group, sIdx) => {
         const groupAdviser = getSectionAdviser(group.grade, group.section);
         const groupCompliantCount = group.items.filter(
           (st) => getCompleteness(st).isFullyCompliant
         ).length;
-
-        const headerRow = `
-          <tr class="section-hdr">
-            <td colspan="9">
-              <div class="section-hdr-content">
-                <span><strong>${group.grade.toUpperCase()} — SECTION ${group.section.toUpperCase()}</strong>${
-          groupAdviser ? ` · CLASS ADVISER: ${groupAdviser.toUpperCase()}` : ''
-        }</span>
-                <span>${group.items.length} ${
-          group.items.length === 1 ? 'Learner' : 'Learners'
-        } (${groupCompliantCount} Complete)</span>
-              </div>
-            </td>
-          </tr>
-        `;
+        const compRate =
+          group.items.length > 0 ? Math.round((groupCompliantCount / group.items.length) * 100) : 100;
+        const isLastSheet = sIdx === groupsToPrint.length - 1;
 
         const studentRows = group.items
           .map((st, idx) => {
             const comp = getCompleteness(st);
-            const statusLabel = (status: DocStatus) => {
-              if (status === 'verified') return '<span class="status-verified">✓ Verified</span>';
-              if (status === 'submitted') return '<span class="status-submitted">Submitted</span>';
-              if (status === 'waived') return '<span class="status-waived">Waived</span>';
-              return '<span class="status-missing">Missing</span>';
-            };
-
             const overallBadge = comp.isFullyCompliant
               ? '<span class="comp-complete">COMPLETE (4/4)</span>'
               : `<span class="comp-deficient">DEFICIENT (${comp.score}/4)</span>`;
@@ -875,7 +864,95 @@ export const RegistrarRequirementsPage: React.FC = () => {
           })
           .join('');
 
-        return headerRow + studentRows;
+        return `
+    <div class="bond-sheet ${!isLastSheet ? 'page-break' : ''}">
+      <table class="header-table">
+        <tr>
+          <td style="width: 58px; text-align: left;">
+            <img src="/pictures/logo sa skwelahan.png" alt="PLSNHS Seal" style="width: 52px; height: 52px; object-fit: contain; border-radius: 50%;" onerror="this.style.display='none'" />
+          </td>
+          <td class="header-center">
+            <p class="header-rep">Republic of the Philippines</p>
+            <h2 class="header-deped">Department of Education</h2>
+            <p class="header-div">Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I</p>
+            <h1 class="header-school">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</h1>
+            <p class="header-address">Langtad, City of Naga, Cebu · School ID: <strong>303035</strong></p>
+          </td>
+          <td style="width: 58px; text-align: right;">
+            <img src="/pictures/deped_matatag_banner.png" alt="DepEd Matatag" style="width: 62px; height: auto; object-fit: contain;" onerror="this.style.display='none'" />
+          </td>
+        </tr>
+      </table>
+
+      <hr class="double-rule-top" />
+      <hr class="double-rule-bottom" />
+
+      <div class="doc-title-block">
+        <h3 class="doc-title">OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER</h3>
+        <p class="doc-sub">School Year 2026–2027</p>
+        <p class="doc-desc">Standard DepEd Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · Reconciled with LIS</p>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-lbl">Target Section</span>
+          <span class="meta-val">${group.grade.toUpperCase()} — ${group.section.toUpperCase()}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-lbl">Class Adviser</span>
+          <span class="meta-val">${groupAdviser || 'Unassigned Faculty'}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-lbl">Section Enrolment</span>
+          <span class="meta-val">${group.items.length} ${group.items.length === 1 ? 'Learner' : 'Learners'}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-lbl">Compliance Index</span>
+          <span class="meta-val" style="color: #047857;">${groupCompliantCount} / ${group.items.length} Complete (${compRate}%)</span>
+        </div>
+      </div>
+
+      <table class="official-table">
+        <thead>
+          <tr>
+            <th style="width: 4%; text-align: center;">#</th>
+            <th style="width: 27%;">Learner Full Name (Last, First, Middle)</th>
+            <th style="width: 14%; text-align: center;">LRN</th>
+            <th style="width: 13%; text-align: center;">Grade &amp; Section</th>
+            <th style="width: 8.5%; text-align: center;">Form 138 (SF9)</th>
+            <th style="width: 8.5%; text-align: center;">PSA Birth Cert</th>
+            <th style="width: 8.5%; text-align: center;">Good Moral</th>
+            <th style="width: 7.5%; text-align: center;">2x2 Photo</th>
+            <th style="width: 9%; text-align: center;">Compliance</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${studentRows || '<tr><td colspan="9" style="text-align: center; padding: 20px;">No learner records found in this section.</td></tr>'}
+        </tbody>
+      </table>
+
+      <div class="signatory-grid">
+        <div>
+          <p class="sign-title">Prepared &amp; Audited by:</p>
+          <div class="sign-line">MARIA ELENA R. REGISTRAR</div>
+          <p class="sign-pos">School Registrar II</p>
+          <p class="sign-sub">LIS &amp; Student Records In-Charge</p>
+        </div>
+        <div>
+          <p class="sign-title">Certified Correct &amp; Approved by:</p>
+          <div class="sign-line">JUSTINE MANGILA, EdD</div>
+          <p class="sign-pos">Secondary School Principal II</p>
+          <p class="sign-sub">School Head / Authorized Official</p>
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        <span>Placido L. Señor National High School · DepEd School ID: 303035 · Langtad, City of Naga, Cebu</span>
+        <span style="font-family: monospace;">Ref: PLSNHS-REG-REQ-2026-${group.section.replace(/\s+/g, '').toUpperCase()}</span>
+        <span><strong>${paperName} · Section ${sIdx + 1} of ${groupsToPrint.length}</strong></span>
+      </div>
+    </div>
+        `;
       })
       .join('');
 
@@ -903,11 +980,18 @@ export const RegistrarRequirementsPage: React.FC = () => {
       font-size: 8pt;
       line-height: 1.3;
     }
+    .page-break {
+      page-break-after: always !important;
+      break-after: page !important;
+    }
     .bond-sheet {
       width: 100%;
       max-width: ${isLong ? '7.7in' : '7.6in'};
       margin: 0 auto;
       background: #ffffff;
+      box-sizing: border-box;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .header-table {
       width: 100%;
@@ -1055,19 +1139,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .section-hdr {
-      background-color: #f1f5f9 !important;
-      font-weight: 900;
-      font-size: 7.4pt;
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    .section-hdr-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1px 2px;
-    }
     .text-center { text-align: center; }
     .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .font-bold { font-weight: 700; }
@@ -1126,93 +1197,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
   </style>
 </head>
 <body>
-  <div class="bond-sheet">
-    <table class="header-table">
-      <tr>
-        <td style="width: 60px; text-align: left;">
-          <img src="/pictures/logo sa skwelahan.png" alt="PLSNHS Seal" style="width: 54px; height: 54px; object-fit: contain; border-radius: 50%;" onerror="this.style.display='none'" />
-        </td>
-        <td class="header-center">
-          <p class="header-rep">Republic of the Philippines</p>
-          <h2 class="header-deped">Department of Education</h2>
-          <p class="header-div">Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I</p>
-          <h1 class="header-school">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</h1>
-          <p class="header-address">Langtad, City of Naga, Cebu · School ID: <strong>303035</strong></p>
-        </td>
-        <td style="width: 60px; text-align: right;">
-          <img src="/pictures/deped_matatag_banner.png" alt="DepEd Matatag" style="width: 65px; height: auto; object-fit: contain;" onerror="this.style.display='none'" />
-        </td>
-      </tr>
-    </table>
-
-    <hr class="double-rule-top" />
-    <hr class="double-rule-bottom" />
-
-    <div class="doc-title-block">
-      <h3 class="doc-title">OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER</h3>
-      <p class="doc-sub">School Year 2026–2027</p>
-      <p class="doc-desc">Standard DepEd Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · Reconciled with LIS</p>
-    </div>
-
-    <div class="meta-grid">
-      <div class="meta-item">
-        <span class="meta-lbl">Total Audited</span>
-        <span class="meta-val">${totalStudentsInScope} Learners</span>
-      </div>
-      <div class="meta-item">
-        <span class="meta-lbl">Target Scope</span>
-        <span class="meta-val">${scopeTitle}</span>
-      </div>
-      <div class="meta-item">
-        <span class="meta-lbl">Date Generated</span>
-        <span class="meta-val">${currentDateStr}</span>
-      </div>
-      <div class="meta-item">
-        <span class="meta-lbl">Compliance Index</span>
-        <span class="meta-val" style="color: #047857;">${compliantStudentsInScope} / ${totalStudentsInScope} (${complianceRate}%)</span>
-      </div>
-    </div>
-
-    <table class="official-table">
-      <thead>
-        <tr>
-          <th style="width: 4%; text-align: center;">#</th>
-          <th style="width: 27%;">Learner Full Name (Last, First, Middle)</th>
-          <th style="width: 14%; text-align: center;">LRN</th>
-          <th style="width: 13%; text-align: center;">Grade &amp; Section</th>
-          <th style="width: 8.5%; text-align: center;">Form 138 (SF9)</th>
-          <th style="width: 8.5%; text-align: center;">PSA Birth Cert</th>
-          <th style="width: 8.5%; text-align: center;">Good Moral</th>
-          <th style="width: 7.5%; text-align: center;">2x2 Photo</th>
-          <th style="width: 9%; text-align: center;">Compliance</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rowsHtml || '<tr><td colspan="9" style="text-align: center; padding: 20px;">No records found.</td></tr>'}
-      </tbody>
-    </table>
-
-    <div class="signatory-grid">
-      <div>
-        <p class="sign-title">Prepared &amp; Audited by:</p>
-        <div class="sign-line">MARIA ELENA R. REGISTRAR</div>
-        <p class="sign-pos">School Registrar II</p>
-        <p class="sign-sub">LIS &amp; Student Records In-Charge</p>
-      </div>
-      <div>
-        <p class="sign-title">Certified Correct &amp; Approved by:</p>
-        <div class="sign-line">JUSTINE MANGILA, EdD</div>
-        <p class="sign-pos">Secondary School Principal II</p>
-        <p class="sign-sub">School Head / Authorized Official</p>
-      </div>
-    </div>
-
-    <div class="doc-footer">
-      <span>Placido L. Señor National High School · DepEd School ID: 303035 · Langtad, City of Naga, Cebu</span>
-      <span style="font-family: monospace;">Ref: PLSNHS-REG-DOC-2026-004 · Security Hash Verified</span>
-      <span><strong>${paperName}</strong></span>
-    </div>
-  </div>
+  ${sheetsHtml}
 </body>
 </html>`;
   };
@@ -2084,251 +2069,245 @@ export const RegistrarRequirementsPage: React.FC = () => {
       {/* =========================================================================
           OFFICIAL PRINT-ONLY DEPED BOND PAPER DOCUMENT (Short 8.5"x11" or Long 8.5"x13")
           Strictly hidden on screen, automatically rendered on window.print() / Ctrl+P
+          Strictly ONE section per sheet of bond paper
           ========================================================================= */}
-      <div className="print-bond-paper print-only space-y-3 font-sans">
-        {/* Official DepEd Philippines Letterhead Header */}
-        <div className="flex items-center justify-between pb-1">
-          {/* Left: School Official Seal / Logo */}
-          <div className="w-16 flex items-center justify-center shrink-0">
-            <img
-              src="/pictures/logo sa skwelahan.png"
-              alt="PLSNHS Seal"
-              className="h-16 w-16 object-contain rounded-full shadow-2xs"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
+      {groupedStudentsBySection.length > 0 ? (
+        groupedStudentsBySection.map((group, sIdx) => {
+          const groupAdviser = getSectionAdviser(group.grade, group.section);
+          const compliantCount = group.items.filter(
+            (st) => getCompleteness(st).isFullyCompliant
+          ).length;
+          const compRate =
+            group.items.length > 0 ? Math.round((compliantCount / group.items.length) * 100) : 100;
+          const isLastSheet = sIdx === groupedStudentsBySection.length - 1;
+
+          return (
+            <div
+              key={`print-sheet-${group.key}`}
+              className={`print-bond-paper print-only space-y-2 font-sans ${!isLastSheet ? 'page-break' : ''}`}
+              style={{
+                pageBreakAfter: isLastSheet ? 'avoid' : 'always',
+                breakAfter: isLastSheet ? 'avoid' : 'page',
+                breakInside: 'avoid',
+                pageBreakInside: 'avoid',
               }}
-            />
-          </div>
+            >
+              {/* Official DepEd Philippines Letterhead Header */}
+              <div className="flex items-center justify-between pb-1">
+                {/* Left: School Official Seal / Logo */}
+                <div className="w-14 flex items-center justify-center shrink-0">
+                  <img
+                    src="/pictures/logo sa skwelahan.png"
+                    alt="PLSNHS Seal"
+                    className="h-14 w-14 object-contain rounded-full shadow-2xs"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
 
-          {/* Center: Official Government Institution Hierarchy */}
-          <div className="text-center flex-1 px-3">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-slate-700 leading-tight font-serif">
-              Republic of the Philippines
-            </p>
-            <h2 className="text-[13px] uppercase font-bold tracking-wider text-slate-950 leading-tight mt-0.5 font-serif">
-              Department of Education
-            </h2>
-            <p className="text-[9.5px] font-medium text-slate-700 leading-tight">
-              Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
-            </p>
-            <h1 className="text-[14px] font-black tracking-wide text-slate-950 uppercase mt-0.5 font-serif">
-              PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
-            </h1>
-            <p className="text-[9px] text-slate-600 leading-tight mt-0.5">
-              Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
-            </p>
-          </div>
+                {/* Center: Official Government Institution Hierarchy */}
+                <div className="text-center flex-1 px-3">
+                  <p className="text-[9.5px] uppercase tracking-widest font-semibold text-slate-700 leading-tight font-serif">
+                    Republic of the Philippines
+                  </p>
+                  <h2 className="text-[12px] uppercase font-bold tracking-wider text-slate-950 leading-tight mt-0.5 font-serif">
+                    Department of Education
+                  </h2>
+                  <p className="text-[9px] font-medium text-slate-700 leading-tight">
+                    Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I
+                  </p>
+                  <h1 className="text-[13px] font-black tracking-wide text-slate-950 uppercase mt-0.5 font-serif">
+                    PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
+                  </h1>
+                  <p className="text-[8.5px] text-slate-600 leading-tight mt-0.5">
+                    Langtad, City of Naga, Cebu · School Identification Number (ID): <strong>303035</strong>
+                  </p>
+                </div>
 
-          {/* Right: DepEd Matatag / Official Logo */}
-          <div className="w-16 flex items-center justify-center shrink-0">
-            <img
-              src="/pictures/deped_matatag_banner.png"
-              alt="DepEd Matatag"
-              className="h-11 w-auto object-contain"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-          </div>
-        </div>
+                {/* Right: DepEd Matatag / Official Logo */}
+                <div className="w-14 flex items-center justify-center shrink-0">
+                  <img
+                    src="/pictures/deped_matatag_banner.png"
+                    alt="DepEd Matatag"
+                    className="h-10 w-auto object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
 
-        {/* Official DepEd Double Line Accent (Thick + Thin Rule) */}
-        <div className="border-b-2 border-slate-900 mt-1"></div>
-        <div className="border-b border-slate-900 mt-[2px] mb-2"></div>
+              {/* Official DepEd Double Line Accent (Thick + Thin Rule) */}
+              <div className="border-b-2 border-slate-900 mt-1"></div>
+              <div className="border-b border-slate-900 mt-[2px] mb-2"></div>
 
-        {/* Document Title & Reference Metadata */}
-        <div className="text-center py-0.5 space-y-0.5">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-950 font-display">
-            OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER
-          </h3>
-          <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wide">
-            School Year 2026–2027
-          </p>
-          <p className="text-[8.5px] text-slate-500 italic">
-            Standard DepEd Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · Reconciled with LIS
-          </p>
-        </div>
+              {/* Document Title & Reference Metadata */}
+              <div className="text-center py-0.5 space-y-0.5">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-950 font-display">
+                  OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER
+                </h3>
+                <p className="text-[9.5px] font-bold text-slate-800 uppercase tracking-wide">
+                  School Year 2026–2027
+                </p>
+                <p className="text-[8px] text-slate-500 italic">
+                  Standard DepEd Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · Reconciled with LIS
+                </p>
+              </div>
 
-        {/* Institutional Statistical Indicators Summary Bar */}
-        <div className="rounded-md border border-slate-300 bg-slate-50/70 py-1.5 px-3 grid grid-cols-4 divide-x divide-slate-200 text-center text-slate-900">
-          <div className="px-2">
-            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Total Audited Learners</span>
-            <span className="text-xs font-black text-slate-950 font-display block mt-0.5">{filteredStudents.length} Learners</span>
-          </div>
-          <div className="px-2">
-            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Target Scope</span>
-            <span className="text-[10px] font-bold text-slate-950 block mt-0.5 truncate">
-              {gradeFilter === 'all' ? 'All Year Levels' : gradeFilter}
-              {sectionFilter === 'all' ? '' : ` · ${sectionFilter}`}
-            </span>
-          </div>
-          <div className="px-2">
-            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Date Generated</span>
-            <span className="text-[10px] font-bold text-slate-900 mt-0.5 block">
-              {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-          </div>
-          <div className="px-2">
-            <span className="text-[8.5px] uppercase font-bold text-slate-600 block">Compliance Index</span>
-            <span className="text-xs font-black text-emerald-800 font-display block mt-0.5">
-              {stats.completeCount} / {filteredStudents.length} ({stats.overallRate}%)
-            </span>
-          </div>
-        </div>
+              {/* Section Statistical Indicators Summary Bar */}
+              <div className="rounded-md border border-slate-300 bg-slate-50/70 py-1.5 px-3 grid grid-cols-4 divide-x divide-slate-200 text-center text-slate-900">
+                <div className="px-2">
+                  <span className="text-[8px] uppercase font-bold text-slate-600 block">Target Section</span>
+                  <span className="text-xs font-black text-slate-950 font-display block mt-0.5">
+                    {group.grade.toUpperCase()} — {group.section.toUpperCase()}
+                  </span>
+                </div>
+                <div className="px-2">
+                  <span className="text-[8px] uppercase font-bold text-slate-600 block">Class Adviser</span>
+                  <span className="text-[9.5px] font-bold text-slate-950 block mt-0.5 truncate">
+                    {groupAdviser || 'Unassigned Faculty'}
+                  </span>
+                </div>
+                <div className="px-2">
+                  <span className="text-[8px] uppercase font-bold text-slate-600 block">Section Enrolment</span>
+                  <span className="text-[9.5px] font-bold text-slate-900 mt-0.5 block">
+                    {group.items.length} {group.items.length === 1 ? 'Learner' : 'Learners'}
+                  </span>
+                </div>
+                <div className="px-2">
+                  <span className="text-[8px] uppercase font-bold text-slate-600 block">Compliance Index</span>
+                  <span className="text-xs font-black text-emerald-800 font-display block mt-0.5">
+                    {compliantCount} / {group.items.length} Complete ({compRate}%)
+                  </span>
+                </div>
+              </div>
 
-        {/* Official Printable Table */}
-        <div className="w-full">
-          <table className="official-table w-full text-left text-xs border-collapse border border-slate-900 table-fixed">
-            <thead>
-              <tr className="bg-slate-100 uppercase border-b-2 border-slate-900 text-[7pt] text-slate-950">
-                <th className="border border-slate-900 px-1 py-1 text-center w-[4%]">#</th>
-                <th className="border border-slate-900 px-2 py-1 w-[27%]">Learner Full Name (Last, First, Middle)</th>
-                <th className="border border-slate-900 px-1 py-1 text-center font-mono w-[14%]">LRN</th>
-                <th className="border border-slate-900 px-1.5 py-1 text-center w-[13%]">Grade &amp; Section</th>
-                <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">Form 138 (SF9)</th>
-                <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">PSA Birth Cert</th>
-                <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">Good Moral</th>
-                <th className="border border-slate-900 px-1 py-1 text-center w-[7.5%]">2x2 Photo</th>
-                <th className="border border-slate-900 px-1.5 py-1 text-center w-[9%]">Compliance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupedStudentsBySection.length > 0 ? (
-                groupedStudentsBySection.map((group) => {
-                  const groupAdviser = getSectionAdviser(group.grade, group.section);
-                  const compliantCount = group.items.filter(
-                    (st) => getCompleteness(st).isFullyCompliant
-                  ).length;
+              {/* Official Printable Table for THIS SECTION ONLY */}
+              <div className="w-full">
+                <table className="official-table w-full text-left text-xs border-collapse border border-slate-900 table-fixed">
+                  <thead>
+                    <tr className="bg-slate-100 uppercase border-b-2 border-slate-900 text-[6.8pt] text-slate-950">
+                      <th className="border border-slate-900 px-1 py-1 text-center w-[4%]">#</th>
+                      <th className="border border-slate-900 px-2 py-1 w-[27%]">Learner Full Name (Last, First, Middle)</th>
+                      <th className="border border-slate-900 px-1 py-1 text-center font-mono w-[14%]">LRN</th>
+                      <th className="border border-slate-900 px-1.5 py-1 text-center w-[13%]">Grade &amp; Section</th>
+                      <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">Form 138 (SF9)</th>
+                      <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">PSA Birth Cert</th>
+                      <th className="border border-slate-900 px-1 py-1 text-center w-[8.5%]">Good Moral</th>
+                      <th className="border border-slate-900 px-1 py-1 text-center w-[7.5%]">2x2 Photo</th>
+                      <th className="border border-slate-900 px-1.5 py-1 text-center w-[9%]">Compliance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.items.map((student, idx) => {
+                      const comp = getCompleteness(student);
+                      return (
+                        <tr key={`print-row-${student.id}`} className="text-[7pt]">
+                          <td className="border border-slate-900 px-1 py-0.5 text-center font-mono text-slate-700">
+                            {idx + 1}
+                          </td>
+                          <td className="border border-slate-900 px-2 py-0.5 font-bold text-slate-950 truncate">
+                            {student.last_name}, {student.first_name}{' '}
+                            {student.middle_name ? student.middle_name[0] + '.' : ''}
+                          </td>
+                          <td className="border border-slate-900 px-1 py-0.5 text-center font-mono font-bold text-slate-950">
+                            {student.lrn || '—'}
+                          </td>
+                          <td className="border border-slate-900 px-1.5 py-0.5 text-center text-slate-900 truncate">
+                            {student.grade_level || group.grade} - {group.section}
+                          </td>
+                          <td className="border border-slate-900 px-1 py-0.5 text-center font-bold text-[6.5pt] uppercase text-emerald-800">
+                            {student.form_138_status === 'verified'
+                              ? '✓ Verified'
+                              : student.form_138_status === 'submitted'
+                              ? 'Submitted'
+                              : student.form_138_status === 'waived'
+                              ? 'Waived'
+                              : 'Missing'}
+                          </td>
+                          <td className="border border-slate-900 px-1 py-0.5 text-center font-bold text-[6.5pt] uppercase text-emerald-800">
+                            {student.psa_birth_status === 'verified'
+                              ? '✓ Verified'
+                              : student.psa_birth_status === 'submitted'
+                              ? 'Submitted'
+                              : student.psa_birth_status === 'waived'
+                              ? 'Waived'
+                              : 'Missing'}
+                          </td>
+                          <td className="border border-slate-900 px-1 py-0.5 text-center font-bold text-[6.5pt] uppercase text-emerald-800">
+                            {student.good_moral_status === 'verified'
+                              ? '✓ Verified'
+                              : student.good_moral_status === 'submitted'
+                              ? 'Submitted'
+                              : student.good_moral_status === 'waived'
+                              ? 'Waived'
+                              : 'Missing'}
+                          </td>
+                          <td className="border border-slate-900 px-1 py-0.5 text-center font-bold text-[6.5pt] uppercase text-emerald-800">
+                            {student.two_by_two_status === 'verified'
+                              ? '✓ Verified'
+                              : student.two_by_two_status === 'submitted'
+                              ? 'Submitted'
+                              : student.two_by_two_status === 'waived'
+                              ? 'Waived'
+                              : 'Missing'}
+                          </td>
+                          <td className="border border-slate-900 px-1.5 py-0.5 text-center font-bold text-slate-950">
+                            {comp.isFullyCompliant
+                              ? 'COMPLETE (4/4)'
+                              : `DEFICIENT (${comp.score}/4)`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-                  return (
-                    <React.Fragment key={`print-${group.key}`}>
-                      {/* Section Header Row */}
-                      <tr className="bg-slate-100 font-bold text-[7.6pt] print-section-header">
-                        <td colSpan={9} className="border border-slate-900 px-2 py-1">
-                          <div className="flex items-center justify-between">
-                            <span>
-                              {group.grade.toUpperCase()} — SECTION {group.section.toUpperCase()}
-                              {groupAdviser ? ` · CLASS ADVISER: ${groupAdviser.toUpperCase()}` : ''}
-                            </span>
-                            <span>
-                              {group.items.length} {group.items.length === 1 ? 'Learner' : 'Learners'} · {compliantCount} Complete
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
+              {/* DepEd Sign-Off & Attestation Block */}
+              <div className="grid grid-cols-2 gap-8 pt-3 text-xs text-center border-t border-slate-300 mt-2">
+                {/* Signatory 1: Registrar */}
+                <div className="flex flex-col items-center">
+                  <p className="text-[9px] font-semibold text-slate-700 mb-6 uppercase tracking-wider">
+                    Prepared &amp; Audited by:
+                  </p>
+                  <div className="border-b-2 border-slate-900 w-48 pb-0.5 font-black text-slate-950 uppercase text-[9.5px]">
+                    MARIA ELENA R. REGISTRAR
+                  </div>
+                  <p className="text-[8.5px] font-bold text-slate-900 mt-0.5">School Registrar II</p>
+                  <p className="text-[7.5px] text-slate-600">LIS &amp; Student Records In-Charge</p>
+                </div>
 
-                      {/* Student Rows */}
-                      {group.items.map((student, idx) => {
-                        const comp = getCompleteness(student);
-                        return (
-                          <tr key={`print-row-${student.id}`} className="text-[7.2pt]">
-                            <td className="border border-slate-900 px-1 py-1 text-center font-mono text-slate-700">
-                              {idx + 1}
-                            </td>
-                            <td className="border border-slate-900 px-2 py-1 font-bold text-slate-950 truncate">
-                              {student.last_name}, {student.first_name}{' '}
-                              {student.middle_name ? student.middle_name[0] + '.' : ''}
-                            </td>
-                            <td className="border border-slate-900 px-1 py-1 text-center font-mono font-bold text-slate-950">
-                              {student.lrn || '—'}
-                            </td>
-                            <td className="border border-slate-900 px-1.5 py-1 text-center text-slate-900 truncate">
-                              {student.grade_level || group.grade} - {group.section}
-                            </td>
-                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
-                              {student.form_138_status === 'verified'
-                                ? '✓ Verified'
-                                : student.form_138_status === 'submitted'
-                                ? 'Submitted'
-                                : student.form_138_status === 'waived'
-                                ? 'Waived'
-                                : 'Missing'}
-                            </td>
-                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
-                              {student.psa_birth_status === 'verified'
-                                ? '✓ Verified'
-                                : student.psa_birth_status === 'submitted'
-                                ? 'Submitted'
-                                : student.psa_birth_status === 'waived'
-                                ? 'Waived'
-                                : 'Missing'}
-                            </td>
-                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
-                              {student.good_moral_status === 'verified'
-                                ? '✓ Verified'
-                                : student.good_moral_status === 'submitted'
-                                ? 'Submitted'
-                                : student.good_moral_status === 'waived'
-                                ? 'Waived'
-                                : 'Missing'}
-                            </td>
-                            <td className="border border-slate-900 px-1 py-1 text-center font-bold text-[6.5pt] uppercase text-slate-900">
-                              {student.two_by_two_status === 'verified'
-                                ? '✓ Verified'
-                                : student.two_by_two_status === 'submitted'
-                                ? 'Submitted'
-                                : student.two_by_two_status === 'waived'
-                                ? 'Waived'
-                                : 'Missing'}
-                            </td>
-                            <td className="border border-slate-900 px-1.5 py-1 text-center font-bold text-slate-950">
-                              {comp.isFullyCompliant
-                                ? 'COMPLETE (4/4)'
-                                : `DEFICIENT (${comp.score}/4)`}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </React.Fragment>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="border border-slate-900 px-4 py-6 text-center text-slate-500">
-                    No student records match the active criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                {/* Signatory 2: Principal */}
+                <div className="flex flex-col items-center">
+                  <p className="text-[9px] font-semibold text-slate-700 mb-6 uppercase tracking-wider">
+                    Certified Correct &amp; Approved by:
+                  </p>
+                  <div className="border-b-2 border-slate-900 w-48 pb-0.5 font-black text-slate-950 uppercase text-[9.5px]">
+                    JUSTINE MANGILA, EdD
+                  </div>
+                  <p className="text-[8.5px] font-bold text-slate-900 mt-0.5">Secondary School Principal II</p>
+                  <p className="text-[7.5px] text-slate-600">School Head / Authorized Official</p>
+                </div>
+              </div>
 
-        {/* DepEd Sign-Off & Attestation Block */}
-        <div className="grid grid-cols-2 gap-8 pt-4 text-xs text-center border-t border-slate-300 mt-4">
-          {/* Signatory 1: Registrar */}
-          <div className="flex flex-col items-center">
-            <p className="text-[9.5px] font-semibold text-slate-700 mb-7 uppercase tracking-wider">
-              Prepared &amp; Audited by:
-            </p>
-            <div className="border-b-2 border-slate-900 w-52 pb-0.5 font-black text-slate-950 uppercase text-[10px]">
-              MARIA ELENA R. REGISTRAR
+              {/* Document Verification & Security Tracking Footer */}
+              <div className="pt-1.5 border-t border-slate-300 flex items-center justify-between text-[7.5px] text-slate-600 leading-tight">
+                <span>Placido L. Señor National High School · DepEd School ID: 303035 · Langtad, City of Naga, Cebu</span>
+                <span className="font-mono">Ref: PLSNHS-REG-REQ-2026-{group.section.replace(/\s+/g, '').toUpperCase()}</span>
+                <span className="font-bold text-slate-800">
+                  {paperSize === 'long' ? 'Long Bond Paper (8.5" × 13")' : 'Short Bond Paper (8.5" × 11")'} · Section {sIdx + 1} of {groupedStudentsBySection.length}
+                </span>
+              </div>
             </div>
-            <p className="text-[9px] font-bold text-slate-900 mt-1">School Registrar II</p>
-            <p className="text-[8px] text-slate-600">LIS &amp; Student Records In-Charge</p>
-          </div>
-
-          {/* Signatory 2: Principal */}
-          <div className="flex flex-col items-center">
-            <p className="text-[9.5px] font-semibold text-slate-700 mb-7 uppercase tracking-wider">
-              Certified Correct &amp; Approved by:
-            </p>
-            <div className="border-b-2 border-slate-900 w-52 pb-0.5 font-black text-slate-950 uppercase text-[10px]">
-              JUSTINE MANGILA, EdD
-            </div>
-            <p className="text-[9px] font-bold text-slate-900 mt-1">Secondary School Principal II</p>
-            <p className="text-[8px] text-slate-600">School Head / Authorized Official</p>
-          </div>
+          );
+        })
+      ) : (
+        <div className="print-bond-paper print-only p-8 text-center text-slate-500">
+          No learner records match the active audit scope.
         </div>
-
-        {/* Document Verification & Security Tracking Footer */}
-        <div className="pt-2 border-t border-slate-300 flex items-center justify-between text-[8px] text-slate-600 leading-tight">
-          <span>Placido L. Señor National High School · DepEd School ID: 303035 · Langtad, City of Naga, Cebu</span>
-          <span className="font-mono">Doc Ref: PLSNHS-REG-DOC-2026-004 · Security Hash Verified</span>
-          <span className="font-bold text-slate-800">
-            {paperSize === 'long' ? 'Long Bond Paper (8.5" × 13")' : 'Short Bond Paper (8.5" × 11")'}
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* Document Audit & Inspection Modal (Rendered via Portal so it is always centered in the active viewport) */}
       {selectedStudent &&

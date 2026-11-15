@@ -122,6 +122,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     visibility: visible !important;
     width: 100% !important;
   }
+
+  .page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
 }
 
 @media screen {
