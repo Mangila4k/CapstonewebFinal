@@ -315,7 +315,7 @@ export const ForgotPasswordPage: React.FC = () => {
       setCode('');
       setStep('code');
       setSuccess(
-        `Verification code generated for ${cleanEmail}. Check your Gmail inbox or use the confirmation assistant below.`
+        `A 6-digit verification code has been sent to ${cleanEmail}. Please check your Gmail inbox and enter the code below.`
       );
     } catch (err: any) {
       setError(err?.message || 'Error processing request. Please try again.');
@@ -696,37 +696,6 @@ export const ForgotPasswordPage: React.FC = () => {
                     </a>
                   </div>
                 </div>
-
-                {/* Active OTP Assistance Card */}
-                {activeSession?.code && (
-                  <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-xs space-y-2.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-amber-900 font-bold">
-                        <Sparkles className="h-4 w-4 text-amber-600" />
-                        <span>Security Verification Code:</span>
-                      </div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-900">
-                        One-Time Code
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 bg-white/95 p-2.5 rounded-xl border border-amber-200 shadow-inner">
-                      <div className="font-mono text-2xl font-black tracking-[8px] text-[#1B2A4A] pl-2 select-all">
-                        {activeSession.code}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setCode(activeSession.code)}
-                        className="px-3 py-1.5 rounded-lg bg-[#1B2A4A] text-white hover:bg-[#142038] text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center gap-1.5 active:scale-95"
-                      >
-                        <Check className="h-3.5 w-3.5 text-amber-400" />
-                        <span>Auto-Fill Code</span>
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Generated for <strong className="font-mono">{email}</strong>. If your email delivery is delayed, you can click <strong>Auto-Fill Code</strong> above to proceed with resetting your password immediately.
-                    </p>
-                  </div>
-                )}
 
                 {/* 6-Digit Code Input */}
                 <div>
