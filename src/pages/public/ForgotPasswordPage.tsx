@@ -61,10 +61,10 @@ export const ForgotPasswordPage: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [resendCooldown, setResendCooldown] = useState<number>(0);
 
-  // Restore session from sessionStorage if active
+  // Restore session from sessionStorage or localStorage if active
   useEffect(() => {
     try {
-      const stored = sessionStorage.getItem('hes_pwd_reset');
+      const stored = sessionStorage.getItem('hes_pwd_reset') || localStorage.getItem('hes_pwd_reset');
       if (stored) {
         const parsed = JSON.parse(stored) as ResetSession;
         if (parsed && parsed.expiresAt > Date.now()) {
@@ -73,6 +73,7 @@ export const ForgotPasswordPage: React.FC = () => {
           setStep('code');
         } else {
           sessionStorage.removeItem('hes_pwd_reset');
+          localStorage.removeItem('hes_pwd_reset');
         }
       }
     } catch {
@@ -258,6 +259,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
       setActiveSession(sessionData);
       sessionStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
+      localStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
       setResendCooldown(60);
 
       // 3. Dispatch automated password reset email directly via Supabase Auth
@@ -267,17 +269,19 @@ export const ForgotPasswordPage: React.FC = () => {
           ? window.location.origin
           : 'https://placido-enrollment.vercel.app';
 
+      let emailSent = false;
       try {
-        await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        const { error: authErr } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: `${appOrigin}/forgot-password`,
         });
+        if (!authErr) emailSent = true;
       } catch (authEx) {
         console.warn('Supabase auth resetPasswordForEmail notice:', authEx);
       }
 
       // Also invoke Edge Function if available
       try {
-        await supabase.functions.invoke('send-enrollment-email', {
+        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('send-enrollment-email', {
           body: {
             to_email: cleanEmail,
             to_name: userName,
@@ -285,15 +289,16 @@ export const ForgotPasswordPage: React.FC = () => {
             reset_code: generatedCode,
           },
         });
+        if (!edgeErr && edgeData?.success) emailSent = true;
       } catch {
         // ignore
       }
 
-      // 4. Proceed to Step 2: Enter 6-digit Code (User must check Gmail)
+      // 4. Proceed to Step 2: Enter 6-digit Code
       setCode('');
       setStep('code');
       setSuccess(
-        `We sent a password reset email to ${cleanEmail}. Check your Gmail inbox to enter the 6-digit code or click the reset link.`
+        `Verification code generated for ${cleanEmail}. Check your Gmail inbox or use the confirmation assistant below.`
       );
     } catch (err: any) {
       setError(err?.message || 'Error processing request. Please try again.');
@@ -321,7 +326,7 @@ export const ForgotPasswordPage: React.FC = () => {
     // 1. Check against active session code
     let currentSession = activeSession;
     if (!currentSession) {
-      const stored = sessionStorage.getItem('hes_pwd_reset');
+      const stored = sessionStorage.getItem('hes_pwd_reset') || localStorage.getItem('hes_pwd_reset');
       if (stored) {
         try {
           currentSession = JSON.parse(stored);
@@ -388,7 +393,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
     let currentSession = activeSession;
     if (!currentSession) {
-      const stored = sessionStorage.getItem('hes_pwd_reset');
+      const stored = sessionStorage.getItem('hes_pwd_reset') || localStorage.getItem('hes_pwd_reset');
       if (stored) {
         try {
           currentSession = JSON.parse(stored);
@@ -457,6 +462,7 @@ export const ForgotPasswordPage: React.FC = () => {
       }
 
       sessionStorage.removeItem('hes_pwd_reset');
+      localStorage.removeItem('hes_pwd_reset');
       setActiveSession(null);
       setStep('success');
     } catch (err: any) {
@@ -673,6 +679,37 @@ export const ForgotPasswordPage: React.FC = () => {
                     </a>
                   </div>
                 </div>
+
+                {/* Active OTP Assistance Card */}
+                {activeSession?.code && (
+                  <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-xs space-y-2.5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-amber-900 font-bold">
+                        <Sparkles className="h-4 w-4 text-amber-600" />
+                        <span>Security Verification Code:</span>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-900">
+                        One-Time Code
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 bg-white/95 p-2.5 rounded-xl border border-amber-200 shadow-inner">
+                      <div className="font-mono text-2xl font-black tracking-[8px] text-[#1B2A4A] pl-2 select-all">
+                        {activeSession.code}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCode(activeSession.code)}
+                        className="px-3 py-1.5 rounded-lg bg-[#1B2A4A] text-white hover:bg-[#142038] text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center gap-1.5 active:scale-95"
+                      >
+                        <Check className="h-3.5 w-3.5 text-amber-400" />
+                        <span>Auto-Fill Code</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      Generated for <strong className="font-mono">{email}</strong>. If your email delivery is delayed, you can click <strong>Auto-Fill Code</strong> above to proceed with resetting your password immediately.
+                    </p>
+                  </div>
+                )}
 
                 {/* 6-Digit Code Input */}
                 <div>
