@@ -228,7 +228,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
   const [complianceFilter, setComplianceFilter] = useState<
     'all' | 'complete' | 'incomplete' | 'missing_138' | 'missing_psa' | 'missing_moral'
   >('all');
-  const [activeTab, setActiveTab] = useState<'all' | 'form_138' | 'psa' | 'good_moral' | 'two_by_two'>('all');
 
   // Available sections dynamically filtered by selected grade level
   const availableSections = useMemo(() => {
@@ -998,70 +997,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Focus Tab View */}
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-            Document Audit Focus
-          </label>
-          <div className="flex rounded-xl bg-slate-100 p-1 overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className={`flex-1 rounded-lg py-1.5 px-2 text-center text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTab === 'all'
-                    ? 'bg-white text-emerald-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                All Documents
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('form_138')}
-                className={`flex-1 rounded-lg py-1.5 px-2 text-center text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTab === 'form_138'
-                    ? 'bg-white text-emerald-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Form 138 (SF9)
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('psa')}
-                className={`flex-1 rounded-lg py-1.5 px-2 text-center text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTab === 'psa'
-                    ? 'bg-white text-emerald-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                PSA Birth Cert
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('good_moral')}
-                className={`flex-1 rounded-lg py-1.5 px-2 text-center text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTab === 'good_moral'
-                    ? 'bg-white text-emerald-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Good Moral
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('two_by_two')}
-                className={`flex-1 rounded-lg py-1.5 px-2 text-center text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTab === 'two_by_two'
-                    ? 'bg-white text-emerald-800 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                2x2 Photo
-              </button>
-            </div>
-          </div>
-
         {/* Live Search & Quick Filter Pills */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-3">
           <div className="relative w-full sm:w-96">
@@ -1131,57 +1066,19 @@ export const RegistrarRequirementsPage: React.FC = () => {
                 <th className="px-4 py-3.5 w-12 text-center text-slate-400">#</th>
                 <th className="px-5 py-3.5 min-w-[220px]">Learner Name & LRN</th>
                 <th className="px-4 py-3.5 min-w-[150px]">Grade & Section</th>
-
-                {(activeTab === 'all' || activeTab === 'form_138') && (
-                  <th className="px-4 py-3.5 text-center min-w-[120px]">
-                    Form 138 (SF9)
-                    <span className="block text-[9px] font-normal text-slate-400 normal-case">
-                      Report Card
-                    </span>
-                  </th>
-                )}
-
-                {(activeTab === 'all' || activeTab === 'psa') && (
-                  <th className="px-4 py-3.5 text-center min-w-[120px]">
-                    PSA Birth Cert
-                    <span className="block text-[9px] font-normal text-slate-400 normal-case">
-                      Authenticated
-                    </span>
-                  </th>
-                )}
-
-                {(activeTab === 'all' || activeTab === 'good_moral') && (
-                  <th className="px-4 py-3.5 text-center min-w-[120px]">
-                    Good Moral
-                    <span className="block text-[9px] font-normal text-slate-400 normal-case">
-                      Clearance
-                    </span>
-                  </th>
-                )}
-
-                {(activeTab === 'all' || activeTab === 'two_by_two') && (
-                  <th className="px-4 py-3.5 text-center min-w-[100px]">
-                    2x2 ID Photo
-                    <span className="block text-[9px] font-normal text-slate-400 normal-case">
-                      White BG
-                    </span>
-                  </th>
-                )}
-
-                <th className="px-4 py-3.5 text-center w-36 font-black text-emerald-800 bg-emerald-50/50">
+                <th className="px-4 py-3.5 text-center w-48 font-black text-emerald-800 bg-emerald-50/50">
                   Compliance Status
                   <span className="block text-[9px] font-normal text-emerald-600 normal-case">
                     Audit Score
                   </span>
                 </th>
-
                 <th className="px-5 py-3.5 text-right min-w-[150px]">Audit Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={activeTab === 'all' ? 9 : 6} className="py-16 text-center text-slate-400">
+                  <td colSpan={5} className="py-16 text-center text-slate-400">
                     <div className="inline-block h-7 w-7 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent mb-2"></div>
                     <p className="font-semibold text-slate-600">Loading requirement audit registry...</p>
                     <p className="text-[11px] text-slate-400">Querying DepEd documentary records</p>
@@ -1199,13 +1096,12 @@ export const RegistrarRequirementsPage: React.FC = () => {
                   const compliantCount = group.items.filter(
                     (st) => getCompleteness(st).isFullyCompliant
                   ).length;
-                  const colSpan = activeTab === 'all' ? 9 : 6;
 
                   return (
                     <React.Fragment key={group.key}>
                       {/* Year Level & Section Header Row */}
                       <tr className="bg-slate-100/90 border-y border-slate-200">
-                        <td colSpan={colSpan} className="px-5 py-2.5">
+                        <td colSpan={5} className="px-5 py-2.5">
                           <div className="flex items-center justify-between gap-3 flex-wrap">
                             <div className="flex items-center gap-2.5 flex-wrap">
                               <span className="inline-flex items-center gap-1 rounded-lg bg-[#1B2A4A] px-2.5 py-1 text-[11px] font-extrabold text-white">
@@ -1307,82 +1203,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 )}
                               </div>
                             </td>
-
-                            {/* Form 138 */}
-                            {(activeTab === 'all' || activeTab === 'form_138') && (
-                              <td className="px-4 py-3.5 text-center">
-                                <div className="inline-flex flex-col items-center gap-1">
-                                  {renderStatusBadge(student.form_138_status, student.form_138_url)}
-                                  {student.form_138_url && (
-                                    <a
-                                      href={student.form_138_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                                    >
-                                      View <Eye className="h-2.5 w-2.5" />
-                                    </a>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            {/* PSA Birth Cert */}
-                            {(activeTab === 'all' || activeTab === 'psa') && (
-                              <td className="px-4 py-3.5 text-center">
-                                <div className="inline-flex flex-col items-center gap-1">
-                                  {renderStatusBadge(student.psa_birth_status, student.psa_birth_url)}
-                                  {student.psa_birth_url && (
-                                    <a
-                                      href={student.psa_birth_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                                    >
-                                      View <Eye className="h-2.5 w-2.5" />
-                                    </a>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            {/* Good Moral */}
-                            {(activeTab === 'all' || activeTab === 'good_moral') && (
-                              <td className="px-4 py-3.5 text-center">
-                                <div className="inline-flex flex-col items-center gap-1">
-                                  {renderStatusBadge(student.good_moral_status, student.good_moral_url)}
-                                  {student.good_moral_url && (
-                                    <a
-                                      href={student.good_moral_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                                    >
-                                      View <Eye className="h-2.5 w-2.5" />
-                                    </a>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            {/* 2x2 Photo */}
-                            {(activeTab === 'all' || activeTab === 'two_by_two') && (
-                              <td className="px-4 py-3.5 text-center">
-                                <div className="inline-flex flex-col items-center gap-1">
-                                  {renderStatusBadge(student.two_by_two_status, student.two_by_two_picture_url)}
-                                  {student.two_by_two_picture_url && (
-                                    <a
-                                      href={student.two_by_two_picture_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                                    >
-                                      Photo <Eye className="h-2.5 w-2.5" />
-                                    </a>
-                                  )}
-                                </div>
-                              </td>
-                            )}
 
                             {/* Overall Compliance */}
                             <td className="px-4 py-3.5 text-center bg-emerald-50/40">
@@ -1510,7 +1330,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={activeTab === 'all' ? 9 : 6} className="py-12 text-center text-slate-400">
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
                     <AlertCircle className="mx-auto h-8 w-8 text-slate-300 mb-2" />
                     <p className="font-bold text-slate-600">No student records match the active criteria.</p>
                     <p className="text-xs text-slate-400">Try clearing the search or adjusting the year level, section, or compliance filter.</p>
