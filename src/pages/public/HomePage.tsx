@@ -148,8 +148,8 @@ export const HomePage: React.FC = () => {
 
   const displayActivities = activities.length > 0 ? activities : defaultActivities;
   const visibleActivities =
-    displayActivities.length > 6 && !showAllActivities
-      ? displayActivities.slice(0, 6)
+    displayActivities.length > 3 && !showAllActivities
+      ? displayActivities.slice(0, 3)
       : displayActivities;
 
   const activeSelectedActivity = selectedActivity
@@ -304,17 +304,28 @@ export const HomePage: React.FC = () => {
             ))}
           </div>
 
-          {displayActivities.length > 6 && (
-            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+          {displayActivities.length > 3 && (
+            <div className="activities-action-bar">
               <button
                 type="button"
                 onClick={() => setShowAllActivities(!showAllActivities)}
-                className="rounded-full border border-amber-400/40 bg-amber-400/10 px-6 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 hover:text-white transition-all cursor-pointer inline-flex items-center gap-2"
+                className="btn-activities-action"
+                aria-expanded={showAllActivities}
               >
-                <i className={showAllActivities ? 'fas fa-chevron-up' : 'fas fa-chevron-down'}></i>
-                {showAllActivities
-                  ? 'Show Less'
-                  : `View All School Activities (${displayActivities.length})`}
+                <span className="btn-activities-action-icon">
+                  <i className={showAllActivities ? 'fas fa-chevron-up' : 'fas fa-th-large'}></i>
+                </span>
+                <span className="btn-activities-action-text">
+                  {showAllActivities
+                    ? 'Show Fewer Activities'
+                    : `View All School Activities (${displayActivities.length})`}
+                </span>
+                <span className="btn-activities-action-badge">
+                  {showAllActivities ? 'Showing All' : `+${displayActivities.length - 3} More`}
+                </span>
+                <i
+                  className={`fas ${showAllActivities ? 'fa-arrow-up' : 'fa-arrow-right'} btn-activities-action-arrow`}
+                ></i>
               </button>
             </div>
           )}
