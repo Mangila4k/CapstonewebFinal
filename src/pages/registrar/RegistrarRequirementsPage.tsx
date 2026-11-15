@@ -1145,7 +1145,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                               </span>
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 whitespace-nowrap">
                                 <CheckCircle2 className="h-3 w-3" />
-                                {compliantCount} Compliant ({Math.round((compliantCount / group.items.length) * 100)}%)
+                                {compliantCount} Compliant
                               </span>
                             </div>
                           </div>
@@ -1207,24 +1207,13 @@ export const RegistrarRequirementsPage: React.FC = () => {
                             {/* Overall Compliance */}
                             <td className="px-4 py-3.5 text-center bg-emerald-50/40">
                               <div className="inline-flex flex-col items-center">
-                                <div className="flex items-center gap-1.5 font-bold">
-                                  <span
-                                    className={`text-xs ${
-                                      comp.isFullyCompliant ? 'text-emerald-800' : 'text-amber-800'
-                                    }`}
-                                  >
-                                    {comp.score} / 4
-                                  </span>
-                                  <span
-                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                      comp.isFullyCompliant
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : 'bg-amber-100 text-amber-800'
-                                    }`}
-                                  >
-                                    {comp.pct}%
-                                  </span>
-                                </div>
+                                <span
+                                  className={`text-xs font-bold ${
+                                    comp.isFullyCompliant ? 'text-emerald-800' : 'text-amber-800'
+                                  }`}
+                                >
+                                  {comp.score} / 4
+                                </span>
                                 <span
                                   className={`text-[10px] font-semibold mt-0.5 ${
                                     comp.isFullyCompliant ? 'text-emerald-700' : 'text-amber-700'
