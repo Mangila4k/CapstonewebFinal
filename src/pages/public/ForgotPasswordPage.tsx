@@ -364,8 +364,24 @@ export const ForgotPasswordPage: React.FC = () => {
     setError('');
     setSuccess('');
 
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long.');
+    // Password format validation:
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      setError('Password must contain at least one uppercase letter (A-Z).');
+      return;
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      setError('Password must contain at least one lowercase letter (a-z).');
+      return;
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      setError('Password must contain at least one number (0-9).');
       return;
     }
 
@@ -754,10 +770,10 @@ export const ForgotPasswordPage: React.FC = () => {
                       type={showNewPassword ? 'text' : 'password'}
                       required
                       autoFocus
-                      minLength={6}
+                      minLength={8}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password (min. 6 characters)"
+                      placeholder="Enter new password (min. 8 chars, uppercase, lowercase & number)"
                       className="w-full rounded-xl border border-slate-300 bg-slate-50/50 pl-11 pr-11 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-[#1B2A4A] focus:bg-white focus:outline-hidden"
                     />
                     <button
@@ -782,7 +798,7 @@ export const ForgotPasswordPage: React.FC = () => {
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       required
-                      minLength={6}
+                      minLength={8}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter new password to confirm"
@@ -803,24 +819,67 @@ export const ForgotPasswordPage: React.FC = () => {
                 </div>
 
                 {/* Password Criteria Checks */}
-                <div className="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-600 space-y-1 border border-slate-200/80">
-                  <div className="flex items-center gap-1.5">
+                <div className="rounded-xl bg-slate-50 p-3.5 text-[11px] text-slate-600 space-y-1.5 border border-slate-200/80">
+                  <p className="font-bold text-slate-700 text-[10px] uppercase tracking-wider mb-1">
+                    Password Format Requirements:
+                  </p>
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        newPassword.length >= 6 ? 'bg-emerald-500' : 'bg-slate-300'
+                      className={`h-2 w-2 rounded-full transition-colors ${
+                        newPassword.length >= 8 ? 'bg-emerald-500' : 'bg-slate-300'
                       }`}
                     />
-                    <span>At least 6 characters in length</span>
+                    <span className={newPassword.length >= 8 ? 'text-emerald-700 font-semibold' : ''}>
+                      At least 8 characters in length
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${
+                      className={`h-2 w-2 rounded-full transition-colors ${
+                        /[A-Z]/.test(newPassword) ? 'bg-emerald-500' : 'bg-slate-300'
+                      }`}
+                    />
+                    <span className={/[A-Z]/.test(newPassword) ? 'text-emerald-700 font-semibold' : ''}>
+                      Contains an uppercase letter (A–Z)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full transition-colors ${
+                        /[a-z]/.test(newPassword) ? 'bg-emerald-500' : 'bg-slate-300'
+                      }`}
+                    />
+                    <span className={/[a-z]/.test(newPassword) ? 'text-emerald-700 font-semibold' : ''}>
+                      Contains a lowercase letter (a–z)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full transition-colors ${
+                        /[0-9]/.test(newPassword) ? 'bg-emerald-500' : 'bg-slate-300'
+                      }`}
+                    />
+                    <span className={/[0-9]/.test(newPassword) ? 'text-emerald-700 font-semibold' : ''}>
+                      Contains at least one number (0–9)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full transition-colors ${
                         newPassword && newPassword === confirmPassword
                           ? 'bg-emerald-500'
                           : 'bg-slate-300'
                       }`}
                     />
-                    <span>Passwords match</span>
+                    <span
+                      className={
+                        newPassword && newPassword === confirmPassword
+                          ? 'text-emerald-700 font-semibold'
+                          : ''
+                      }
+                    >
+                      Passwords match exactly
+                    </span>
                   </div>
                 </div>
 

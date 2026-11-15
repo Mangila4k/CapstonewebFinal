@@ -314,21 +314,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let matchedUser: any = null;
 
       if (usersData && usersData.length > 0) {
+        // STRICT case-sensitive comparison: uppercase and lowercase must match exactly
         matchedUser = usersData.find((u: any) => {
           const uPass = (u.password || '').trim();
-          if (uPass === cleanPass || uPass.toLowerCase() === cleanPass.toLowerCase()) return true;
+          if (uPass && uPass === cleanPass) return true;
 
-          // For student role, also allow last_name or first_name as initial password
+          // For student role initial temporary password: exact match against last_name
           if (u.role === 'student') {
-            const uLast = (u.last_name || '').trim().toLowerCase();
-            const uFirst = (u.first_name || '').trim().toLowerCase();
-            if (uLast && uLast === cleanPass.toLowerCase()) return true;
-            if (uFirst && uFirst === cleanPass.toLowerCase()) return true;
+            const uLast = (u.last_name || '').trim();
+            if (uLast && uLast === cleanPass) return true;
           }
           return false;
         });
 
         if (!matchedUser) {
+          // Detect if failure is due to letter case mismatch (e.g., starts with lowercase instead of uppercase)
+          const isCaseMismatch = usersData.some((u: any) => {
+            const uPass = (u.password || '').trim().toLowerCase();
+            const uLast = (u.last_name || '').trim().toLowerCase();
+            return (
+              (uPass && uPass === cleanPass.toLowerCase()) ||
+              (u.role === 'student' && uLast && uLast === cleanPass.toLowerCase())
+            );
+          });
+
+          if (isCaseMismatch) {
+            return {
+              success: false,
+              error: 'Incorrect password. Passwords are strictly case-sensitive—check your uppercase and lowercase letters.',
+            };
+          }
+
           return { success: false, error: 'Incorrect password. Please verify your credentials.' };
         }
       } else {
@@ -340,17 +356,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .maybeSingle();
 
         if (fallbackStudent) {
-          const expectedPass = (fallbackStudent.last_name || '').trim().toLowerCase();
-          if (
-            (expectedPass && expectedPass === cleanPass.toLowerCase()) ||
-            cleanPass.toLowerCase() === 'student123'
-          ) {
+          const expectedPass = (fallbackStudent.last_name || '').trim();
+          if (expectedPass && expectedPass === cleanPass) {
             matchedUser = {
               id: fallbackStudent.id,
               email: fallbackStudent.email,
               role: 'student',
               first_name: fallbackStudent.first_name,
               last_name: fallbackStudent.last_name,
+            };
+          } else if (expectedPass && expectedPass.toLowerCase() === cleanPass.toLowerCase()) {
+            return {
+              success: false,
+              error: 'Incorrect password. Passwords are strictly case-sensitive—check your uppercase and lowercase letters.',
             };
           }
         }
