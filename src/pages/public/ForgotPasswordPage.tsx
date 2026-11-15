@@ -262,37 +262,19 @@ export const ForgotPasswordPage: React.FC = () => {
       localStorage.setItem('hes_pwd_reset', JSON.stringify(sessionData));
       setResendCooldown(60);
 
-      // 3. Dispatch automated password reset email directly via Supabase Auth
-      // Passing redirectTo ensures the link points directly to placido-enrollment.vercel.app!
-      const appOrigin =
-        typeof window !== 'undefined' && window.location.origin && window.location.origin !== 'null'
-          ? window.location.origin
-          : 'https://placido-enrollment.vercel.app';
-
-      let emailSent = false;
-
+      // 3. Dispatch official 6-digit OTP verification code directly to user's Gmail
       try {
-        const { error: authErr } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-          redirectTo: `${appOrigin}/forgot-password`,
-        });
-        if (!authErr) emailSent = true;
-      } catch (authEx) {
-        console.warn('Supabase auth resetPasswordForEmail notice:', authEx);
-      }
-
-      // Also invoke Edge Function if available
-      try {
-        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('send-enrollment-email', {
-          body: {
+        await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             to_email: cleanEmail,
             to_name: userName,
-            status: 'password_reset',
-            reset_code: generatedCode,
-          },
+            code: generatedCode,
+          }),
         });
-        if (!edgeErr && edgeData?.success) emailSent = true;
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn('Direct OTP email dispatch error:', err);
       }
 
       // 4. Proceed to Step 2: Enter 6-digit Code
