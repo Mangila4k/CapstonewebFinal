@@ -60,6 +60,65 @@ export interface StudentWithRequirements extends Student {
   updated_at_audit?: string;
 }
 
+// Standard Grade Levels in PLSNHS
+const ALL_GRADES = [
+  'Grade 7',
+  'Grade 8',
+  'Grade 9',
+  'Grade 10',
+  'Grade 11',
+  'Grade 12',
+];
+
+// Default fallback sections per grade level matching Supabase sections table
+const DEFAULT_SECTIONS_BY_GRADE: Record<string, string[]> = {
+  'Grade 7': ['Chiong', 'De Gracia', 'Mendiola', 'Mendoza', 'Paul Ong', 'Quirante', 'Sayson'],
+  'Grade 8': ['Antipolo', 'Banaba', 'Kamagong', 'Mahogany', 'Molave', 'Narra', 'Square', 'Yakal'],
+  'Grade 9': ['Batangas', 'Cebu', 'Davao', 'Ilo-Ilo', 'Negros Occidental', 'Palawan', 'Rizal'],
+  'Grade 10': ['Generosity', 'Honesty', 'Kindness', 'Perseverance', 'Wisdom'],
+  'Grade 11': ['Almario', 'Amorsolo', 'Baltazar', 'Tolentino'],
+  'Grade 12': ['Salcedo', 'Santos', 'Velasco', 'Velasquez'],
+};
+
+// Fallback section adviser mapping matching official school assignments in Supabase
+const FALLBACK_ADVISERS: Record<string, string> = {
+  'Grade 7___De Gracia': 'Mrs. Tapasao',
+  'Grade 7___Mendoza': 'Mrs. Baclayon',
+  'Grade 7___Paul Ong': 'Mrs. Manabat',
+  'Grade 7___Sayson': 'Mrs. Llanda',
+  'Grade 7___Quirante': 'Mrs. Codelan',
+  'Grade 7___Mendiola': 'Mr. Selim',
+  'Grade 7___Chiong': 'Mrs. Generale',
+  'Grade 8___Square': 'Twengcle Deguma',
+  'Grade 8___Antipolo': 'Ms. Alinsonorin',
+  'Grade 8___Banaba': 'Ms. Omambac',
+  'Grade 8___Kamagong': 'Mr. Padillo',
+  'Grade 8___Molave': 'Mrs. Rabanes',
+  'Grade 8___Narra': 'Mrs. Montoya',
+  'Grade 8___Yakal': 'Mrs. Balwit',
+  'Grade 8___Mahogany': 'Mr. Gonzaga',
+  'Grade 9___Cebu': 'Mrs. Taruc',
+  'Grade 9___Davao': 'Mr. Albores',
+  'Grade 9___Negros Occidental': 'Mrs. Ramas',
+  'Grade 9___Ilo-Ilo': 'Mrs. Ogaob',
+  'Grade 9___Palawan': 'Mrs. Rivera',
+  'Grade 9___Batangas': 'Mrs. Francisco',
+  'Grade 9___Rizal': 'Ms. Bo-ok',
+  'Grade 10___Generosity': 'Mrs. Paunel',
+  'Grade 10___Honesty': 'Mrs. Dela Torre',
+  'Grade 10___Kindness': 'Mr. Gentica',
+  'Grade 10___Perseverance': 'Mrs. Rimas',
+  'Grade 10___Wisdom': 'Mrs. Diaz',
+  'Grade 11___Almario': 'SHS Faculty',
+  'Grade 11___Amorsolo': 'SHS Faculty',
+  'Grade 11___Baltazar': 'SHS Faculty',
+  'Grade 11___Tolentino': 'SHS Faculty',
+  'Grade 12___Salcedo': 'SHS Faculty',
+  'Grade 12___Santos': 'SHS Faculty',
+  'Grade 12___Velasco': 'SHS Faculty',
+  'Grade 12___Velasquez': 'SHS Faculty',
+};
+
 const FALLBACK_REQ_STUDENTS: StudentWithRequirements[] = [
   {
     id: 'req-1',
@@ -165,10 +224,38 @@ export const RegistrarRequirementsPage: React.FC = () => {
   // Filters
   const [search, setSearch] = useState<string>('');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
+  const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [complianceFilter, setComplianceFilter] = useState<
     'all' | 'complete' | 'incomplete' | 'missing_138' | 'missing_psa' | 'missing_moral'
   >('all');
   const [activeTab, setActiveTab] = useState<'all' | 'form_138' | 'psa' | 'good_moral' | 'two_by_two'>('all');
+
+  // Available sections dynamically filtered by selected grade level
+  const availableSections = useMemo(() => {
+    const secSet = new Set<string>();
+
+    if (gradeFilter !== 'all' && DEFAULT_SECTIONS_BY_GRADE[gradeFilter]) {
+      DEFAULT_SECTIONS_BY_GRADE[gradeFilter].forEach((s) => secSet.add(s));
+    }
+
+    students.forEach((st) => {
+      if (
+        gradeFilter === 'all' ||
+        (st.grade_level && st.grade_level.toLowerCase().includes(gradeFilter.toLowerCase()))
+      ) {
+        if (st.section_name && st.section_name !== 'Unassigned') {
+          secSet.add(st.section_name);
+        }
+      }
+    });
+
+    return Array.from(secSet).sort();
+  }, [students, gradeFilter]);
+
+  const getSectionAdviser = (grade: string, section: string): string => {
+    const key = `${grade}___${section}`;
+    return FALLBACK_ADVISERS[key] || '';
+  };
 
   // Modal / Inspection state
   const [selectedStudent, setSelectedStudent] = useState<StudentWithRequirements | null>(null);
@@ -361,6 +448,14 @@ export const RegistrarRequirementsPage: React.FC = () => {
         gradeFilter === 'all' ||
         (s.grade_level && s.grade_level.toLowerCase().includes(gradeFilter.toLowerCase()));
 
+      // Section filter
+      let matchesSection = true;
+      if (sectionFilter === 'Unassigned') {
+        matchesSection = !s.section_name || s.section_name.toLowerCase() === 'unassigned';
+      } else if (sectionFilter !== 'all') {
+        matchesSection = (s.section_name || '').toLowerCase() === sectionFilter.toLowerCase();
+      }
+
       // Compliance filter
       const comp = getCompleteness(s);
       let matchesCompliance = true;
@@ -376,7 +471,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
         matchesCompliance = s.good_moral_status === 'missing';
       }
 
-      return matchesSearch && matchesGrade && matchesCompliance;
+      return matchesSearch && matchesGrade && matchesSection && matchesCompliance;
     }).sort((a, b) => {
       const gA = parseInt(String(a.grade_level || '').replace(/\D/g, '') || '10', 10);
       const gB = parseInt(String(b.grade_level || '').replace(/\D/g, '') || '10', 10);
@@ -390,7 +485,36 @@ export const RegistrarRequirementsPage: React.FC = () => {
         `${b.last_name || ''} ${b.first_name || ''}`
       );
     });
-  }, [students, search, gradeFilter, complianceFilter]);
+  }, [students, search, gradeFilter, sectionFilter, complianceFilter]);
+
+  // Group filteredStudents by Year Level and Section so every section is clearly structured
+  const groupedStudentsBySection = useMemo(() => {
+    const groups: {
+      key: string;
+      grade: string;
+      section: string;
+      items: StudentWithRequirements[];
+    }[] = [];
+
+    const map = new Map<
+      string,
+      { key: string; grade: string; section: string; items: StudentWithRequirements[] }
+    >();
+
+    filteredStudents.forEach((s) => {
+      const g = s.grade_level || 'Grade 10';
+      const sec = s.section_name || 'Unassigned';
+      const key = `${g}___${sec}`;
+      if (!map.has(key)) {
+        const entry = { key, grade: g, section: sec, items: [] as StudentWithRequirements[] };
+        map.set(key, entry);
+        groups.push(entry);
+      }
+      map.get(key)!.items.push(s);
+    });
+
+    return groups;
+  }, [filteredStudents]);
 
   // Overall Statistics Cards
   const stats = useMemo(() => {
@@ -808,24 +932,49 @@ export const RegistrarRequirementsPage: React.FC = () => {
 
       {/* Control Bar: Filters, Search & View Modes */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Grade Level Filter */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Grade / Year Level Filter */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1.5">
-              <GraduationCap className="h-3.5 w-3.5 text-slate-400" /> Grade Level
+              <GraduationCap className="h-3.5 w-3.5 text-slate-400" /> Year Level
             </label>
             <select
               value={gradeFilter}
-              onChange={(e) => setGradeFilter(e.target.value)}
+              onChange={(e) => {
+                setGradeFilter(e.target.value);
+                setSectionFilter('all');
+              }}
               className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
             >
-              <option value="all">All Grade Levels (7 to 12)</option>
+              <option value="all">All Year Levels (7 to 12)</option>
               <option value="Grade 7">Grade 7 - Junior High</option>
               <option value="Grade 8">Grade 8 - Junior High</option>
               <option value="Grade 9">Grade 9 - Junior High</option>
               <option value="Grade 10">Grade 10 - Junior High</option>
               <option value="Grade 11">Grade 11 - Senior High</option>
               <option value="Grade 12">Grade 12 - Senior High</option>
+            </select>
+          </div>
+
+          {/* Section Filter */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-slate-400" /> Section
+            </label>
+            <select
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:border-emerald-600 focus:bg-white focus:outline-hidden"
+            >
+              <option value="all">
+                All Sections {gradeFilter !== 'all' ? `(${gradeFilter})` : ''}
+              </option>
+              {availableSections.map((sec) => (
+                <option key={sec} value={sec}>
+                  Section {sec}
+                </option>
+              ))}
+              <option value="Unassigned">Unassigned Sections Only</option>
             </select>
           </div>
 
@@ -847,13 +996,14 @@ export const RegistrarRequirementsPage: React.FC = () => {
               <option value="missing_moral">Deficient in Good Moral</option>
             </select>
           </div>
+        </div>
 
-          {/* Focus Tab View */}
-          <div className="lg:col-span-2">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Document Audit Focus
-            </label>
-            <div className="flex rounded-xl bg-slate-100 p-1 overflow-x-auto">
+        {/* Focus Tab View */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+            Document Audit Focus
+          </label>
+          <div className="flex rounded-xl bg-slate-100 p-1 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab('all')}
@@ -911,7 +1061,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
 
         {/* Live Search & Quick Filter Pills */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-3">
@@ -956,11 +1105,12 @@ export const RegistrarRequirementsPage: React.FC = () => {
             >
               Compliant ({stats.completeCount})
             </button>
-            {(complianceFilter !== 'all' || gradeFilter !== 'all' || search) && (
+            {(complianceFilter !== 'all' || gradeFilter !== 'all' || sectionFilter !== 'all' || search) && (
               <button
                 onClick={() => {
                   setComplianceFilter('all');
                   setGradeFilter('all');
+                  setSectionFilter('all');
                   setSearch('');
                 }}
                 className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
@@ -1031,265 +1181,339 @@ export const RegistrarRequirementsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center text-slate-400">
+                  <td colSpan={activeTab === 'all' ? 9 : 6} className="py-16 text-center text-slate-400">
                     <div className="inline-block h-7 w-7 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent mb-2"></div>
                     <p className="font-semibold text-slate-600">Loading requirement audit registry...</p>
                     <p className="text-[11px] text-slate-400">Querying DepEd documentary records</p>
                   </td>
                 </tr>
-              ) : filteredStudents.length > 0 ? (
-                filteredStudents.map((student, idx) => {
-                  const comp = getCompleteness(student);
+              ) : groupedStudentsBySection.length > 0 ? (
+                groupedStudentsBySection.map((group, gIdx) => {
+                  const gradeNum = parseInt(
+                    String(group.grade).replace(/\D/g, '') || '10',
+                    10
+                  );
+                  const isShsGroup = gradeNum >= 11;
+                  const isLastGroup = gIdx === groupedStudentsBySection.length - 1;
+                  const groupAdviser = getSectionAdviser(group.grade, group.section);
+                  const compliantCount = group.items.filter(
+                    (st) => getCompleteness(st).isFullyCompliant
+                  ).length;
+                  const colSpan = activeTab === 'all' ? 9 : 6;
 
                   return (
-                    <tr
-                      key={student.id}
-                      className="hover:bg-slate-50/80 transition-colors group"
-                    >
-                      {/* Row Index */}
-                      <td className="px-4 py-3.5 text-center text-slate-400 font-mono text-[11px]">
-                        {idx + 1}
-                      </td>
-
-                      {/* Learner Name & LRN */}
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600 border border-slate-200">
-                            {student.first_name?.[0]}
-                            {student.last_name?.[0]}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
-                              {student.last_name}, {student.first_name}{' '}
-                              {student.middle_name ? student.middle_name[0] + '.' : ''}
-                            </p>
-                            <span className="font-mono text-[11px] text-slate-500">
-                              LRN: {student.lrn || '—'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Grade & Section */}
-                      <td className="px-4 py-3.5">
-                        <p className="font-semibold text-slate-800">
-                          {student.grade_level || 'Grade 11'}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[11px] text-slate-500 font-medium">
-                            {student.section_name || 'Almario'}
-                          </span>
-                          {student.strand && (
-                            <span className="rounded-md bg-slate-100 px-1.5 py-0.2 text-[9px] font-bold text-slate-600">
-                              {student.strand}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Form 138 */}
-                      {(activeTab === 'all' || activeTab === 'form_138') && (
-                        <td className="px-4 py-3.5 text-center">
-                          <div className="inline-flex flex-col items-center gap-1">
-                            {renderStatusBadge(student.form_138_status, student.form_138_url)}
-                            {student.form_138_url && (
-                              <a
-                                href={student.form_138_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                              >
-                                View <Eye className="h-2.5 w-2.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                      )}
-
-                      {/* PSA Birth Cert */}
-                      {(activeTab === 'all' || activeTab === 'psa') && (
-                        <td className="px-4 py-3.5 text-center">
-                          <div className="inline-flex flex-col items-center gap-1">
-                            {renderStatusBadge(student.psa_birth_status, student.psa_birth_url)}
-                            {student.psa_birth_url && (
-                              <a
-                                href={student.psa_birth_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                              >
-                                View <Eye className="h-2.5 w-2.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Good Moral */}
-                      {(activeTab === 'all' || activeTab === 'good_moral') && (
-                        <td className="px-4 py-3.5 text-center">
-                          <div className="inline-flex flex-col items-center gap-1">
-                            {renderStatusBadge(student.good_moral_status, student.good_moral_url)}
-                            {student.good_moral_url && (
-                              <a
-                                href={student.good_moral_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                              >
-                                View <Eye className="h-2.5 w-2.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                      )}
-
-                      {/* 2x2 Photo */}
-                      {(activeTab === 'all' || activeTab === 'two_by_two') && (
-                        <td className="px-4 py-3.5 text-center">
-                          <div className="inline-flex flex-col items-center gap-1">
-                            {renderStatusBadge(student.two_by_two_status, student.two_by_two_picture_url)}
-                            {student.two_by_two_picture_url && (
-                              <a
-                                href={student.two_by_two_picture_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
-                              >
-                                Photo <Eye className="h-2.5 w-2.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Overall Compliance */}
-                      <td className="px-4 py-3.5 text-center bg-emerald-50/40">
-                        <div className="inline-flex flex-col items-center">
-                          <div className="flex items-center gap-1.5 font-bold">
-                            <span
-                              className={`text-xs ${
-                                comp.isFullyCompliant ? 'text-emerald-800' : 'text-amber-800'
-                              }`}
-                            >
-                              {comp.score} / 4
-                            </span>
-                            <span
-                              className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                                comp.isFullyCompliant
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {comp.pct}%
-                            </span>
-                          </div>
-                          <span
-                            className={`text-[10px] font-semibold mt-0.5 ${
-                              comp.isFullyCompliant ? 'text-emerald-700' : 'text-amber-700'
-                            }`}
-                          >
-                            {comp.isFullyCompliant ? 'Compliant' : 'Deficient'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-5 py-3.5 text-right whitespace-nowrap relative">
-                        <div className="inline-flex items-center justify-end whitespace-nowrap">
-                          <div className="relative inline-block text-left">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(
-                                  activeDropdownId === student.id ? null : student.id
-                                );
-                              }}
-                              className={`inline-flex items-center justify-center gap-1 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer shadow-2xs ${
-                                activeDropdownId === student.id
-                                  ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              <span>Manage</span>
-                              <ChevronDown
-                                className={`h-3 w-3 transition-transform duration-200 ${
-                                  activeDropdownId === student.id ? 'rotate-180' : ''
-                                }`}
-                              />
-                            </button>
-
-                            {activeDropdownId === student.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-40"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveDropdownId(null);
-                                  }}
-                                />
-                                <div
-                                  className={`absolute right-0 z-50 w-56 rounded-xl border border-slate-200 bg-white py-1 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
-                                    idx >= filteredStudents.length - 2 && filteredStudents.length > 2
-                                      ? 'bottom-full mb-1.5 origin-bottom-right'
-                                      : 'top-full mt-1.5 origin-top-right'
+                    <React.Fragment key={group.key}>
+                      {/* Year Level & Section Header Row */}
+                      <tr className="bg-slate-100/90 border-y border-slate-200">
+                        <td colSpan={colSpan} className="px-5 py-2.5">
+                          <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-[#1B2A4A] px-2.5 py-1 text-[11px] font-extrabold text-white">
+                                <GraduationCap className="h-3.5 w-3.5 text-[#F5C518]" />
+                                {group.grade}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-300 px-3 py-1 text-xs font-extrabold text-[#1B2A4A] shadow-2xs">
+                                <Layers className="h-3.5 w-3.5 text-[#1B2A4A]" />
+                                Section {group.section}
+                              </span>
+                              {group.section && group.section.toLowerCase() !== 'unassigned' && (
+                                <span
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold shadow-2xs ${
+                                    groupAdviser
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                      : 'bg-amber-50 border-amber-300 text-amber-800'
                                   }`}
                                 >
-                                  <div className="py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveDropdownId(null);
-                                        handleOpenModal(student);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                                    >
-                                      <Eye className="h-3.5 w-3.5 text-slate-500" />
-                                      <span>Review / Audit Documents</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveDropdownId(null);
-                                        setIdCardSide('both');
-                                        setIdCardFlipped(false);
-                                        setGeneratingIdStudent(student);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-xs font-bold text-amber-900 hover:bg-amber-50/80 transition-colors cursor-pointer"
-                                    >
-                                      <CreditCard className="h-3.5 w-3.5 text-amber-600" />
-                                      <span>Generate ID</span>
-                                    </button>
-                                  </div>
-                                  <div className="py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActiveDropdownId(null);
-                                        handleVerifyAllSingle(student.id);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
-                                    >
-                                      <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                                      <span>Verify All 4 Credentials</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </>
-                            )}
+                                  <UserCheck
+                                    className={`h-3.5 w-3.5 ${
+                                      groupAdviser ? 'text-emerald-700' : 'text-amber-600'
+                                    }`}
+                                  />
+                                  <span>
+                                    Adviser:{' '}
+                                    <strong className="font-extrabold">
+                                      {groupAdviser || 'Unassigned'}
+                                    </strong>
+                                  </span>
+                                </span>
+                              )}
+                              <span className="text-[11px] font-semibold text-slate-500">
+                                {isShsGroup ? 'Senior High School (SHS)' : 'Junior High School (JHS)'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[11px] font-bold text-[#1B2A4A] whitespace-nowrap">
+                                <Users className="h-3 w-3" />
+                                {group.items.length}{' '}
+                                {group.items.length === 1 ? 'Learner' : 'Learners'}
+                              </span>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 whitespace-nowrap">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {compliantCount} Compliant ({Math.round((compliantCount / group.items.length) * 100)}%)
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+
+                      {/* Consecutive Student Rows in this Section */}
+                      {group.items.map((student, rIdx) => {
+                        const comp = getCompleteness(student);
+                        const openUpward =
+                          isLastGroup && rIdx >= group.items.length - 2 && filteredStudents.length > 2;
+
+                        return (
+                          <tr
+                            key={student.id}
+                            className="hover:bg-slate-50/80 transition-colors group"
+                          >
+                            {/* Row Index */}
+                            <td className="px-4 py-3.5 text-center text-slate-400 font-mono text-[11px]">
+                              {rIdx + 1}
+                            </td>
+
+                            {/* Learner Name & LRN */}
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600 border border-slate-200">
+                                  {student.first_name?.[0]}
+                                  {student.last_name?.[0]}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
+                                    {student.last_name}, {student.first_name}{' '}
+                                    {student.middle_name ? student.middle_name[0] + '.' : ''}
+                                  </p>
+                                  <span className="font-mono text-[11px] text-slate-500">
+                                    LRN: {student.lrn || '—'}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Grade & Section */}
+                            <td className="px-4 py-3.5">
+                              <p className="font-semibold text-slate-800">
+                                {student.grade_level || 'Grade 11'}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[11px] text-slate-500 font-medium">
+                                  {student.section_name || 'Almario'}
+                                </span>
+                                {student.strand && (
+                                  <span className="rounded-md bg-slate-100 px-1.5 py-0.2 text-[9px] font-bold text-slate-600">
+                                    {student.strand}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Form 138 */}
+                            {(activeTab === 'all' || activeTab === 'form_138') && (
+                              <td className="px-4 py-3.5 text-center">
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  {renderStatusBadge(student.form_138_status, student.form_138_url)}
+                                  {student.form_138_url && (
+                                    <a
+                                      href={student.form_138_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
+                                    >
+                                      View <Eye className="h-2.5 w-2.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* PSA Birth Cert */}
+                            {(activeTab === 'all' || activeTab === 'psa') && (
+                              <td className="px-4 py-3.5 text-center">
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  {renderStatusBadge(student.psa_birth_status, student.psa_birth_url)}
+                                  {student.psa_birth_url && (
+                                    <a
+                                      href={student.psa_birth_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
+                                    >
+                                      View <Eye className="h-2.5 w-2.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* Good Moral */}
+                            {(activeTab === 'all' || activeTab === 'good_moral') && (
+                              <td className="px-4 py-3.5 text-center">
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  {renderStatusBadge(student.good_moral_status, student.good_moral_url)}
+                                  {student.good_moral_url && (
+                                    <a
+                                      href={student.good_moral_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
+                                    >
+                                      View <Eye className="h-2.5 w-2.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* 2x2 Photo */}
+                            {(activeTab === 'all' || activeTab === 'two_by_two') && (
+                              <td className="px-4 py-3.5 text-center">
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  {renderStatusBadge(student.two_by_two_status, student.two_by_two_picture_url)}
+                                  {student.two_by_two_picture_url && (
+                                    <a
+                                      href={student.two_by_two_picture_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[10px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
+                                    >
+                                      Photo <Eye className="h-2.5 w-2.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* Overall Compliance */}
+                            <td className="px-4 py-3.5 text-center bg-emerald-50/40">
+                              <div className="inline-flex flex-col items-center">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                  <span
+                                    className={`text-xs ${
+                                      comp.isFullyCompliant ? 'text-emerald-800' : 'text-amber-800'
+                                    }`}
+                                  >
+                                    {comp.score} / 4
+                                  </span>
+                                  <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                      comp.isFullyCompliant
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-amber-100 text-amber-800'
+                                    }`}
+                                  >
+                                    {comp.pct}%
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[10px] font-semibold mt-0.5 ${
+                                    comp.isFullyCompliant ? 'text-emerald-700' : 'text-amber-700'
+                                  }`}
+                                >
+                                  {comp.isFullyCompliant ? 'Compliant' : 'Deficient'}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-5 py-3.5 text-right whitespace-nowrap relative">
+                              <div className="inline-flex items-center justify-end whitespace-nowrap">
+                                <div className="relative inline-block text-left">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveDropdownId(
+                                        activeDropdownId === student.id ? null : student.id
+                                      );
+                                    }}
+                                    className={`inline-flex items-center justify-center gap-1 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer shadow-2xs ${
+                                      activeDropdownId === student.id
+                                        ? 'border-[#1B2A4A] bg-[#1B2A4A] text-white'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <span>Manage</span>
+                                    <ChevronDown
+                                      className={`h-3 w-3 transition-transform duration-200 ${
+                                        activeDropdownId === student.id ? 'rotate-180' : ''
+                                      }`}
+                                    />
+                                  </button>
+
+                                  {activeDropdownId === student.id && (
+                                    <>
+                                      <div
+                                        className="fixed inset-0 z-40"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveDropdownId(null);
+                                        }}
+                                      />
+                                      <div
+                                        className={`absolute right-0 z-50 w-56 rounded-xl border border-slate-200 bg-white py-1 shadow-xl ring-1 ring-black/5 divide-y divide-slate-100 text-left ${
+                                          openUpward
+                                            ? 'bottom-full mb-1.5 origin-bottom-right'
+                                            : 'top-full mt-1.5 origin-top-right'
+                                        }`}
+                                      >
+                                        <div className="py-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveDropdownId(null);
+                                              handleOpenModal(student);
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                                          >
+                                            <Eye className="h-3.5 w-3.5 text-slate-500" />
+                                            <span>Review / Audit Documents</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveDropdownId(null);
+                                              setIdCardSide('both');
+                                              setIdCardFlipped(false);
+                                              setGeneratingIdStudent(student);
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-xs font-bold text-amber-900 hover:bg-amber-50/80 transition-colors cursor-pointer"
+                                          >
+                                            <CreditCard className="h-3.5 w-3.5 text-amber-600" />
+                                            <span>Generate ID</span>
+                                          </button>
+                                        </div>
+                                        <div className="py-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveDropdownId(null);
+                                              handleVerifyAllSingle(student.id);
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                                          >
+                                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                                            <span>Verify All 4 Credentials</span>
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={activeTab === 'all' ? 9 : 6} className="py-12 text-center text-slate-400">
                     <AlertCircle className="mx-auto h-8 w-8 text-slate-300 mb-2" />
                     <p className="font-bold text-slate-600">No student records match the active criteria.</p>
-                    <p className="text-xs text-slate-400">Try clearing the search or adjusting the compliance filter.</p>
+                    <p className="text-xs text-slate-400">Try clearing the search or adjusting the year level, section, or compliance filter.</p>
                   </td>
                 </tr>
               )}
