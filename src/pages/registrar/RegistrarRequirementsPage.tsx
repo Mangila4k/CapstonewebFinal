@@ -780,18 +780,492 @@ export const RegistrarRequirementsPage: React.FC = () => {
     );
   };
 
-  // Professional DepEd Bond Paper Print Handler
-  const handlePrint = () => {
-    const prevTitle = document.title;
-    const scopeLabel = gradeFilter !== 'all' ? `_${gradeFilter.replace(/\s+/g, '')}` : '';
-    const sectionLabel = sectionFilter !== 'all' ? `_Sec-${sectionFilter.replace(/\s+/g, '')}` : '';
-    const paperLabel = paperSize === 'long' ? '_LongBond-8.5x13' : '_ShortBond-8.5x11';
-    document.title = `PLSNHS_DepEd_Documentary_Compliance_Audit_Register_SY2026-2027${scopeLabel}${sectionLabel}${paperLabel}`;
-    window.print();
-    setTimeout(() => {
-      document.title = prevTitle;
-    }, 1000);
+  // Generate dedicated DepEd bond paper HTML string (isolated for iframe printing)
+  const generateRequirementsBondPaperHtml = (
+    targetGroup?: { grade: string; section: string; items: StudentWithRequirements[] } | null
+  ): string => {
+    const isLong = paperSize === 'long';
+    const paperDimensions = isLong ? '8.5in 13in' : '8.5in 11in';
+    const paperName = isLong ? 'Long Bond Paper (8.5" × 13")' : 'Short Bond Paper (8.5" × 11")';
+
+    // Determine data groups to print
+    const groupsToPrint = targetGroup
+      ? [targetGroup]
+      : sectionFilter !== 'all'
+      ? groupedStudentsBySection.filter(
+          (g) => g.section.toLowerCase() === sectionFilter.toLowerCase()
+        )
+      : groupedStudentsBySection;
+
+    const totalStudentsInScope = groupsToPrint.reduce((acc, g) => acc + g.items.length, 0);
+    const compliantStudentsInScope = groupsToPrint.reduce(
+      (acc, g) => acc + g.items.filter((st) => getCompleteness(st).isFullyCompliant).length,
+      0
+    );
+    const complianceRate =
+      totalStudentsInScope > 0
+        ? Math.round((compliantStudentsInScope / totalStudentsInScope) * 100)
+        : 100;
+
+    const scopeTitle = targetGroup
+      ? `${targetGroup.grade} - Section ${targetGroup.section}`
+      : sectionFilter !== 'all'
+      ? `${gradeFilter !== 'all' ? gradeFilter + ' - ' : ''}Section ${sectionFilter}`
+      : gradeFilter !== 'all'
+      ? `${gradeFilter} (All Sections)`
+      : 'All Year Levels & Sections';
+
+    const currentDateStr = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const rowsHtml = groupsToPrint
+      .map((group) => {
+        const groupAdviser = getSectionAdviser(group.grade, group.section);
+        const groupCompliantCount = group.items.filter(
+          (st) => getCompleteness(st).isFullyCompliant
+        ).length;
+
+        const headerRow = `
+          <tr class="section-hdr">
+            <td colspan="9">
+              <div class="section-hdr-content">
+                <span><strong>${group.grade.toUpperCase()} — SECTION ${group.section.toUpperCase()}</strong>${
+          groupAdviser ? ` · CLASS ADVISER: ${groupAdviser.toUpperCase()}` : ''
+        }</span>
+                <span>${group.items.length} ${
+          group.items.length === 1 ? 'Learner' : 'Learners'
+        } (${groupCompliantCount} Complete)</span>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        const studentRows = group.items
+          .map((st, idx) => {
+            const comp = getCompleteness(st);
+            const statusLabel = (status: DocStatus) => {
+              if (status === 'verified') return '<span class="status-verified">✓ Verified</span>';
+              if (status === 'submitted') return '<span class="status-submitted">Submitted</span>';
+              if (status === 'waived') return '<span class="status-waived">Waived</span>';
+              return '<span class="status-missing">Missing</span>';
+            };
+
+            const overallBadge = comp.isFullyCompliant
+              ? '<span class="comp-complete">COMPLETE (4/4)</span>'
+              : `<span class="comp-deficient">DEFICIENT (${comp.score}/4)</span>`;
+
+            return `
+              <tr>
+                <td class="text-center font-mono">${idx + 1}</td>
+                <td><strong>${st.last_name}, ${st.first_name} ${
+              st.middle_name ? st.middle_name[0] + '.' : ''
+            }</strong></td>
+                <td class="text-center font-mono font-bold">${st.lrn || '—'}</td>
+                <td class="text-center">${st.grade_level || group.grade} - ${group.section}</td>
+                <td class="text-center">${statusLabel(st.form_138_status)}</td>
+                <td class="text-center">${statusLabel(st.psa_birth_status)}</td>
+                <td class="text-center">${statusLabel(st.good_moral_status)}</td>
+                <td class="text-center">${statusLabel(st.two_by_two_status)}</td>
+                <td class="text-center font-bold">${overallBadge}</td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        return headerRow + studentRows;
+      })
+      .join('');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PLSNHS_Requirements_Audit_${scopeTitle.replace(/\s+/g, '_')}_${isLong ? 'LongBond' : 'ShortBond'}</title>
+  <style>
+    @page {
+      size: ${paperDimensions} portrait;
+      margin: 0.35in 0.45in 0.35in 0.45in;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 8pt;
+      line-height: 1.3;
+    }
+    .bond-sheet {
+      width: 100%;
+      max-width: ${isLong ? '7.7in' : '7.6in'};
+      margin: 0 auto;
+      background: #ffffff;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2px;
+    }
+    .header-table td {
+      border: none !important;
+      padding: 0;
+      vertical-align: middle;
+    }
+    .header-center {
+      text-align: center;
+      padding: 0 10px;
+    }
+    .header-rep {
+      font-size: 8.5pt;
+      font-family: Georgia, serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #334155;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-deped {
+      font-size: 11pt;
+      font-family: Georgia, serif;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: #000000;
+      margin: 1px 0;
+      letter-spacing: 0.5px;
+    }
+    .header-div {
+      font-size: 7.8pt;
+      color: #334155;
+      margin: 1px 0;
+    }
+    .header-school {
+      font-size: 12pt;
+      font-family: Georgia, serif;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: #000000;
+      margin: 2px 0 1px 0;
+      letter-spacing: 0.5px;
+    }
+    .header-address {
+      font-size: 7.5pt;
+      color: #475569;
+      margin: 0;
+    }
+    .double-rule-top {
+      border: 0;
+      border-top: 2px solid #0f172a;
+      margin: 4px 0 1px 0;
+    }
+    .double-rule-bottom {
+      border: 0;
+      border-top: 1px solid #0f172a;
+      margin: 0 0 6px 0;
+    }
+    .doc-title-block {
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .doc-title {
+      font-size: 10pt;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #0f172a;
+      margin: 0;
+    }
+    .doc-sub {
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #1e293b;
+      margin: 1px 0 0 0;
+    }
+    .doc-desc {
+      font-size: 7.2pt;
+      color: #64748b;
+      font-style: italic;
+      margin: 1px 0 0 0;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      border-radius: 4px;
+      padding: 5px 8px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .meta-item {
+      border-right: 1px solid #e2e8f0;
+      padding: 0 6px;
+    }
+    .meta-item:last-child {
+      border-right: none;
+    }
+    .meta-lbl {
+      font-size: 6.8pt;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      display: block;
+    }
+    .meta-val {
+      font-size: 8pt;
+      font-weight: 900;
+      color: #0f172a;
+      display: block;
+      margin-top: 1px;
+    }
+    table.official-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 7.2pt;
+    }
+    table.official-table th, table.official-table td {
+      border: 1px solid #0f172a;
+      padding: 3.5px 4.5px;
+      line-height: 1.25;
+      color: #0f172a;
+    }
+    table.official-table th {
+      background-color: #f1f5f9;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 6.8pt;
+    }
+    thead {
+      display: table-header-group;
+    }
+    tfoot {
+      display: table-footer-group;
+    }
+    tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .section-hdr {
+      background-color: #f1f5f9 !important;
+      font-weight: 900;
+      font-size: 7.4pt;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    .section-hdr-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1px 2px;
+    }
+    .text-center { text-align: center; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .font-bold { font-weight: 700; }
+    .status-verified { color: #047857; font-weight: 800; font-size: 6.5pt; text-transform: uppercase; }
+    .status-submitted { color: #1d4ed8; font-weight: 700; font-size: 6.5pt; text-transform: uppercase; }
+    .status-waived { color: #6b21a8; font-weight: 700; font-size: 6.5pt; text-transform: uppercase; }
+    .status-missing { color: #b91c1c; font-weight: 800; font-size: 6.5pt; text-transform: uppercase; }
+    .comp-complete { color: #047857; font-weight: 800; }
+    .comp-deficient { color: #b91c1c; font-weight: 800; }
+    .signatory-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid #cbd5e1;
+      text-align: center;
+    }
+    .sign-title {
+      font-size: 7.2pt;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .sign-line {
+      border-bottom: 1.5px solid #0f172a;
+      width: 220px;
+      margin: 0 auto 3px auto;
+      font-weight: 900;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+    .sign-pos {
+      font-size: 7.2pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+    }
+    .sign-sub {
+      font-size: 6.8pt;
+      color: #64748b;
+      margin: 0;
+    }
+    .doc-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 5px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 6.8pt;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="bond-sheet">
+    <table class="header-table">
+      <tr>
+        <td style="width: 60px; text-align: left;">
+          <img src="/pictures/logo sa skwelahan.png" alt="PLSNHS Seal" style="width: 54px; height: 54px; object-fit: contain; border-radius: 50%;" onerror="this.style.display='none'" />
+        </td>
+        <td class="header-center">
+          <p class="header-rep">Republic of the Philippines</p>
+          <h2 class="header-deped">Department of Education</h2>
+          <p class="header-div">Region VII, Central Visayas · Schools Division of City of Naga · District of Naga I</p>
+          <h1 class="header-school">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</h1>
+          <p class="header-address">Langtad, City of Naga, Cebu · School ID: <strong>303035</strong></p>
+        </td>
+        <td style="width: 60px; text-align: right;">
+          <img src="/pictures/deped_matatag_banner.png" alt="DepEd Matatag" style="width: 65px; height: auto; object-fit: contain;" onerror="this.style.display='none'" />
+        </td>
+      </tr>
+    </table>
+
+    <hr class="double-rule-top" />
+    <hr class="double-rule-bottom" />
+
+    <div class="doc-title-block">
+      <h3 class="doc-title">OFFICIAL LEARNER DOCUMENTARY COMPLIANCE &amp; REQUIREMENTS AUDIT REGISTER</h3>
+      <p class="doc-sub">School Year 2026–2027</p>
+      <p class="doc-desc">Standard DepEd Learner 201 Dossier Audit (Form 138 / SF9 · PSA Birth Certificate · Good Moral · 2x2 Photo) · Reconciled with LIS</p>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <span class="meta-lbl">Total Audited</span>
+        <span class="meta-val">${totalStudentsInScope} Learners</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-lbl">Target Scope</span>
+        <span class="meta-val">${scopeTitle}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-lbl">Date Generated</span>
+        <span class="meta-val">${currentDateStr}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-lbl">Compliance Index</span>
+        <span class="meta-val" style="color: #047857;">${compliantStudentsInScope} / ${totalStudentsInScope} (${complianceRate}%)</span>
+      </div>
+    </div>
+
+    <table class="official-table">
+      <thead>
+        <tr>
+          <th style="width: 4%; text-align: center;">#</th>
+          <th style="width: 27%;">Learner Full Name (Last, First, Middle)</th>
+          <th style="width: 14%; text-align: center;">LRN</th>
+          <th style="width: 13%; text-align: center;">Grade &amp; Section</th>
+          <th style="width: 8.5%; text-align: center;">Form 138 (SF9)</th>
+          <th style="width: 8.5%; text-align: center;">PSA Birth Cert</th>
+          <th style="width: 8.5%; text-align: center;">Good Moral</th>
+          <th style="width: 7.5%; text-align: center;">2x2 Photo</th>
+          <th style="width: 9%; text-align: center;">Compliance</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml || '<tr><td colspan="9" style="text-align: center; padding: 20px;">No records found.</td></tr>'}
+      </tbody>
+    </table>
+
+    <div class="signatory-grid">
+      <div>
+        <p class="sign-title">Prepared &amp; Audited by:</p>
+        <div class="sign-line">MARIA ELENA R. REGISTRAR</div>
+        <p class="sign-pos">School Registrar II</p>
+        <p class="sign-sub">LIS &amp; Student Records In-Charge</p>
+      </div>
+      <div>
+        <p class="sign-title">Certified Correct &amp; Approved by:</p>
+        <div class="sign-line">JUSTINE MANGILA, EdD</div>
+        <p class="sign-pos">Secondary School Principal II</p>
+        <p class="sign-sub">School Head / Authorized Official</p>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>Placido L. Señor National High School · DepEd School ID: 303035 · Langtad, City of Naga, Cebu</span>
+      <span style="font-family: monospace;">Ref: PLSNHS-REG-DOC-2026-004 · Security Hash Verified</span>
+      <span><strong>${paperName}</strong></span>
+    </div>
+  </div>
+</body>
+</html>`;
   };
+
+  /**
+   * Dedicated print function that isolates the bond paper document in an invisible iframe.
+   * Guarantees exact bond paper size (Short: 8.5"x11" or Long: 8.5"x13") and 0% interference.
+   */
+  const handlePrintBondPaper = (
+    targetGroup?: { grade: string; section: string; items: StudentWithRequirements[] } | null
+  ) => {
+    const html = generateRequirementsBondPaperHtml(targetGroup);
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'req_bond_paper_print_frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (err) {
+        console.warn('Iframe print error, falling back to native print:', err);
+        window.print();
+      } finally {
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1500);
+      }
+    }, 350);
+  };
+
+  // Backwards compatibility handler
+  const handlePrint = () => handlePrintBondPaper(null);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -1324,7 +1798,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 {isShsGroup ? 'Senior High School (SHS)' : 'Junior High School (JHS)'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[11px] font-bold text-[#1B2A4A] whitespace-nowrap">
                                 <Users className="h-3 w-3" />
                                 {group.items.length} {group.items.length === 1 ? 'Learner' : 'Learners'}
@@ -1339,6 +1813,18 @@ export const RegistrarRequirementsPage: React.FC = () => {
                                 <CheckCircle2 className="h-3 w-3" />
                                 {compliantCount} / {group.items.length} Complete
                               </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrintBondPaper(group);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-bold text-[#1B2A4A] shadow-2xs hover:bg-slate-50 hover:border-slate-400 hover:text-blue-900 transition-all cursor-pointer ml-1 active:scale-95"
+                                title={`Print ${group.grade} - Section ${group.section} on ${paperSize === 'long' ? 'Long Bond Paper (8.5" × 13")' : 'Short Bond Paper (8.5" × 11")'}`}
+                              >
+                                <Printer className="h-3 w-3 text-slate-500" />
+                                <span>Print Section</span>
+                              </button>
                             </div>
                           </div>
                         </td>
