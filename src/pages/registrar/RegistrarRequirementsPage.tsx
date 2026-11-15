@@ -1063,22 +1063,18 @@ export const RegistrarRequirementsPage: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="px-4 py-3.5 w-12 text-center text-slate-400">#</th>
-                <th className="px-5 py-3.5 min-w-[220px]">Learner Name & LRN</th>
-                <th className="px-4 py-3.5 min-w-[150px]">Grade & Section</th>
-                <th className="px-4 py-3.5 text-center w-48 font-black text-emerald-800 bg-emerald-50/50">
-                  Compliance Status
-                  <span className="block text-[9px] font-normal text-emerald-600 normal-case">
-                    Audit Score
-                  </span>
-                </th>
-                <th className="px-5 py-3.5 text-right min-w-[150px]">Audit Actions</th>
+                <th className="px-4 py-3.5 w-12 text-center rounded-tl-2xl text-slate-400">#</th>
+                <th className="px-5 py-3.5 min-w-[200px]">Learner Name</th>
+                <th className="px-5 py-3.5 min-w-[140px]">LRN</th>
+                <th className="px-5 py-3.5 min-w-[140px]">Year Level</th>
+                <th className="px-5 py-3.5 min-w-[170px]">Documentary Status</th>
+                <th className="px-5 py-3.5 text-right rounded-tr-2xl min-w-[120px]">Audit Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-slate-400">
+                  <td colSpan={6} className="py-16 text-center text-slate-400">
                     <div className="inline-block h-7 w-7 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent mb-2"></div>
                     <p className="font-semibold text-slate-600">Loading requirement audit registry...</p>
                     <p className="text-[11px] text-slate-400">Querying DepEd documentary records</p>
@@ -1101,7 +1097,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                     <React.Fragment key={group.key}>
                       {/* Year Level & Section Header Row */}
                       <tr className="bg-slate-100/90 border-y border-slate-200">
-                        <td colSpan={5} className="px-5 py-2.5">
+                        <td colSpan={6} className="px-5 py-2.5">
                           <div className="flex items-center justify-between gap-3 flex-wrap">
                             <div className="flex items-center gap-2.5 flex-wrap">
                               <span className="inline-flex items-center gap-1 rounded-lg bg-[#1B2A4A] px-2.5 py-1 text-[11px] font-extrabold text-white">
@@ -1140,12 +1136,17 @@ export const RegistrarRequirementsPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[11px] font-bold text-[#1B2A4A] whitespace-nowrap">
                                 <Users className="h-3 w-3" />
-                                {group.items.length}{' '}
-                                {group.items.length === 1 ? 'Learner' : 'Learners'}
+                                {group.items.length} {group.items.length === 1 ? 'Learner' : 'Learners'}
                               </span>
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap ${
+                                  compliantCount === group.items.length
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                                }`}
+                              >
                                 <CheckCircle2 className="h-3 w-3" />
-                                {compliantCount} Compliant
+                                {compliantCount} / {group.items.length} Complete
                               </span>
                             </div>
                           </div>
@@ -1168,60 +1169,52 @@ export const RegistrarRequirementsPage: React.FC = () => {
                               {rIdx + 1}
                             </td>
 
-                            {/* Learner Name & LRN */}
+                            {/* Learner Name */}
                             <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600 border border-slate-200">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-700 border border-slate-200 shadow-2xs">
                                   {student.first_name?.[0]}
                                   {student.last_name?.[0]}
                                 </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
-                                    {student.last_name}, {student.first_name}{' '}
-                                    {student.middle_name ? student.middle_name[0] + '.' : ''}
-                                  </p>
-                                  <span className="font-mono text-[11px] text-slate-500">
-                                    LRN: {student.lrn || '—'}
-                                  </span>
+                                <div className="font-bold text-slate-900 text-[13px] group-hover:text-emerald-800 transition-colors">
+                                  {student.last_name}, {student.first_name}{' '}
+                                  {student.middle_name ? student.middle_name[0] + '.' : ''}
                                 </div>
                               </div>
                             </td>
 
-                            {/* Grade & Section */}
-                            <td className="px-4 py-3.5">
-                              <p className="font-semibold text-slate-800">
-                                {student.grade_level || 'Grade 11'}
-                              </p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[11px] text-slate-500 font-medium">
-                                  {student.section_name || 'Almario'}
+                            {/* LRN */}
+                            <td className="px-5 py-3.5 font-mono font-bold text-slate-700 whitespace-nowrap">
+                              {student.lrn || '—'}
+                            </td>
+
+                            {/* Year Level & Strand */}
+                            <td className="px-5 py-3.5 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-800">
+                                  {student.grade_level || group.grade}
                                 </span>
-                                {student.strand && (
-                                  <span className="rounded-md bg-slate-100 px-1.5 py-0.2 text-[9px] font-bold text-slate-600">
+                                {student.strand && isShsGroup && (
+                                  <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#1E3A8A]">
                                     {student.strand}
                                   </span>
                                 )}
                               </div>
                             </td>
 
-                            {/* Overall Compliance */}
-                            <td className="px-4 py-3.5 text-center bg-emerald-50/40">
-                              <div className="inline-flex flex-col items-center">
-                                <span
-                                  className={`text-xs font-bold ${
-                                    comp.isFullyCompliant ? 'text-emerald-800' : 'text-amber-800'
-                                  }`}
-                                >
-                                  {comp.score} / 4
-                                </span>
-                                <span
-                                  className={`text-[10px] font-semibold mt-0.5 ${
-                                    comp.isFullyCompliant ? 'text-emerald-700' : 'text-amber-700'
-                                  }`}
-                                >
-                                  {comp.isFullyCompliant ? 'Compliant' : 'Deficient'}
-                                </span>
-                              </div>
+                            {/* Documentary Status Badge */}
+                            <td className="px-5 py-3.5 whitespace-nowrap">
+                              {comp.isFullyCompliant ? (
+                                <Badge variant="success" size="sm" className="font-bold">
+                                  <CheckCircle2 className="h-3 w-3 inline mr-1" />
+                                  Complete (4/4)
+                                </Badge>
+                              ) : (
+                                <Badge variant="warning" size="sm" className="font-bold">
+                                  <AlertTriangle className="h-3 w-3 inline mr-1" />
+                                  Deficient ({comp.score}/4)
+                                </Badge>
+                              )}
                             </td>
 
                             {/* Actions */}
@@ -1319,7 +1312,7 @@ export const RegistrarRequirementsPage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
                     <AlertCircle className="mx-auto h-8 w-8 text-slate-300 mb-2" />
                     <p className="font-bold text-slate-600">No student records match the active criteria.</p>
                     <p className="text-xs text-slate-400">Try clearing the search or adjusting the year level, section, or compliance filter.</p>
