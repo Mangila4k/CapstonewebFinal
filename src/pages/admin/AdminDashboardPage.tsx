@@ -683,12 +683,6 @@ export const AdminDashboardPage: React.FC = () => {
                                     <div className="truncate font-bold text-slate-900">
                                       {enr.first_name} {enr.last_name}
                                     </div>
-                                    <div
-                                      className="text-[10px] text-slate-400 font-normal truncate"
-                                      title={enr.email}
-                                    >
-                                      {enr.email}
-                                    </div>
                                   </td>
                                   <td className="px-3 py-3 font-medium text-slate-700 whitespace-nowrap">
                                     <span className="font-bold text-slate-800">

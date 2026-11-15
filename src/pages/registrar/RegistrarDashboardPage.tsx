@@ -607,9 +607,6 @@ export const RegistrarDashboardPage: React.FC = () => {
                                 <div className="font-bold text-slate-900 leading-snug">
                                   {enr.first_name} {enr.last_name}
                                 </div>
-                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                  {enr.email || 'No email provided'}
-                                </div>
                               </div>
                             </div>
                           </td>

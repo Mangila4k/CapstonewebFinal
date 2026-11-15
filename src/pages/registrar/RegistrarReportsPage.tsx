@@ -609,7 +609,6 @@ export const RegistrarReportsPage: React.FC = () => {
                           <div className="font-bold text-slate-900">
                             {st.last_name}, {st.first_name} {st.middle_name ? `${st.middle_name.charAt(0)}.` : ''} {st.suffix || ''}
                           </div>
-                          {st.email && <span className="text-[10px] text-slate-400 block">{st.email}</span>}
                         </td>
                         <td className="px-3 py-3 text-center whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-md font-bold text-[10.5px] ${
