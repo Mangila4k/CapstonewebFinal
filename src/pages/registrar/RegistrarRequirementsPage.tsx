@@ -1952,40 +1952,6 @@ export const RegistrarRequirementsPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Official Action Controls (Bottom Aligned) */}
-      <div className="no-print flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
-        <button
-          onClick={handleExportCSV}
-          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all cursor-pointer active:scale-98"
-          title="Download Full Documentary Audit Checklist as CSV"
-        >
-          <Download className="h-4 w-4 text-slate-500" />
-          <span>Export CSV</span>
-        </button>
-
-        <button
-          onClick={handlePrint}
-          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-5 text-xs font-bold text-white shadow-2xs hover:shadow-md transition-all cursor-pointer active:scale-98"
-          title="Print official report on standard bond paper"
-        >
-          <Printer className="h-4 w-4 text-[#F5C518]" />
-          <span>Print Sheet</span>
-        </button>
-
-        <button
-          onClick={handleBatchVerifyAll}
-          disabled={saving || loading || filteredStudents.length === 0}
-          className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 text-xs font-bold text-white shadow-xs hover:shadow-md disabled:opacity-60 transition-all cursor-pointer active:scale-98"
-        >
-          {saving ? (
-            <RefreshCw className="h-4 w-4 animate-spin shrink-0" />
-          ) : (
-            <ShieldCheck className="h-4 w-4 shrink-0" />
-          )}
-          <span>{saving ? 'Verifying...' : 'Batch Verify All'}</span>
-        </button>
-      </div>
       </div>
 
       {/* =========================================================================
