@@ -819,43 +819,13 @@ export const AdminStudentsPage: React.FC = () => {
         />
       )}
 
-      {/* View Mode Switcher & Filter Controls */}
+      {/* Filter & Search Controls */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
-        {/* Top: View Mode Tabs */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'list'
-                  ? 'bg-white text-[#1B2A4A] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              📋 By Section Rows
-            </button>
-            <button
-              onClick={() => setViewMode('grade')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'grade'
-                  ? 'bg-white text-[#1B2A4A] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              🎓 By Year Level
-            </button>
-            <button
-              onClick={() => setViewMode('section')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'section'
-                  ? 'bg-white text-[#1B2A4A] shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              🏫 Section Cards
-            </button>
-          </div>
-
+        {/* Top: Student Counter */}
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Official Learner Masterlist
+          </span>
           <div className="text-xs font-semibold text-slate-500">
             Showing <strong className="text-slate-900">{filteredStudents.length}</strong> of{' '}
             <strong className="text-slate-900">{students.length}</strong> students
