@@ -98,12 +98,12 @@ export const PublicNavbar: React.FC = () => {
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#1B2A4A] shadow-md backdrop-blur-md">
       <div className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-10 h-20">
         {/* Brand */}
-        <Link to="/" className="flex items-center gap-3 group">
+        <div className="flex items-center gap-3 select-none cursor-default">
           <div className="h-11 w-11 rounded-full overflow-hidden bg-white p-0.5 shadow-md flex items-center justify-center shrink-0 border border-amber-400/40">
             <img
               src="/pictures/logo sa skwelahan.png"
               alt="PLSNHS Logo"
-              className="h-full w-full rounded-full object-cover transition-transform group-hover:scale-105"
+              className="h-full w-full rounded-full object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/pictures/logo sa skwelahan.jpg';
               }}
@@ -117,7 +117,7 @@ export const PublicNavbar: React.FC = () => {
               Placido L. Señor National High School
             </p>
           </div>
-        </Link>
+        </div>
 
         {!hideNavLinks && (
           <>

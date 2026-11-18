@@ -285,29 +285,6 @@ export const DashboardLayout: React.FC = () => {
 
   const roleTitle = roleLabels[user?.role || 'student'] || 'Portal User';
 
-  // Dedicated role dashboard path so clicking the portal logo stays within the portal instead of redirecting to the public homepage
-  const getDashboardPath = () => {
-    switch (user?.role) {
-      case 'admin':
-      case 'principal':
-        return '/admin/dashboard';
-      case 'registrar':
-        return '/registrar/dashboard';
-      case 'teacher':
-        return '/teacher/dashboard';
-      case 'student':
-        return '/student/dashboard';
-      case 'parent':
-        return '/parents/dashboard';
-      case 'guidance':
-        return '/guidance/dashboard';
-      default:
-        return user?.role ? `/${user.role}/dashboard` : '/admin/dashboard';
-    }
-  };
-
-  const dashboardPath = getDashboardPath();
-
   // Resolve profile picture from user object or strictly user-scoped storage
   const resolveProfileAvatar = () => {
     if (typeof window !== 'undefined') {
@@ -412,7 +389,7 @@ export const DashboardLayout: React.FC = () => {
         {/* Sidebar Header */}
         <div className="px-3.5 pt-4 pb-3.5 border-b border-white/10 shrink-0">
           <div className="flex items-center justify-between">
-            <Link to={dashboardPath} className="flex items-center gap-3">
+            <div className="flex items-center gap-3 select-none cursor-default">
               <img
                 src="/pictures/logo sa skwelahan.png"
                 alt="School Logo"
@@ -426,7 +403,7 @@ export const DashboardLayout: React.FC = () => {
                   PLS<span className="text-[#FBBF24]">NHS</span>
                 </h1>
               </div>
-            </Link>
+            </div>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden rounded-lg p-1 text-slate-300 hover:bg-white/10 cursor-pointer"
@@ -544,7 +521,7 @@ export const DashboardLayout: React.FC = () => {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <Link to={dashboardPath} className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 select-none cursor-default">
               <img
                 src="/pictures/logo sa skwelahan.png"
                 alt="School Logo"
@@ -556,7 +533,7 @@ export const DashboardLayout: React.FC = () => {
               <span className="text-sm font-extrabold text-[#1B2A4A] tracking-tight truncate">
                 PLS<span className="text-[#F59E0B]">NHS</span> Portal
               </span>
-            </Link>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
