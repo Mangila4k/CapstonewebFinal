@@ -486,7 +486,7 @@ export const TeacherDashboardPage: React.FC = () => {
                 <span>Assessments</span>
               </Link>
               <Link
-                to="/teacher/schedule"
+                to="/teacher/class-program"
                 className="rounded-xl bg-white p-3 border border-emerald-200/80 text-emerald-950 hover:bg-emerald-600 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"
               >
                 <Clock className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
