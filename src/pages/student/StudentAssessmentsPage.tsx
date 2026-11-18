@@ -31,6 +31,23 @@ import {
   type StudentSubmissionRecord,
 } from '../teacher/TeacherAssessmentsPage';
 
+const normalizeGradeNumber = (val?: string | null): string => {
+  if (!val) return '';
+  const cleaned = String(val).trim().toLowerCase();
+  if (cleaned === 'all' || cleaned === 'all grades') return 'all';
+  const match = cleaned.match(/\d+/);
+  return match ? match[0] : cleaned;
+};
+
+const normalizeSectionName = (val?: string | null): string => {
+  if (!val) return '';
+  return String(val)
+    .trim()
+    .toLowerCase()
+    .replace(/^section\s+/i, '')
+    .trim();
+};
+
 export const StudentAssessmentsPage: React.FC = () => {
   const { user } = useAuth();
   const [filter, setFilter] = useState<'All' | 'Quiz' | 'Exam' | 'Performance Task' | 'Written Work'>('All');
@@ -39,11 +56,15 @@ export const StudentAssessmentsPage: React.FC = () => {
     fullName: string;
     grade_level: string;
     section: string;
-  }>({
-    id: 'student-default',
-    fullName: user?.full_name || 'Student Learner',
-    grade_level: 'Grade 10',
-    section: 'Generosity',
+  }>(() => {
+    const userGrade = user?.student_grade || (user as any)?.grade_level || '';
+    const userSection = user?.student_section || (user as any)?.section || '';
+    return {
+      id: user?.student_id || user?.id || 'student-default',
+      fullName: user?.full_name || 'Student Learner',
+      grade_level: userGrade || 'Grade 11',
+      section: userSection || 'Almario',
+    };
   });
 
   const [assessments, setAssessments] = useState<ClassroomAssessmentItem[]>(() => {
@@ -51,7 +72,12 @@ export const StudentAssessmentsPage: React.FC = () => {
       const saved = localStorage.getItem(CLASSROOM_ASSESSMENTS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const map = new Map<number | string, ClassroomAssessmentItem>();
+          DEFAULT_CLASSROOM_ASSESSMENTS.forEach((a) => map.set(a.id, a));
+          parsed.forEach((a: ClassroomAssessmentItem) => map.set(a.id, a));
+          return Array.from(map.values());
+        }
       }
     } catch {
       // ignore
@@ -170,20 +196,37 @@ export const StudentAssessmentsPage: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (dbAss && dbAss.length > 0) {
-          const mappedAss: ClassroomAssessmentItem[] = dbAss.map((a: any) => ({
-            id: a.id,
-            title: a.title,
-            instructions: a.description || 'Complete the assessment and turn in your work.',
-            subject: a.subject_name || 'General Mathematics',
-            grade_level: a.section_name?.includes('Grade') ? a.section_name.split(' - ')[0] : 'Grade 10',
-            section: a.section_name?.includes(' - ') ? a.section_name.split(' - ')[1] : a.section_name || 'Generosity',
-            type: (a.type || 'Quiz') as any,
-            totalScore: a.total_points || 50,
-            passingScore: Math.round((a.total_points || 50) * 0.75),
-            date: a.due_date ? a.due_date.split('T')[0] : a.created_at.split('T')[0],
-            attachmentName: a.attachment_name || undefined,
-            attachmentDataUrl: a.attachment_url || undefined,
-          }));
+          const mappedAss: ClassroomAssessmentItem[] = dbAss.map((a: any) => {
+            let grade = a.grade_level || '';
+            let section = a.section || '';
+
+            if (a.section_name) {
+              if (a.section_name.includes(' - ')) {
+                const parts = a.section_name.split(' - ');
+                if (!grade) grade = parts[0].trim();
+                if (!section) section = parts[1].trim();
+              } else if (a.section_name.toLowerCase().includes('grade')) {
+                if (!grade) grade = a.section_name.trim();
+              } else {
+                if (!section) section = a.section_name.trim();
+              }
+            }
+
+            return {
+              id: a.id,
+              title: a.title,
+              instructions: a.description || 'Complete the assessment and turn in your work.',
+              subject: a.subject_name || 'General Mathematics',
+              grade_level: grade || 'Grade 10',
+              section: section || 'Generosity',
+              type: (a.type || 'Quiz') as any,
+              totalScore: a.total_points || 50,
+              passingScore: Math.round((a.total_points || 50) * 0.75),
+              date: a.due_date ? a.due_date.split('T')[0] : a.created_at.split('T')[0],
+              attachmentName: a.attachment_name || undefined,
+              attachmentDataUrl: a.attachment_url || undefined,
+            };
+          });
 
           setAssessments((prev) => {
             const map = new Map<number | string, ClassroomAssessmentItem>();
@@ -264,10 +307,34 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
     URL.revokeObjectURL(url);
   };
 
-  const filtered = useMemo(
-    () => assessments.filter((a) => filter === 'All' || a.type === filter),
-    [assessments, filter]
-  );
+  // Strictly filter classwork to only those assigned to the student's Grade Level & Section
+  const filtered = useMemo(() => {
+    const studentGradeNorm = normalizeGradeNumber(studentMeta.grade_level);
+    const studentSecNorm = normalizeSectionName(studentMeta.section);
+
+    return assessments.filter((a) => {
+      // 1. Tab category filter
+      if (filter !== 'All' && a.type !== filter) return false;
+
+      // 2. Grade level match (e.g., Grade 11 student only sees Grade 11 or All)
+      const assGradeNorm = normalizeGradeNumber(a.grade_level);
+      if (studentGradeNorm && assGradeNorm) {
+        if (assGradeNorm !== 'all' && assGradeNorm !== studentGradeNorm) {
+          return false;
+        }
+      }
+
+      // 3. Section match (e.g., Section Almario only sees Almario or All)
+      const assSecNorm = normalizeSectionName(a.section);
+      if (studentSecNorm && assSecNorm) {
+        if (assSecNorm !== 'all' && assSecNorm !== 'all sections' && assSecNorm !== studentSecNorm) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [assessments, filter, studentMeta.grade_level, studentMeta.section]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -481,7 +548,22 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
 
       {/* Google Classroom Style Assessment Cards */}
       <div className="space-y-4">
-        {filtered.map((item) => {
+        {filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-500 space-y-3 shadow-xs">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+              <BookOpen className="h-7 w-7" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">
+              No {filter !== 'All' ? filter.toLowerCase() : ''} assessments found
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              There are currently no {filter !== 'All' ? filter.toLowerCase() : ''} assessments assigned for{' '}
+              <strong className="text-slate-700">{studentMeta.grade_level || 'your grade'}</strong> —{' '}
+              <strong className="text-slate-700">Section {studentMeta.section || 'assigned'}</strong>. You will only see and answer classwork designated specifically for your grade level and section.
+            </p>
+          </div>
+        ) : (
+          filtered.map((item) => {
           const submission = submissionsMap[item.id]?.[studentMeta.id];
           const staged = stagedFiles[item.id];
           const isTurnedIn = Boolean(submission?.submitted);
@@ -762,7 +844,7 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Teacher Reference Material & Questionnaire Preview Modal */}

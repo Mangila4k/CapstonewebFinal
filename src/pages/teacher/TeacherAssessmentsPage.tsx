@@ -119,6 +119,51 @@ export const DEFAULT_CLASSROOM_ASSESSMENTS: ClassroomAssessmentItem[] = [
     attachmentName: 'Stats_Chapter3_Quiz_Sheet.pdf',
     attachmentSize: '220 KB',
   },
+  {
+    id: 105,
+    title: '1st Quarter Periodical Examination: Reading & Writing',
+    instructions:
+      'Download the examination questionnaire, read each critical passage carefully, and submit your comprehensive analysis and answers in PDF format before the due date.',
+    subject: 'Reading and Writing Skills',
+    grade_level: 'Grade 11',
+    section: 'Almario',
+    type: 'Exam',
+    totalScore: 100,
+    passingScore: 75,
+    date: '2026-11-20',
+    attachmentName: 'Reading_and_Writing_Quarter1_Exam.pdf',
+    attachmentSize: '340 KB',
+  },
+  {
+    id: 106,
+    title: 'Practical Research 1: Literature Review Matrix',
+    instructions:
+      'Complete the synthesized literature matrix for your approved research topic. Upload your completed matrix in PDF or Word format.',
+    subject: 'Practical Research 1',
+    grade_level: 'Grade 11',
+    section: 'Almario',
+    type: 'Performance Task',
+    totalScore: 50,
+    passingScore: 38,
+    date: '2026-11-25',
+    attachmentName: 'PR1_Literature_Review_Matrix_Template.pdf',
+    attachmentSize: '215 KB',
+  },
+  {
+    id: 107,
+    title: 'Quiz #2: Qualitative Research Methodologies',
+    instructions:
+      'Answer all multiple choice and brief application questions regarding sampling methods and research ethics.',
+    subject: 'Practical Research 1',
+    grade_level: 'Grade 11',
+    section: 'Almario',
+    type: 'Quiz',
+    totalScore: 30,
+    passingScore: 23,
+    date: '2026-11-22',
+    attachmentName: 'PR1_Quiz2_Qualitative_Methodology.pdf',
+    attachmentSize: '180 KB',
+  },
 ];
 
 export const TeacherAssessmentsPage: React.FC = () => {
