@@ -425,7 +425,12 @@ export const TeacherGradesPage: React.FC = () => {
   };
 
   // Helper: Computes summary, average, remarks, and descriptor for a student
-  const computeStudentSummary = (entry?: StudentGradeEntry) => {
+  // In accordance with DepEd Order No. 8, s. 2015:
+  // There shouldn't be a total average or final rating yet if not all of the student's grades have been entered.
+  const computeStudentSummary = (
+    entry?: StudentGradeEntry,
+    gradeLevel?: string
+  ) => {
     if (!entry) {
       return {
         average: null,
@@ -438,39 +443,73 @@ export const TeacherGradesPage: React.FC = () => {
       };
     }
 
-    let activeQuarters: number[] = [];
-    if (termView === 'sem1') {
-      if (typeof entry.q1 === 'number') activeQuarters.push(entry.q1);
-      if (typeof entry.q2 === 'number') activeQuarters.push(entry.q2);
-    } else if (termView === 'sem2') {
-      if (typeof entry.q3 === 'number') activeQuarters.push(entry.q3);
-      if (typeof entry.q4 === 'number') activeQuarters.push(entry.q4);
-    } else {
-      if (typeof entry.q1 === 'number') activeQuarters.push(entry.q1);
-      if (typeof entry.q2 === 'number') activeQuarters.push(entry.q2);
-      if (typeof entry.q3 === 'number') activeQuarters.push(entry.q3);
-      if (typeof entry.q4 === 'number') activeQuarters.push(entry.q4);
-    }
+    const isSHS = Boolean(
+      gradeLevel && (gradeLevel.includes('11') || gradeLevel.includes('12'))
+    );
 
-    const requiredQuarterCount = termView === 'full' ? 4 : 2;
-    const isComplete = activeQuarters.length === requiredQuarterCount;
+    const hasQ1 = typeof entry.q1 === 'number' && !isNaN(entry.q1) && entry.q1 > 0;
+    const hasQ2 = typeof entry.q2 === 'number' && !isNaN(entry.q2) && entry.q2 > 0;
+    const hasQ3 = typeof entry.q3 === 'number' && !isNaN(entry.q3) && entry.q3 > 0;
+    const hasQ4 = typeof entry.q4 === 'number' && !isNaN(entry.q4) && entry.q4 > 0;
+    const hasAnyGrade = hasQ1 || hasQ2 || hasQ3 || hasQ4;
+
+    let isComplete = false;
+    let quartersToAverage: number[] = [];
+
+    if (isSHS) {
+      // Senior High School (Grades 11–12): Subjects are semester-based
+      if (termView === 'sem1') {
+        // 1st Semester subject: strictly requires both Q1 and Q2
+        isComplete = hasQ1 && hasQ2;
+        if (isComplete) quartersToAverage = [entry.q1!, entry.q2!];
+      } else if (termView === 'sem2') {
+        // 2nd Semester subject: strictly requires both Q3 and Q4
+        isComplete = hasQ3 && hasQ4;
+        if (isComplete) quartersToAverage = [entry.q3!, entry.q4!];
+      } else {
+        // Full view in SHS: check if complete for Sem 1 (Q1 & Q2), Sem 2 (Q3 & Q4), or all 4
+        if (hasQ1 && hasQ2 && hasQ3 && hasQ4) {
+          isComplete = true;
+          quartersToAverage = [entry.q1!, entry.q2!, entry.q3!, entry.q4!];
+        } else if (hasQ1 && hasQ2 && !hasQ3 && !hasQ4) {
+          isComplete = true;
+          quartersToAverage = [entry.q1!, entry.q2!];
+        } else if (hasQ3 && hasQ4 && !hasQ1 && !hasQ2) {
+          isComplete = true;
+          quartersToAverage = [entry.q3!, entry.q4!];
+        } else {
+          // Incomplete semester marks in SHS
+          isComplete = false;
+        }
+      }
+    } else {
+      // Junior High School (Grades 7, 8, 9, 10) & Elementary:
+      // In strict compliance with DepEd Order No. 8, s. 2015:
+      // All JHS subjects are year-long. Final Rating and Total General Average
+      // can ONLY be computed if ALL 4 QUARTERS (Q1, Q2, Q3, and Q4) have been entered.
+      // If any quarter has not been entered yet, there must NOT be a total average or final rating.
+      isComplete = hasQ1 && hasQ2 && hasQ3 && hasQ4;
+      if (isComplete) {
+        quartersToAverage = [entry.q1!, entry.q2!, entry.q3!, entry.q4!];
+      }
+    }
 
     // Under DepEd DO 8, s. 2015:
     // Final grade and average can ONLY be computed if all required grading periods have been entered.
-    if (!isComplete) {
+    if (!isComplete || quartersToAverage.length === 0) {
       return {
         average: null,
         finalGrade: null,
         remarks: 'Pending' as const,
-        descriptor: activeQuarters.length > 0 ? 'In Progress' : 'No Marks Encoded',
+        descriptor: hasAnyGrade ? 'In Progress' : 'No Marks Encoded',
         descriptorCode: '—',
         badgeVariant: 'neutral' as const,
         isComplete: false,
       };
     }
 
-    const sum = activeQuarters.reduce((acc, curr) => acc + curr, 0);
-    const exactAvg = sum / activeQuarters.length;
+    const sum = quartersToAverage.reduce((acc, curr) => acc + curr, 0);
+    const exactAvg = sum / quartersToAverage.length;
     const finalGrade = Math.round(exactAvg);
     const isPassed = finalGrade >= 75;
     const descInfo = getDepEdDescriptor(finalGrade);
@@ -536,7 +575,7 @@ export const TeacherGradesPage: React.FC = () => {
     let minGrade = 101;
 
     filteredStudents.forEach((s) => {
-      const summary = computeStudentSummary(gradesMap[s.id]);
+      const summary = computeStudentSummary(gradesMap[s.id], s.grade_level);
       if (summary.finalGrade !== null) {
         totalGraded++;
         sumGrades += summary.finalGrade;
@@ -703,7 +742,7 @@ export const TeacherGradesPage: React.FC = () => {
 
     const rows = filteredStudents.map((s) => {
       const g = gradesMap[s.id] || {};
-      const summary = computeStudentSummary(g);
+      const summary = computeStudentSummary(g, s.grade_level);
       return [
         `"${s.lrn || ''}"`,
         `"${s.last_name}, ${s.first_name} ${s.middle_name || ''}"`,
@@ -1232,7 +1271,10 @@ export const TeacherGradesPage: React.FC = () => {
 
                       {group.students.map((student, idx) => {
                         const entry = gradesMap[student.id] || {};
-                        const summary = computeStudentSummary(entry);
+                        const summary = computeStudentSummary(
+                          entry,
+                          student.grade_level || group.grade
+                        );
 
                         return (
                           <tr
@@ -1398,7 +1440,12 @@ export const TeacherGradesPage: React.FC = () => {
                                   )}
                                 </div>
                               ) : (
-                                <span className="font-mono text-slate-300">—</span>
+                                <span
+                                  className="font-mono text-slate-400 font-bold"
+                                  title="Total average and final rating will compute automatically once all required grading quarters are entered"
+                                >
+                                  —
+                                </span>
                               )}
                             </td>
 
@@ -1415,7 +1462,10 @@ export const TeacherGradesPage: React.FC = () => {
                                   </span>
                                 )
                               ) : (
-                                <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500 shadow-2xs whitespace-nowrap">
+                                <span
+                                  className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 shadow-2xs whitespace-nowrap"
+                                  title="Pending completion of all required grading quarters"
+                                >
                                   Pending
                                 </span>
                               )}
@@ -1456,7 +1506,12 @@ export const TeacherGradesPage: React.FC = () => {
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-slate-400 text-xs italic">Incomplete</span>
+                                <span
+                                  className="text-slate-400 text-xs italic font-medium"
+                                  title="Awaiting encoding of all required quarters"
+                                >
+                                  {summary.descriptor}
+                                </span>
                               )}
                             </td>
 
