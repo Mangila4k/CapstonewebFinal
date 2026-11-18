@@ -1222,17 +1222,37 @@ export const TeacherClassProgramPage: React.FC = () => {
     };
   }, [user, teacherName]);
 
-  // Filter schedule files relevant to this logged-in teacher
+  // Filter schedule files relevant to this logged-in teacher (strip honorifics like Mrs./Mr./Ms. before matching)
   const myReceivedScheduleFiles = useMemo(() => {
-    return adminFiles.filter((file) => {
-      if (file.recipientType === 'all') return true;
+    const stripHonorific = (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/\b(mrs?\.?|ms\.?|dr\.?|prof\.?|teacher|sir|ma'am)\b/gi, '')
+        .trim();
+
+    const cleanTeacher = stripHonorific(teacherName);
+    const teacherTokens = cleanTeacher.split(/\s+/).filter((t) => t.length >= 3);
+
+    const matched = adminFiles.filter((file) => {
       if (user?.id && String(file.id).includes(String(user.id))) return true;
-      return file.recipientTeacherNames.some(
-        (name) =>
-          name.toLowerCase().includes(teacherName.toLowerCase().split(' ')[0]) ||
-          teacherName.toLowerCase().includes(name.toLowerCase().split(' ')[0])
-      );
+      if (file.recipientType === 'all') return true;
+
+      return file.recipientTeacherNames.some((recName) => {
+        const cleanRec = stripHonorific(recName);
+        if (!cleanRec) return false;
+        if (cleanRec.includes(cleanTeacher) || cleanTeacher.includes(cleanRec)) return true;
+        return teacherTokens.some((tok) => cleanRec.includes(tok));
+      });
     });
+
+    // Prioritize personal / year-level specific files and keep the top 2 most relevant files so the grid stays compact (1 row of 2 cards)
+    const sorted = [...matched].sort((a, b) => {
+      const aSpecific = a.recipientType === 'selected' ? 0 : 1;
+      const bSpecific = b.recipientType === 'selected' ? 0 : 1;
+      return aSpecific - bSpecific;
+    });
+
+    return sorted.slice(0, 2);
   }, [adminFiles, teacherName, user]);
 
   // Generate personalized teaching loads
@@ -1377,29 +1397,29 @@ export const TeacherClassProgramPage: React.FC = () => {
       <div className="no-print space-y-6 animate-fade-in pb-12">
         {/* Page Header */}
         <div className="border-b border-slate-200 pb-5">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
                 Faculty Teaching Program &amp; Workload
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-500 mt-1 leading-relaxed">
                 View, print, or download your official teaching schedule and class program issued by the School Administrator.
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+            <div className="flex items-center gap-3 shrink-0 ml-auto pt-0.5">
               <button
                 type="button"
                 onClick={() => handleDownloadBondPaperHtml(paperSize)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer shrink-0"
+                className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer shrink-0"
               >
-                <Download className="h-4 w-4 text-slate-500" />
+                <Download className="h-4 w-4 text-slate-600" />
                 Download Program
               </button>
               <button
                 type="button"
                 onClick={() => handlePrintBondPaper(paperSize)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
+                className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 py-2.5 text-sm font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
               >
                 <Printer className="h-4 w-4 text-white" />
                 Print Class Program
@@ -1409,19 +1429,19 @@ export const TeacherClassProgramPage: React.FC = () => {
           </div>
 
           {/* Mobile Action Row */}
-          <div className="sm:hidden mt-3 flex items-center gap-2">
+          <div className="sm:hidden mt-3 flex items-center gap-2.5">
             <button
               type="button"
               onClick={() => handleDownloadBondPaperHtml(paperSize)}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
             >
-              <Download className="h-4 w-4 text-slate-500" />
+              <Download className="h-4 w-4 text-slate-600" />
               Download
             </button>
             <button
               type="button"
               onClick={() => handlePrintBondPaper(paperSize)}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-2.5 text-sm font-bold text-white shadow-xs transition-all cursor-pointer"
             >
               <Printer className="h-4 w-4 text-white" />
               Print Class Program
@@ -1430,110 +1450,110 @@ export const TeacherClassProgramPage: React.FC = () => {
         </div>
 
         {/* Official Schedule Files Received from School Admin */}
-        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-white to-slate-50 p-5 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/70 pb-3.5">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-xs">
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-white to-slate-50 p-5 sm:p-6 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/70 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-xs">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm sm:text-base font-extrabold text-slate-900 font-display">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h2 className="text-base sm:text-lg font-extrabold text-slate-900 font-display">
                     Official Teaching Schedule Files from Admin
                   </h2>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
-                    <ShieldCheck className="h-3 w-3 text-emerald-700" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-200 px-3 py-0.5 text-xs font-extrabold text-emerald-800">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
                     Admin Verified
                   </span>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                   Official class program documents sent to you by the School Administration / Office of the Principal.
                 </p>
               </div>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs w-fit">
-              <Building2 className="h-3.5 w-3.5 text-emerald-700" />
+            <span className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs w-fit">
+              <Building2 className="h-4 w-4 text-emerald-700" />
               Recipient: {teacherName}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {myReceivedScheduleFiles.map((file) => (
               <div
                 key={file.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between gap-4"
               >
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-[#0f172a] px-2.5 py-1 text-[10px] font-bold text-white">
-                        <Calendar className="h-3 w-3 text-amber-400" />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#0f172a] px-3 py-1 text-xs font-bold text-white">
+                        <Calendar className="h-3.5 w-3.5 text-amber-400" />
                         {file.schoolYear} • {file.semester}
                       </span>
                       {file.targetGradeLevel && (
-                        <span className="inline-flex items-center rounded-lg bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                        <span className="inline-flex items-center rounded-lg bg-emerald-100 border border-emerald-300 px-2.5 py-1 text-xs font-extrabold text-emerald-800">
                           {file.targetGradeLevel}
                         </span>
                       )}
                     </div>
-                    <Badge variant="emerald" size="sm">
+                    <Badge variant="emerald" size="md">
                       {file.fileType || 'PDF'} FILE
                     </Badge>
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 font-display">
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-display leading-snug">
                       {file.title}
                     </h3>
-                    <p className="text-[11px] font-medium text-emerald-800 mt-0.5">
+                    <p className="text-xs sm:text-sm font-semibold text-emerald-800 mt-1">
                       Issued by: {file.sentBy} • {file.sentAt}
                     </p>
                   </div>
 
                   {/* Attached File Pill */}
-                  <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                      <FileText className="h-4 w-4" />
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                      <FileText className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-slate-800" title={file.fileName}>
+                      <p className="truncate text-sm font-bold text-slate-800" title={file.fileName}>
                         {file.fileName}
                       </p>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-xs text-slate-500">
                         {file.fileSize} • Official Admin Schedule Attachment
                       </p>
                     </div>
                   </div>
 
                   {file.notes && (
-                    <p className="text-xs text-slate-600 leading-relaxed">{file.notes}</p>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{file.notes}</p>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                <div className="flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3.5">
                   <button
                     type="button"
                     onClick={() => setPreviewFile(file)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
                   >
-                    <Eye className="h-3.5 w-3.5 text-emerald-700" />
+                    <Eye className="h-4 w-4 text-emerald-700" />
                     Preview File
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePrintBondPaper(paperSize)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
                   >
-                    <Printer className="h-3.5 w-3.5 text-slate-500" />
+                    <Printer className="h-4 w-4 text-slate-500" />
                     Print
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadScheduleFile(file)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition-all cursor-pointer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-2xs hover:bg-emerald-800 transition-all cursor-pointer"
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download className="h-4 w-4" />
                     Download File
                   </button>
                 </div>
@@ -1543,109 +1563,109 @@ export const TeacherClassProgramPage: React.FC = () => {
         </div>
 
         {/* DepEd Instructional Workload Compliance Banner */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
-              <CheckCircle2 className="h-5 w-5" />
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <CheckCircle2 className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
                 Total Instructional Load: {teachingLoads.length * 4} Teaching Hours / Week ({teachingLoads.length} Assigned Sections)
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Advisory Section: <span className="font-bold text-slate-700">{facultyProfile.advisory_grade} – Section {facultyProfile.advisory_section}</span> • Specialization: <span className="font-bold text-slate-700">{facultyProfile.specialization}</span> ({facultyProfile.room})
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Advisory Section: <span className="font-bold text-slate-800">{facultyProfile.advisory_grade} – Section {facultyProfile.advisory_section}</span> • Specialization: <span className="font-bold text-slate-800">{facultyProfile.specialization}</span> ({facultyProfile.room})
               </p>
             </div>
           </div>
-          <span className="rounded-xl bg-[#0f172a] px-3.5 py-1.5 text-xs font-bold text-white w-fit shrink-0">
+          <span className="rounded-xl bg-[#0f172a] px-4 py-2 text-xs sm:text-sm font-bold text-white w-fit shrink-0">
             Full-Time Regular Faculty
           </span>
         </div>
 
         {/* Structured Timetable Matrix Organized by Year Level & Section */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-5 py-3.5">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-emerald-700" />
-              <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-6 py-4">
+            <div className="flex items-center gap-2.5">
+              <Clock className="h-5 w-5 text-emerald-700" />
+              <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wider text-slate-800">
                 Assigned Teaching Timetable (By Year Level &amp; Section)
               </h2>
             </div>
-            <span className="text-[11px] font-semibold text-slate-500">
+            <span className="text-xs sm:text-sm font-semibold text-slate-500">
               Synced from Admin Schedule File ({myReceivedScheduleFiles[0]?.fileName})
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-xs">
                 <tr>
-                  <th className="px-4 py-3.5 w-12 text-center text-slate-400">#</th>
-                  <th className="px-4 py-3.5">Time Period &amp; Days</th>
-                  <th className="px-4 py-3.5">Subject / Learning Area</th>
-                  <th className="px-4 py-3.5">Year Level &amp; Section</th>
-                  <th className="px-4 py-3.5">Room Assignment</th>
-                  <th className="px-4 py-3.5 text-right">Faculty Designation</th>
+                  <th className="px-5 py-4 w-14 text-center text-slate-400">#</th>
+                  <th className="px-5 py-4">Time Period &amp; Days</th>
+                  <th className="px-5 py-4">Subject / Learning Area</th>
+                  <th className="px-5 py-4">Year Level &amp; Section</th>
+                  <th className="px-5 py-4">Room Assignment</th>
+                  <th className="px-5 py-4 text-right">Faculty Designation</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {teachingLoads.map((slot, index) => (
                   <tr key={index} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3.5 text-center font-mono text-[11px] text-slate-400">
+                    <td className="px-5 py-4 text-center font-mono text-sm font-bold text-slate-400">
                       {index + 1}
                     </td>
 
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-bold">
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-bold">
                           <Clock className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="font-mono font-bold text-slate-900">{slot.period}</p>
-                          <p className="text-[11px] text-slate-500">{slot.days}</p>
+                          <p className="font-mono text-sm font-bold text-slate-900">{slot.period}</p>
+                          <p className="text-xs text-slate-500">{slot.days}</p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2.5">
                         <BookOpen className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-bold text-slate-900 text-sm">{slot.subject}</span>
+                        <span className="font-bold text-slate-900 text-sm sm:text-base">{slot.subject}</span>
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-[#0f172a] px-2.5 py-1 text-[11px] font-bold text-white">
-                          <GraduationCap className="h-3 w-3 text-amber-400" />
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#0f172a] px-3 py-1.5 text-xs font-bold text-white">
+                          <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
                           {slot.grade_level}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
-                          <Layers className="h-3 w-3 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                          <Layers className="h-3.5 w-3.5 text-emerald-600" />
                           Section {slot.section}
                         </span>
                         {slot.strand && (
-                          <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                          <span className="rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-bold text-blue-800">
                             {slot.strand}
                           </span>
                         )}
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
-                        <MapPin className="h-3.5 w-3.5 text-emerald-700" />
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                        <MapPin className="h-4 w-4 text-emerald-700" />
                         {slot.room}
                       </span>
                     </td>
 
-                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                    <td className="px-5 py-4 text-right whitespace-nowrap">
                       {slot.role === 'Advisory & Subject Load' ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-800">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-extrabold text-amber-800">
                           Advisory &amp; Subject Teacher
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
                           Subject Teacher
                         </span>
                       )}
