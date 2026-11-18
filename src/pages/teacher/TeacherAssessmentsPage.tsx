@@ -59,6 +59,148 @@ export const CLASSROOM_ASSESSMENTS_STORAGE_KEY = 'plshs_classroom_assessments_v1
 export const CLASSROOM_SUBMISSIONS_STORAGE_KEY = 'plshs_classroom_submissions_v1';
 
 export const DEFAULT_CLASSROOM_ASSESSMENTS: ClassroomAssessmentItem[] = [
+  // Grade 7 Classwork
+  {
+    id: 701,
+    title: '1st Quarter Periodical Examination: English 7',
+    instructions:
+      'Download the examination questionnaire, read each passage and grammar task carefully, and submit your answer sheet in PDF or image format before the deadline.',
+    subject: 'English 7',
+    grade_level: 'Grade 7',
+    section: 'De Gracia',
+    type: 'Exam',
+    totalScore: 100,
+    passingScore: 75,
+    date: '2026-11-20',
+    attachmentName: 'English7_Quarter1_Periodical_Exam.pdf',
+    attachmentSize: '320 KB',
+  },
+  {
+    id: 702,
+    title: 'Science 7: Scientific Investigation Laboratory Report',
+    instructions:
+      'Formulate hypotheses, identify variables, and write your structured observation conclusions. Upload your completed report in PDF or Word format.',
+    subject: 'Science 7',
+    grade_level: 'Grade 7',
+    section: 'De Gracia',
+    type: 'Performance Task',
+    totalScore: 50,
+    passingScore: 38,
+    date: '2026-11-24',
+    attachmentName: 'Science7_Scientific_Investigation_LabReport.pdf',
+    attachmentSize: '210 KB',
+  },
+  {
+    id: 703,
+    title: 'Quiz #1: Sets, Subsets & the Real Number System',
+    instructions:
+      'Answer all multiple choice and Venn diagram problems showing complete representation.',
+    subject: 'Mathematics 7',
+    grade_level: 'Grade 7',
+    section: 'De Gracia',
+    type: 'Quiz',
+    totalScore: 30,
+    passingScore: 23,
+    date: '2026-11-22',
+    attachmentName: 'Math7_Quiz1_Sets_and_Real_Numbers.pdf',
+    attachmentSize: '175 KB',
+  },
+
+  // Grade 8 Classwork
+  {
+    id: 801,
+    title: 'Quarter Project: Araling Panlipunan',
+    instructions:
+      'Complete the quarter synthesis assessment and turn in your completed work.',
+    subject: 'Araling Panlipunan (AP / Social Studies)',
+    grade_level: 'Grade 8',
+    section: 'Antipolo',
+    type: 'Performance Task',
+    totalScore: 100,
+    passingScore: 75,
+    date: '2026-10-19',
+    attachmentName: 'Scllar-prcfinal-IT300(1).pdf',
+    attachmentSize: '412 KB',
+  },
+  {
+    id: 802,
+    title: 'Science 8: Laws of Motion & Energy Problem Set',
+    instructions:
+      'Solve all items on Newton\'s Laws of Motion showing complete step-by-step mathematical computations with proper units.',
+    subject: 'Science 8',
+    grade_level: 'Grade 8',
+    section: 'Antipolo',
+    type: 'Written Work',
+    totalScore: 50,
+    passingScore: 38,
+    date: '2026-11-23',
+    attachmentName: 'Science8_LawsOfMotion_ProblemSet.pdf',
+    attachmentSize: '240 KB',
+  },
+  {
+    id: 803,
+    title: 'Quiz #2: Factoring Special Products & Polynomials',
+    instructions:
+      'Factor each given polynomial completely and box your final simplified answers.',
+    subject: 'Mathematics 8',
+    grade_level: 'Grade 8',
+    section: 'Antipolo',
+    type: 'Quiz',
+    totalScore: 30,
+    passingScore: 23,
+    date: '2026-11-21',
+    attachmentName: 'Math8_Quiz2_Factoring_Polynomials.pdf',
+    attachmentSize: '190 KB',
+  },
+
+  // Grade 9 Classwork
+  {
+    id: 901,
+    title: 'Chapter 3 Quiz: Probability Distributions',
+    instructions:
+      'Answer the worksheet and upload your completed solution file here for grading.',
+    subject: 'Statistics & Probability',
+    grade_level: 'Grade 9',
+    section: 'Batangas',
+    type: 'Quiz',
+    totalScore: 30,
+    passingScore: 23,
+    date: '2026-10-22',
+    attachmentName: 'Stats_Chapter3_Quiz_Sheet.pdf',
+    attachmentSize: '220 KB',
+  },
+  {
+    id: 902,
+    title: 'Science 9: Respiratory & Circulatory Systems Model',
+    instructions:
+      'Submit your multimedia presentation or photographic documentation of your organ systems project.',
+    subject: 'Science 9',
+    grade_level: 'Grade 9',
+    section: 'Batangas',
+    type: 'Performance Task',
+    totalScore: 50,
+    passingScore: 38,
+    date: '2026-11-25',
+    attachmentName: 'Science9_Circulatory_System_Rubric.pdf',
+    attachmentSize: '205 KB',
+  },
+  {
+    id: 903,
+    title: '1st Quarter Periodical Examination: Mathematics 9',
+    instructions:
+      'Download questionnaire, solve all quadratic equations and inequalities, and submit complete working solutions.',
+    subject: 'Mathematics 9',
+    grade_level: 'Grade 9',
+    section: 'Cebu',
+    type: 'Exam',
+    totalScore: 100,
+    passingScore: 75,
+    date: '2026-11-20',
+    attachmentName: 'Math9_Periodical_Examination_Q1.pdf',
+    attachmentSize: '310 KB',
+  },
+
+  // Grade 10 Classwork
   {
     id: 101,
     title: '2nd Quarter Periodical Examination',
@@ -106,19 +248,21 @@ export const DEFAULT_CLASSROOM_ASSESSMENTS: ClassroomAssessmentItem[] = [
   },
   {
     id: 104,
-    title: 'Chapter 3 Quiz: Probability Distributions',
+    title: 'Quiz: Computer System Servicing 1',
     instructions:
-      'Answer the worksheet and upload your completed solution file here for grading.',
-    subject: 'Statistics & Probability',
-    grade_level: 'Grade 9',
-    section: 'Batangas',
+      'Complete the assessment and turn in your work.',
+    subject: 'Computer System Servicing 1',
+    grade_level: 'Grade 10',
+    section: 'Section 11',
     type: 'Quiz',
-    totalScore: 30,
-    passingScore: 23,
-    date: '2026-10-22',
-    attachmentName: 'Stats_Chapter3_Quiz_Sheet.pdf',
-    attachmentSize: '220 KB',
+    totalScore: 20,
+    passingScore: 15,
+    date: '2026-12-19',
+    attachmentName: 'Alcoy cultural guide template.pdf (1).pdf',
+    attachmentSize: '412 KB',
   },
+
+  // Grade 11 Classwork
   {
     id: 105,
     title: '1st Quarter Periodical Examination: Reading & Writing',
@@ -163,6 +307,38 @@ export const DEFAULT_CLASSROOM_ASSESSMENTS: ClassroomAssessmentItem[] = [
     date: '2026-11-22',
     attachmentName: 'PR1_Quiz2_Qualitative_Methodology.pdf',
     attachmentSize: '180 KB',
+  },
+
+  // Grade 12 Classwork
+  {
+    id: 1201,
+    title: 'Culminating Research Defense Portfolio (3Is)',
+    instructions:
+      'Submit the finalized Chapters 1–5 research manuscript together with research defense slides and signed panel approval sheets.',
+    subject: 'Inquiries, Investigations and Immersion (3Is)',
+    grade_level: 'Grade 12',
+    section: 'All',
+    type: 'Performance Task',
+    totalScore: 100,
+    passingScore: 75,
+    date: '2026-11-28',
+    attachmentName: 'Grade12_3Is_Research_Defense_Rubric.pdf',
+    attachmentSize: '380 KB',
+  },
+  {
+    id: 1202,
+    title: 'Periodical Examination: Media and Information Literacy',
+    instructions:
+      'Analyze case studies on information verification, digital intellectual property, and algorithmic ethics.',
+    subject: 'Media and Information Literacy (MIL)',
+    grade_level: 'Grade 12',
+    section: 'All',
+    type: 'Exam',
+    totalScore: 100,
+    passingScore: 75,
+    date: '2026-11-20',
+    attachmentName: 'MIL_Quarter1_Periodical_Examination.pdf',
+    attachmentSize: '290 KB',
   },
 ];
 

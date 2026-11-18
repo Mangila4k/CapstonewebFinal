@@ -62,8 +62,8 @@ export const StudentAssessmentsPage: React.FC = () => {
     return {
       id: user?.student_id || user?.id || 'student-default',
       fullName: user?.full_name || 'Student Learner',
-      grade_level: userGrade || 'Grade 11',
-      section: userSection || 'Almario',
+      grade_level: userGrade,
+      section: userSection,
     };
   });
 
@@ -159,16 +159,18 @@ export const StudentAssessmentsPage: React.FC = () => {
         const userSection = user?.student_section || (user as any)?.section;
         const userLrn = user?.student_lrn || (user as any)?.lrn;
 
+        const userStuId = user?.student_id || user?.id;
+
         let matched: any = null;
-        if (user?.email || userLrn) {
-          const conditions: string[] = [];
-          if (user?.email) conditions.push(`email.ilike.${user.email.trim().toLowerCase()}`);
-          if (userLrn) conditions.push(`lrn.eq.${userLrn}`);
-          if (conditions.length > 0) {
-            const { data } = await supabase.from('students').select('*').or(conditions.join(',')).limit(1);
-            if (data && data.length > 0) {
-              matched = data[0];
-            }
+        const conditions: string[] = [];
+        if (userStuId && String(userStuId).includes('-')) conditions.push(`id.eq.${userStuId}`);
+        if (userLrn) conditions.push(`lrn.eq.${userLrn}`);
+        if (user?.email) conditions.push(`email.ilike.${user.email.trim().toLowerCase()}`);
+
+        if (conditions.length > 0) {
+          const { data } = await supabase.from('students').select('*').or(conditions.join(',')).limit(1);
+          if (data && data.length > 0) {
+            matched = data[0];
           }
         }
 
@@ -177,15 +179,15 @@ export const StudentAssessmentsPage: React.FC = () => {
           setStudentMeta({
             id: matched.id,
             fullName: `${matched.last_name}, ${matched.first_name}`,
-            grade_level: userGrade || secInfo?.grade_level || matched.grade_level || 'Grade 10',
-            section: userSection || secInfo?.name || matched.section || 'Generosity',
+            grade_level: userGrade || secInfo?.grade_level || matched.grade_level || '',
+            section: userSection || secInfo?.name || matched.section || '',
           });
         } else if (userGrade || userSection) {
           setStudentMeta({
             id: user?.student_id || user?.id || 'student-current',
             fullName: user?.full_name || 'Student Learner',
-            grade_level: userGrade || 'Grade 10',
-            section: userSection || 'Generosity',
+            grade_level: userGrade || '',
+            section: userSection || '',
           });
         }
 
@@ -316,10 +318,10 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
       // 1. Tab category filter
       if (filter !== 'All' && a.type !== filter) return false;
 
-      // 2. Grade level match (e.g., Grade 11 student only sees Grade 11 or All)
+      // 2. Grade level match (enforce strict grade match for all students from Grade 7 to Grade 12)
       const assGradeNorm = normalizeGradeNumber(a.grade_level);
-      if (studentGradeNorm && assGradeNorm) {
-        if (assGradeNorm !== 'all' && assGradeNorm !== studentGradeNorm) {
+      if (studentGradeNorm) {
+        if (!assGradeNorm || (assGradeNorm !== 'all' && assGradeNorm !== studentGradeNorm)) {
           return false;
         }
       }
@@ -496,29 +498,39 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-bold text-white">
-              <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
-              {studentMeta.grade_level}
-            </span>
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
-              <Layers className="h-3.5 w-3.5 text-emerald-600" />
-              Section {studentMeta.section}
-            </span>
+            {studentMeta.grade_level && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-3 py-1.5 text-xs font-bold text-white">
+                <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
+                {studentMeta.grade_level}
+              </span>
+            )}
+            {studentMeta.section && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                <Layers className="h-3.5 w-3.5 text-emerald-600" />
+                Section {studentMeta.section}
+              </span>
+            )}
             <PageHeaderNotificationSlot />
           </div>
         </div>
 
         {/* Mobile Sub-Header Badges */}
-        <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-2.5 py-1 text-xs font-bold text-white">
-            <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
-            {studentMeta.grade_level}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
-            <Layers className="h-3.5 w-3.5 text-emerald-600" />
-            Section {studentMeta.section}
-          </span>
-        </div>
+        {(studentMeta.grade_level || studentMeta.section) && (
+          <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
+            {studentMeta.grade_level && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-2.5 py-1 text-xs font-bold text-white">
+                <GraduationCap className="h-3.5 w-3.5 text-amber-400" />
+                {studentMeta.grade_level}
+              </span>
+            )}
+            {studentMeta.section && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                <Layers className="h-3.5 w-3.5 text-emerald-600" />
+                Section {studentMeta.section}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {notice && (
