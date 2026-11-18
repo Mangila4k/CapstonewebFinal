@@ -285,6 +285,29 @@ export const DashboardLayout: React.FC = () => {
 
   const roleTitle = roleLabels[user?.role || 'student'] || 'Portal User';
 
+  // Dedicated role dashboard path so clicking the portal logo stays within the portal instead of redirecting to the public homepage
+  const getDashboardPath = () => {
+    switch (user?.role) {
+      case 'admin':
+      case 'principal':
+        return '/admin/dashboard';
+      case 'registrar':
+        return '/registrar/dashboard';
+      case 'teacher':
+        return '/teacher/dashboard';
+      case 'student':
+        return '/student/dashboard';
+      case 'parent':
+        return '/parents/dashboard';
+      case 'guidance':
+        return '/guidance/dashboard';
+      default:
+        return user?.role ? `/${user.role}/dashboard` : '/admin/dashboard';
+    }
+  };
+
+  const dashboardPath = getDashboardPath();
+
   // Resolve profile picture from user object or strictly user-scoped storage
   const resolveProfileAvatar = () => {
     if (typeof window !== 'undefined') {
@@ -389,7 +412,7 @@ export const DashboardLayout: React.FC = () => {
         {/* Sidebar Header */}
         <div className="px-3.5 pt-4 pb-3.5 border-b border-white/10 shrink-0">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
+            <Link to={dashboardPath} className="flex items-center gap-3">
               <img
                 src="/pictures/logo sa skwelahan.png"
                 alt="School Logo"
@@ -521,7 +544,7 @@ export const DashboardLayout: React.FC = () => {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <Link to="/" className="flex items-center gap-2 min-w-0">
+            <Link to={dashboardPath} className="flex items-center gap-2 min-w-0">
               <img
                 src="/pictures/logo sa skwelahan.png"
                 alt="School Logo"
