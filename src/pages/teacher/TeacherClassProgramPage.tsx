@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import {
   Calendar,
   Clock,
+  MapPin,
+  BookOpen,
   Layers,
   GraduationCap,
   FileText,
@@ -12,7 +14,6 @@ import {
   CheckCircle2,
   Building2,
   FileCheck,
-  Check,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -1376,481 +1377,63 @@ export const TeacherClassProgramPage: React.FC = () => {
       <div className="no-print space-y-6 animate-fade-in pb-12">
         {/* Page Header */}
         <div className="border-b border-slate-200 pb-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-extrabold text-emerald-800">
-                  <FileCheck className="h-3.5 w-3.5 text-emerald-700" />
-                  Official DepEd Document
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  S.Y. 2026–2027 • Placido L. Señor National High School
-                </span>
-              </div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-display tracking-tight leading-snug">
                 Faculty Teaching Program &amp; Workload
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                Official Department of Education teacher class program formatted for standard bond paper printing.
+                View, print, or download your official teaching schedule and class program issued by the School Administrator.
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 pt-0.5 flex-wrap">
-              <PageHeaderNotificationSlot />
-            </div>
-          </div>
-        </div>
-
-        {/* 
-          ========================================================================
-          BOND PAPER ACTION & FORMAT SELECTION BAR (Prominent & Large Controls)
-          ========================================================================
-        */}
-        <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-            {/* Paper Size Selector */}
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <FileText className="h-4 w-4 text-emerald-700" />
-                  DepEd Bond Paper Size:
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-extrabold text-emerald-900">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-700" />
-                  Official DepEd Size
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setPaperSize('short')}
-                  className={`inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 sm:px-6 sm:py-3.5 text-sm sm:text-base font-black transition-all cursor-pointer shadow-xs ${
-                    paperSize === 'short'
-                      ? 'bg-emerald-700 text-white ring-3 ring-emerald-600 ring-offset-2'
-                      : 'border-2 border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
-                  }`}
-                >
-                  <FileText className="h-5 w-5" />
-                  <span>Short Bond Paper</span>
-                  <span
-                    className={`rounded-lg px-2 py-0.5 text-xs font-mono font-bold ${
-                      paperSize === 'short' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    8.5&quot; × 11&quot;
-                  </span>
-                  {paperSize === 'short' && <Check className="h-4 w-4 text-emerald-200 ml-0.5 stroke-[3]" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaperSize('a4')}
-                  className={`inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 sm:px-6 sm:py-3.5 text-sm sm:text-base font-black transition-all cursor-pointer shadow-xs ${
-                    paperSize === 'a4'
-                      ? 'bg-emerald-700 text-white ring-3 ring-emerald-600 ring-offset-2'
-                      : 'border-2 border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
-                  }`}
-                >
-                  <FileText className="h-5 w-5" />
-                  <span>A4 Standard</span>
-                  <span
-                    className={`rounded-lg px-2 py-0.5 text-xs font-mono font-bold ${
-                      paperSize === 'a4' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    8.27&quot; × 11.69&quot;
-                  </span>
-                  {paperSize === 'a4' && <Check className="h-4 w-4 text-emerald-200 ml-0.5 stroke-[3]" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaperSize('long')}
-                  className={`inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 sm:px-6 sm:py-3.5 text-sm sm:text-base font-black transition-all cursor-pointer shadow-xs ${
-                    paperSize === 'long'
-                      ? 'bg-emerald-700 text-white ring-3 ring-emerald-600 ring-offset-2'
-                      : 'border-2 border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
-                  }`}
-                >
-                  <FileText className="h-5 w-5" />
-                  <span>Long Bond Paper</span>
-                  <span
-                    className={`rounded-lg px-2 py-0.5 text-xs font-mono font-bold ${
-                      paperSize === 'long' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    8.5&quot; × 13&quot;
-                  </span>
-                  {paperSize === 'long' && <Check className="h-4 w-4 text-emerald-200 ml-0.5 stroke-[3]" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Action Buttons (Large & Prominent) */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setIsOfficialDocModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-extrabold text-slate-800 transition-all cursor-pointer shadow-2xs"
-              >
-                <Eye className="h-4 w-4 text-emerald-700" />
-                <span>Preview Full Screen</span>
-              </button>
-
+            <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
               <button
                 type="button"
                 onClick={() => handleDownloadBondPaperHtml(paperSize)}
-                className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-extrabold text-slate-800 transition-all cursor-pointer shadow-2xs"
-                title="Download Standalone Printable HTML"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer shrink-0"
               >
-                <Download className="h-4 w-4 text-slate-600" />
-                <span>Download Document</span>
+                <Download className="h-4 w-4 text-slate-500" />
+                Download Program
               </button>
-
               <button
                 type="button"
                 onClick={() => handlePrintBondPaper(paperSize)}
-                className="inline-flex items-center gap-2.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-black shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer shrink-0"
               >
-                <Printer className="h-5 w-5 text-white" />
-                <span>Print on Bond Paper</span>
-                <span className="rounded-lg bg-emerald-900/80 px-2 py-0.5 text-xs uppercase font-mono font-black tracking-tight">
-                  {paperSize === 'short' ? '8.5×11' : paperSize === 'a4' ? 'A4' : '8.5×13'}
-                </span>
+                <Printer className="h-4 w-4 text-white" />
+                Print Class Program
               </button>
+              <PageHeaderNotificationSlot />
             </div>
+          </div>
+
+          {/* Mobile Action Row */}
+          <div className="sm:hidden mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleDownloadBondPaperHtml(paperSize)}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              <Download className="h-4 w-4 text-slate-500" />
+              Download
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePrintBondPaper(paperSize)}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+            >
+              <Printer className="h-4 w-4 text-white" />
+              Print Class Program
+            </button>
           </div>
         </div>
 
-        {/* 
-          ========================================================================
-          AUTHENTIC DEPED BOND PAPER SHEET SIMULATION (On-Screen Interactive)
-          ========================================================================
-        */}
-        <div className="rounded-3xl border border-slate-300 bg-slate-200/70 p-4 sm:p-8 lg:p-10 shadow-inner flex flex-col items-center">
-          <div className="w-full max-w-[1040px] mb-3.5 flex items-center justify-between text-xs sm:text-sm text-slate-700 px-1">
-            <span className="font-extrabold flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-emerald-700" />
-              DepEd Bond Paper Preview ({paperSize === 'short' ? 'Short 8.5" × 11"' : paperSize === 'a4' ? 'A4 8.27" × 11.69"' : 'Long 8.5" × 13"'} • 1-Page Fit)
-            </span>
-            <span className="text-xs font-mono text-emerald-900 font-extrabold bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-full shadow-2xs">
-              ✓ Page 1 of 1 • 100% DepEd RA 4670 Compliant
-            </span>
-          </div>
-
-          {/* Realistic Bond Paper Sheet (Enlarged for Maximum Readability) */}
-          <div className="w-full max-w-[1040px] rounded-xs bg-white p-6 sm:p-10 lg:p-12 shadow-2xl ring-1 ring-slate-400 text-slate-900 font-sans transition-all">
-            {/* Header */}
-            <div className="text-center pb-2.5 border-b-2 border-slate-900">
-              <div className="flex items-center justify-between gap-4">
-                {/* School Logo */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
-                  <img
-                    src="/pictures/logo sa skwelahan.png"
-                    alt="PLSNHS Logo"
-                    className="w-14 h-14 sm:w-18 sm:h-18 object-contain rounded-full shadow-2xs"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-
-                {/* Central Letterhead */}
-                <div className="flex-1 px-2 text-center">
-                  <p className="text-xs sm:text-sm uppercase tracking-wider font-bold text-slate-700 leading-tight">
-                    Republic of the Philippines • Republika ng Pilipinas
-                  </p>
-                  <p className="text-sm sm:text-base uppercase font-black text-slate-950 leading-tight mt-0.5">
-                    Department of Education • Kagawaran ng Edukasyon
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-700 leading-tight mt-0.5">
-                    Region VII, Central Visayas • Schools Division of Cebu Province • District of Boljoon
-                  </p>
-                  <h2 className="text-base sm:text-2xl font-black uppercase tracking-wide text-slate-950 mt-1 leading-tight font-serif">
-                    PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-tight mt-0.5">
-                    Langub, Boljoon, Cebu • School Identification Number (ID): <strong>303035</strong>
-                  </p>
-                </div>
-
-                {/* DepEd Seal Box */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
-                  <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full border-2 border-slate-900 flex flex-col items-center justify-center text-center p-1 font-serif">
-                    <span className="text-[8pt] sm:text-[9.5pt] font-black uppercase leading-none">DEPED</span>
-                    <span className="text-[7pt] sm:text-[8pt] font-bold leading-tight mt-0.5">Region VII</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Double Border Rule */}
-            <div className="border-b-2 border-slate-900 mt-1 mb-3" />
-
-            {/* Form Title Banner */}
-            <div className="text-center py-2.5 sm:py-3 bg-slate-100 border border-slate-900 mb-3">
-              <h3 className="text-sm sm:text-lg font-black uppercase tracking-wider text-slate-950 leading-tight">
-                TEACHER'S INDIVIDUAL CLASS PROGRAM &amp; TEACHING LOAD
-              </h3>
-              <p className="text-xs sm:text-sm font-extrabold text-slate-800 mt-0.5">
-                School Year 2026–2027 • First &amp; Second Semesters
-              </p>
-              <p className="text-[11px] sm:text-xs text-slate-600 italic mt-0.5">
-                In Strict Compliance with DepEd Order No. 31, s. 2012 &amp; Republic Act No. 4670 (Magna Carta for Public School Teachers)
-              </p>
-            </div>
-
-            {/* Faculty Profile Matrix Box */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 border border-slate-900 text-xs sm:text-sm mb-3 bg-white">
-              <div className="p-3 sm:p-3.5 border-b sm:border-b-0 sm:border-r border-slate-900 space-y-1.5">
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Faculty Teacher:</span>
-                  <span className="font-black text-slate-950 uppercase">{teacherName}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Employee ID:</span>
-                  <span className="font-mono font-bold text-slate-900">{facultyProfile.employee_id}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Civil Service Rank:</span>
-                  <span className="font-semibold text-slate-900">{facultyProfile.position}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Specialization:</span>
-                  <span className="font-bold text-slate-900">{facultyProfile.specialization}</span>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-3.5 space-y-1.5">
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Advisory Section:</span>
-                  <span className="font-black text-slate-950">
-                    {facultyProfile.advisory_grade} – Section {facultyProfile.advisory_section}
-                  </span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Designated Room:</span>
-                  <span className="font-semibold text-slate-900">{facultyProfile.room}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Status:</span>
-                  <span className="font-semibold text-slate-900">Permanent Regular Full-Time</span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Official Hours:</span>
-                  <span className="font-semibold text-slate-900">07:30 AM – 04:30 PM (M–F)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Schedule Timetable */}
-            <div className="border border-slate-900 mb-3 overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-[13px] border-collapse">
-                <thead className="bg-slate-100 text-slate-950 uppercase font-black text-xs sm:text-[13px] border-b border-slate-900">
-                  <tr>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900 text-center w-8">#</th>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900 w-36 whitespace-nowrap">Time Period</th>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900 text-center w-16">Mins</th>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900 text-center w-16">Days</th>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900">Learning Area / Subject</th>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900">Grade &amp; Section</th>
-                    <th className="p-2 sm:p-2.5 border-r border-slate-900">Room</th>
-                    <th className="p-2 sm:p-2.5 text-right w-28 whitespace-nowrap">Weekly Load</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-300">
-                  <tr className="bg-slate-50 italic text-slate-600">
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">07:15 AM – 07:30 AM</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">15</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
-                    <td colSpan={3} className="p-2 sm:p-2.5 border-r border-slate-900 font-medium">
-                      Flag Raising Ceremony &amp; Morning Rituals
-                    </td>
-                    <td className="p-2 sm:p-2.5 text-right font-mono">75 mins</td>
-                  </tr>
-
-                  {teachingLoads.map((slot, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-black">{i + 1}</td>
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono font-bold whitespace-nowrap">
-                        {slot.period}
-                      </td>
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">60</td>
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-bold">M – F</td>
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 font-black">
-                        <span className="text-slate-950 font-black">{slot.subject}</span>
-                        {slot.role === 'Advisory & Subject Load' && (
-                          <span className="block text-[11px] font-black text-blue-800 uppercase mt-0.5">
-                            ★ Designated Advisory Subject
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 font-bold">
-                        {slot.grade_level} – {slot.section}
-                        {slot.strand ? ` (${slot.strand})` : ''}
-                      </td>
-                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-slate-700">{slot.room}</td>
-                      <td className="p-2 sm:p-2.5 text-right font-mono font-bold whitespace-nowrap">300 mins (5h)</td>
-                    </tr>
-                  ))}
-
-                  <tr className="bg-slate-50 italic text-slate-600">
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">11:00 AM – 12:00 PM</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">60</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-bold not-italic text-slate-800">
-                      Homeroom Guidance / Remediation / Catch-Up
-                    </td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-bold not-italic">
-                      {facultyProfile.advisory_grade} – {facultyProfile.advisory_section}
-                    </td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900">{facultyProfile.room}</td>
-                    <td className="p-2 sm:p-2.5 text-right font-mono">300 mins</td>
-                  </tr>
-
-                  <tr className="bg-slate-50 italic text-slate-600">
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">12:00 PM – 01:00 PM</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">60</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
-                    <td colSpan={3} className="p-2 sm:p-2.5 border-r border-slate-900">
-                      Noon Break / Health &amp; Lunch Intermission
-                    </td>
-                    <td className="p-2 sm:p-2.5 text-right font-mono">—</td>
-                  </tr>
-
-                  <tr className="bg-slate-50 italic text-slate-600">
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">04:00 PM – 04:30 PM</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">30</td>
-                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
-                    <td colSpan={3} className="p-2 sm:p-2.5 border-r border-slate-900">
-                      Lesson Preparation, Assessment Records &amp; Ancillary Services
-                    </td>
-                    <td className="p-2 sm:p-2.5 text-right font-mono">150 mins</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Workload Allocation Box */}
-            <div className="border border-slate-900 p-3 sm:p-3.5 bg-slate-50 mb-3">
-              <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 mb-1.5">
-                Summary of Workload Allocation &amp; Time Distribution (RA 4670 Magna Carta Standard)
-              </p>
-              <table className="w-full text-left text-xs sm:text-[13px] border border-slate-400 bg-white">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-400 font-bold">
-                    <th className="p-1.5 sm:p-2 border-r border-slate-400">Workload Allocation Component</th>
-                    <th className="p-1.5 sm:p-2 border-r border-slate-400 text-center">Daily Equivalent</th>
-                    <th className="p-1.5 sm:p-2 border-r border-slate-400 text-center">Weekly Total</th>
-                    <th className="p-1.5 sm:p-2">Statutory Basis</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-300">
-                  <tr>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 font-bold">
-                      A. Actual Classroom Teaching Load (Instructional - 6 Classes)
-                    </td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">4.8 Hours / Day</td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono font-bold">24.0 Hours / Week</td>
-                    <td className="p-1.5 sm:p-2 text-slate-600">RA 4670 (Max 6.0 hrs/day teaching)</td>
-                  </tr>
-                  <tr>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 font-bold">
-                      B. Homeroom Advisory, Remediation &amp; Student Guidance
-                    </td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">1.2 Hours / Day</td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono font-bold">6.0 Hours / Week</td>
-                    <td className="p-1.5 sm:p-2 text-slate-600">DepEd Order No. 31, s. 2012</td>
-                  </tr>
-                  <tr>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 font-bold">
-                      C. Lesson Preparation, Records Keeping &amp; Ancillary Duties
-                    </td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">2.0 Hours / Day</td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono font-bold">10.0 Hours / Week</td>
-                    <td className="p-1.5 sm:p-2 text-slate-600">CSC Prescribed Working Hours</td>
-                  </tr>
-                  <tr className="bg-slate-100 font-black text-slate-950">
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 uppercase">Total Official Weekly Working Hours:</td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">8.0 Hours / Day</td>
-                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">40.0 Hours / Week</td>
-                    <td className="p-1.5 sm:p-2 text-emerald-800 font-bold">✓ 100% DepEd Standard Compliant</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Attestation */}
-            <div className="border border-slate-900 p-2.5 sm:p-3 text-xs sm:text-sm text-justify text-slate-800 leading-relaxed mb-3 bg-white">
-              <p>
-                <strong>OFFICIAL ATTESTATION:</strong> I hereby certify that the individual teaching loads, room assignments, advisory designations, and official working hours detailed in this form have been duly assigned to me for School Year 2026–2027. I attest that I shall discharge my duties in accordance with the prescribed Department of Education curriculum and the Code of Ethics for Professional Teachers.
-              </p>
-            </div>
-
-            {/* Four-Tier Signatories Block */}
-            <div className="border border-slate-900 p-3 sm:p-4 mb-2.5 bg-white">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-xs sm:text-sm">
-                <div className="flex flex-col items-center">
-                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Conformed &amp; Submitted by:</p>
-                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
-                    {teacherName}
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1 font-medium">Teacher / Class Adviser</p>
-                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">Date: {new Date().toLocaleDateString()}</p>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Checked &amp; Verified by:</p>
-                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
-                    JHERICO MAURIN
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1 font-medium">Academic Coordinator / MT I</p>
-                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">Date: {new Date().toLocaleDateString()}</p>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Recommending Approval:</p>
-                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
-                    JUSTINE MANGILA, EdD
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1 font-medium">Secondary School Principal II</p>
-                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">PLSNHS School Head</p>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Approved:</p>
-                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
-                    SENEN PRISCILLO P. PAULIN, CESO V
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1 font-medium">Schools Division Superintendent</p>
-                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">DepEd Cebu Province</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Bar */}
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-300">
-              <span>Placido L. Señor National High School • School ID: 303035</span>
-              <span className="font-mono">Ref: PLSNHS-SF7-TCP-2026-08 • System Verified Form</span>
-              <span>{paperSize === 'short' ? 'Short Bond Paper (8.5" × 11")' : paperSize === 'a4' ? 'A4 Paper (8.27" × 11.69")' : 'Long Bond Paper (8.5" × 13")'} • Page 1 of 1</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 
-          ========================================================================
-          SECTION: OFFICIAL ADMIN SCHEDULE ATTACHMENTS (Archives)
-          ========================================================================
-        */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
+        {/* Official Schedule Files Received from School Admin */}
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-white to-slate-50 p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/70 pb-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0f172a] text-[#F5C518] shadow-xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-xs">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
@@ -1864,12 +1447,12 @@ export const TeacherClassProgramPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Approved schedule documents and attachments sent to you by the School Administration.
+                  Official class program documents sent to you by the School Administration / Office of the Principal.
                 </p>
               </div>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 w-fit">
+            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs w-fit">
               <Building2 className="h-3.5 w-3.5 text-emerald-700" />
               Recipient: {teacherName}
             </span>
@@ -1879,7 +1462,7 @@ export const TeacherClassProgramPage: React.FC = () => {
             {myReceivedScheduleFiles.map((file) => (
               <div
                 key={file.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 shadow-2xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between gap-4"
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
@@ -1909,7 +1492,7 @@ export const TeacherClassProgramPage: React.FC = () => {
                   </div>
 
                   {/* Attached File Pill */}
-                  <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                  <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                       <FileText className="h-4 w-4" />
                     </div>
@@ -1928,23 +1511,22 @@ export const TeacherClassProgramPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                   <button
                     type="button"
                     onClick={() => setPreviewFile(file)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
                   >
                     <Eye className="h-3.5 w-3.5 text-emerald-700" />
-                    Preview
+                    Preview File
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePrintBondPaper(paperSize)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
-                    title="Print Official Bond Paper Document"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
                   >
-                    <Printer className="h-3.5 w-3.5 text-emerald-700" />
-                    Print on Bond Paper
+                    <Printer className="h-3.5 w-3.5 text-slate-500" />
+                    Print
                   </button>
                   <button
                     type="button"
@@ -1952,11 +1534,126 @@ export const TeacherClassProgramPage: React.FC = () => {
                     className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-800 transition-all cursor-pointer"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    Download
+                    Download File
                   </button>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* DepEd Instructional Workload Compliance Banner */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">
+                Total Instructional Load: {teachingLoads.length * 4} Teaching Hours / Week ({teachingLoads.length} Assigned Sections)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Advisory Section: <span className="font-bold text-slate-700">{facultyProfile.advisory_grade} – Section {facultyProfile.advisory_section}</span> • Specialization: <span className="font-bold text-slate-700">{facultyProfile.specialization}</span> ({facultyProfile.room})
+              </p>
+            </div>
+          </div>
+          <span className="rounded-xl bg-[#0f172a] px-3.5 py-1.5 text-xs font-bold text-white w-fit shrink-0">
+            Full-Time Regular Faculty
+          </span>
+        </div>
+
+        {/* Structured Timetable Matrix Organized by Year Level & Section */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-5 py-3.5">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-emerald-700" />
+              <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                Assigned Teaching Timetable (By Year Level &amp; Section)
+              </h2>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-500">
+              Synced from Admin Schedule File ({myReceivedScheduleFiles[0]?.fileName})
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th className="px-4 py-3.5 w-12 text-center text-slate-400">#</th>
+                  <th className="px-4 py-3.5">Time Period &amp; Days</th>
+                  <th className="px-4 py-3.5">Subject / Learning Area</th>
+                  <th className="px-4 py-3.5">Year Level &amp; Section</th>
+                  <th className="px-4 py-3.5">Room Assignment</th>
+                  <th className="px-4 py-3.5 text-right">Faculty Designation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {teachingLoads.map((slot, index) => (
+                  <tr key={index} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-4 py-3.5 text-center font-mono text-[11px] text-slate-400">
+                      {index + 1}
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 font-bold">
+                          <Clock className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-mono font-bold text-slate-900">{slot.period}</p>
+                          <p className="text-[11px] text-slate-500">{slot.days}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span className="font-bold text-slate-900 text-sm">{slot.subject}</span>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-[#0f172a] px-2.5 py-1 text-[11px] font-bold text-white">
+                          <GraduationCap className="h-3 w-3 text-amber-400" />
+                          {slot.grade_level}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+                          <Layers className="h-3 w-3 text-emerald-600" />
+                          Section {slot.section}
+                        </span>
+                        {slot.strand && (
+                          <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                            {slot.strand}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
+                        <MapPin className="h-3.5 w-3.5 text-emerald-700" />
+                        {slot.room}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      {slot.role === 'Advisory & Subject Load' ? (
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-800">
+                          Advisory &amp; Subject Teacher
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+                          Subject Teacher
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
