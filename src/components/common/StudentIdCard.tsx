@@ -139,8 +139,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
   const isSenior = gradeNum !== null ? gradeNum >= 11 : rawGrade.toLowerCase().includes('senior');
 
   const levelVal = isSenior ? 'Senior High' : 'Junior High';
-  const cleanStrand = (data.strand || '').trim();
-  const deptPill = isSenior && cleanStrand ? cleanStrand.toUpperCase() : isSenior ? 'SHS' : 'JHS';
+  const deptPill = isSenior ? 'SHS' : 'JHS';
 
   // Student initial for photo fallback
   const getInitial = (name: string) => {
@@ -462,10 +461,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
               <GraduationCap className="h-2.5 w-2.5 inline text-[#f5b72e]" /> ACADEMIC CLASSIFICATION
             </div>
             <div className="id-back-level-row">
-              <span className="id-back-level-main">
-                {data.grade_level || levelVal}
-                {data.section ? ` · Sec. ${data.section}` : ''}
-              </span>
+              <span className="id-back-level-main">{levelVal}</span>
               <span className="id-back-level-pill">{deptPill}</span>
             </div>
           </div>
