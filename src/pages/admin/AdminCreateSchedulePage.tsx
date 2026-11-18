@@ -16,7 +16,9 @@ import {
   GraduationCap,
   Users,
   Check,
+  Bell,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Alert } from '../../components/common/Alert';
 import { Modal } from '../../components/common/Modal';
@@ -33,9 +35,18 @@ import {
   SECTIONS_CACHE_KEY,
   type Section,
 } from './AdminTeachersPage';
-import { uploadAndAttachTeacherSchedule } from '../../lib/teacherScheduleService';
+import {
+  uploadAndAttachTeacherSchedule,
+  notifyTeachersOfScheduleFile,
+} from '../../lib/teacherScheduleService';
 
 export const AdminCreateSchedulePage: React.FC = () => {
+  const { user } = useAuth();
+  const isRegistrar = user?.role === 'registrar';
+  const senderLabel = isRegistrar
+    ? 'School Registrar • Office of the Registrar'
+    : 'School Administrator • Office of the Principal';
+
   const [searchParams] = useSearchParams();
   const preselectedTeacher = searchParams.get('teacher');
 
@@ -278,7 +289,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
           : fileForm.selectedTeachers.length > 0
           ? fileForm.selectedTeachers
           : ['All Faculty Teachers'],
-      sentBy: 'School Administrator • Office of the Principal',
+      sentBy: senderLabel,
       sentAt: new Date().toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -299,6 +310,9 @@ export const AdminCreateSchedulePage: React.FC = () => {
       // ignore
     }
 
+    // Dispatch instant notification to every targeted teacher's dashboard & Notification Bell
+    await notifyTeachersOfScheduleFile(newEntry, isRegistrar ? 'REGISTRAR' : 'ADMIN');
+
     // If a real file was uploaded, sync to Supabase storage & target teachers
     if (fileForm.rawFile && fileForm.recipientType === 'selected') {
       for (const tName of fileForm.selectedTeachers) {
@@ -317,7 +331,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
             schoolYear: fileForm.schoolYear,
             semester: fileForm.semester,
             notes: fileForm.notes,
-            uploadedBy: 'School Administrator • Office of the Principal',
+            uploadedBy: senderLabel,
           }).catch((err) => console.warn('Teacher attach schedule error:', err));
         }
       }
@@ -344,7 +358,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
                 newEntry.fileDataUrl ||
                 'https://tuujlqrfyuazvbvoribz.supabase.co/storage/v1/object/public/teacher-schedules/faculty_load.pdf',
               file_type: newEntry.fileType === 'PDF' ? 'application/pdf' : 'image/jpeg',
-              uploaded_by: 'Admin',
+              uploaded_by: isRegistrar ? 'Registrar' : 'Admin',
             },
           ])
           .then(({ error }) => {
@@ -362,9 +376,9 @@ export const AdminCreateSchedulePage: React.FC = () => {
           ? 'All Faculty Teachers'
           : newEntry.recipientTeacherNames.join(', ');
       const logRecord = {
-        role: 'admin',
+        role: isRegistrar ? 'registrar' : 'admin',
         action: 'Faculty Schedule Sent',
-        details: `Attached and sent schedule file "${newEntry.fileName}" (${newEntry.fileType}, ${newEntry.fileSize}) to ${recipientStr}.`,
+        details: `${isRegistrar ? 'Registrar' : 'Admin'} sent schedule file "${newEntry.fileName}" (${newEntry.fileType}, ${newEntry.fileSize}) to ${recipientStr} and notified teachers.`,
         timestamp: new Date().toISOString(),
       };
       supabase.from('activity_logs').insert([logRecord]).then(() => {});
@@ -375,13 +389,43 @@ export const AdminCreateSchedulePage: React.FC = () => {
 
     setNotice({
       type: 'success',
-      message: `Schedule file "${newEntry.fileName}" sent to ${
+      message: `Class schedule "${newEntry.fileName}" sent to ${
         newEntry.recipientType === 'all'
           ? 'All Faculty Teachers'
           : newEntry.recipientTeacherNames.join(', ')
-      }. Teachers can now view, print, or download it under their Class Program!`,
+      } and notified in every teacher's dashboard notification bell!`,
     });
     setIsSendFileModalOpen(false);
+  };
+
+  const handleNotifyTeachersForFile = async (file: AdminSentTeacherScheduleFile) => {
+    const updatedFile: AdminSentTeacherScheduleFile = {
+      ...file,
+      sentBy: senderLabel,
+      sentAt: new Date().toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+    const next = [updatedFile, ...sentScheduleFiles.filter((f) => f.id !== file.id)];
+    setSentScheduleFiles(next);
+    try {
+      localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+    await notifyTeachersOfScheduleFile(updatedFile, isRegistrar ? 'REGISTRAR' : 'ADMIN');
+    setNotice({
+      type: 'success',
+      message: `Notification sent to ${
+        file.recipientType === 'all'
+          ? 'All Faculty Teachers'
+          : file.recipientTeacherNames.join(', ')
+      } for "${file.title}"! It is now visible in the notification bell on every teacher's dashboard.`,
+    });
   };
 
   const generateScheduleDocHtml = (file: AdminSentTeacherScheduleFile) => {
@@ -803,7 +847,16 @@ export const AdminCreateSchedulePage: React.FC = () => {
                 <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to Teacher Class Program
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleNotifyTeachersForFile(file)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-400 px-2.5 py-1 text-slate-950 font-extrabold transition-colors cursor-pointer shadow-2xs"
+                    title="Send notification to teachers' dashboard notification bell"
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    Notify Teachers
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleViewFile(file)}

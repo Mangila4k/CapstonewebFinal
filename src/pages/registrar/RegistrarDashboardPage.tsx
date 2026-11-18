@@ -823,6 +823,17 @@ export const RegistrarDashboardPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <Link
+                to="/registrar/create-schedule"
+                className="col-span-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300 transition-all text-left group flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-extrabold text-emerald-950">Send Class Schedule to Teachers</div>
+                  <div className="text-[11px] text-emerald-700">Distribute schedule files &amp; notify teacher dashboards</div>
+                </div>
+                <Clock className="h-5 w-5 text-emerald-700 shrink-0" />
+              </Link>
+
+              <Link
                 to="/registrar/students"
                 className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left group"
               >

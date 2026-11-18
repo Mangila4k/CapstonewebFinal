@@ -111,6 +111,7 @@ export const DashboardLayout: React.FC = () => {
               { name: 'Enrollments', path: '/registrar/enrollments', icon: FileSignature },
               { name: 'Students', path: '/registrar/students', icon: GraduationCap },
               { name: 'Teachers', path: '/registrar/teachers', icon: Users },
+              { name: 'Schedules', path: '/registrar/create-schedule', icon: Clock },
               { name: 'Requirements', path: '/registrar/requirements', icon: FileCheck },
               { name: 'Sections', path: '/registrar/sections', icon: Layers },
             ],

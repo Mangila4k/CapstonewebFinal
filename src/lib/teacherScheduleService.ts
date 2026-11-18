@@ -37,6 +37,76 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+const LOCAL_BROADCAST_KEY = 'plsnhs_broadcast_notifications';
+
+/**
+ * Broadcasts a real-time notification to targeted teachers (or all teachers)
+ * across both local broadcast storage and Supabase `notifications` table.
+ */
+export async function notifyTeachersOfScheduleFile(
+  file: AdminSentTeacherScheduleFile,
+  senderRole?: string,
+  targetUserId?: string | null
+): Promise<void> {
+  const nowIso = new Date().toISOString();
+  const resolvedRole =
+    senderRole || (file.sentBy?.toLowerCase().includes('registrar') ? 'REGISTRAR' : 'ADMIN');
+  const recipientSummary =
+    file.recipientType === 'all'
+      ? 'All Faculty Teachers'
+      : file.recipientTeacherNames.join(', ');
+
+  const notifTitle = `📅 Official Class Schedule Sent (${file.targetGradeLevel || 'All Year Levels'})`;
+  const notifMessage = `${file.sentBy} sent your official class schedule "${file.title}" (${file.fileName}) for ${recipientSummary}. Click to view, download, or print under Class Program.`;
+
+  // 1. Local broadcast storage + real-time window event
+  try {
+    const raw = localStorage.getItem(LOCAL_BROADCAST_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    const newLocalNotif = {
+      id: `sched_notif_${file.id}_${Date.now()}`,
+      title: notifTitle,
+      content: notifMessage,
+      message: notifMessage,
+      target_audience: 'teacher',
+      target_user_id: targetUserId || null,
+      recipient_type: file.recipientType,
+      recipient_teacher_names: file.recipientTeacherNames,
+      priority: 'high',
+      author: file.sentBy,
+      sender_role: resolvedRole,
+      action_url: '/teacher/class-program',
+      action_label: 'Open Class Program',
+      created_at: nowIso,
+    };
+    list.unshift(newLocalNotif);
+    localStorage.setItem(LOCAL_BROADCAST_KEY, JSON.stringify(list.slice(0, 80)));
+
+    window.dispatchEvent(new CustomEvent('plsnhs:notification-sent', { detail: newLocalNotif }));
+    window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
+    window.dispatchEvent(new Event('storage'));
+  } catch {
+    // ignore storage errors
+  }
+
+  // 2. Supabase `notifications` table (compatible with actual schema: title, message, type, role, user_id)
+  try {
+    const isUuid =
+      targetUserId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetUserId);
+
+    await supabase.from('notifications').insert({
+      title: notifTitle,
+      message: notifMessage,
+      type: 'schedule',
+      role: 'teacher',
+      ...(isUuid ? { user_id: targetUserId } : {}),
+    });
+  } catch (err) {
+    console.warn('Supabase schedule notification notice:', err);
+  }
+}
+
 /**
  * Uploads a schedule file to Supabase storage bucket `teacher-schedules`
  * and attaches it directly to the specified teacher across database tables and local cache.
@@ -184,27 +254,11 @@ export async function uploadAndAttachTeacherSchedule(
       localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(updatedFiles));
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
+
+      // 5. Send real-time notification to the teacher
+      await notifyTeachersOfScheduleFile(newEntry, undefined, teacherId);
     } catch {
       // ignore
-    }
-
-    // 5. Send notification to the teacher
-    try {
-      if (teacherId) {
-        await supabase.from('notifications').insert([
-          {
-            user_id: teacherId,
-            title: 'Official Schedule File Attached',
-            content: `The Administration attached your official teaching schedule file: "${file.name}". You can view, download, or print it under Class Program.`,
-            type: 'schedule',
-            action_url: '/teacher/class-program',
-            is_read: false,
-            created_at: nowIso,
-          },
-        ]);
-      }
-    } catch (nErr) {
-      console.warn('Teacher notification notice:', nErr);
     }
 
     // 6. Log to activity_logs

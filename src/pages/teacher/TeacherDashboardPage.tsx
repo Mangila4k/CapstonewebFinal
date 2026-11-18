@@ -19,11 +19,18 @@ import {
   Camera,
   Scan,
   QrCode,
+  Bell,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/common/StatCard';
 import { Badge } from '../../components/common/Badge';
+import {
+  ADMIN_TEACHER_SCHEDULE_FILES_KEY,
+  DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
+  type AdminSentTeacherScheduleFile,
+} from './TeacherClassProgramPage';
 
 interface TeacherClassLoad {
   id: string;
@@ -97,6 +104,69 @@ export const TeacherDashboardPage: React.FC = () => {
   const [assignedClasses, setAssignedClasses] = useState<TeacherClassLoad[]>(DEFAULT_CLASS_LOADS);
   const [announcements, setAnnouncements] = useState<CampusAnnouncement[]>([]);
   const [attendanceLoggedToday, setAttendanceLoggedToday] = useState<number>(118);
+  const [latestScheduleNotif, setLatestScheduleNotif] =
+    useState<AdminSentTeacherScheduleFile | null>(null);
+
+  const loadTeacherScheduleNotification = useCallback(() => {
+    const teacherName = user?.full_name || 'Faculty Teacher';
+    const stripHonorific = (str: string) =>
+      String(str || '')
+        .toLowerCase()
+        .replace(/\b(mrs?\.?|ms\.?|dr\.?|prof\.?|teacher|sir|ma'am)\b/gi, '')
+        .trim();
+
+    const cleanTeacher = stripHonorific(teacherName);
+    const teacherTokens = cleanTeacher.split(/\s+/).filter((t) => t.length >= 3);
+
+    let files: AdminSentTeacherScheduleFile[] = DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES;
+    try {
+      const saved = localStorage.getItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          files = parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    const matched = files.filter((file) => {
+      if (user?.id && String(file.id).includes(String(user.id))) return true;
+      if (file.recipientType === 'all') return true;
+      return (file.recipientTeacherNames || []).some((recName) => {
+        if (recName.toLowerCase().includes('all faculty')) return true;
+        const cleanRec = stripHonorific(recName);
+        if (!cleanRec || !cleanTeacher) return false;
+        if (cleanRec.includes(cleanTeacher) || cleanTeacher.includes(cleanRec)) return true;
+        return teacherTokens.some((tok) => cleanRec.includes(tok));
+      });
+    });
+
+    // Prefer specific / newly sent schedule files first
+    const sorted = [...matched].sort((a, b) => {
+      const aNew = String(a.id).startsWith('adm-sched-17') ? 0 : 1;
+      const bNew = String(b.id).startsWith('adm-sched-17') ? 0 : 1;
+      if (aNew !== bNew) return aNew - bNew;
+      const aSpec = a.recipientType === 'selected' ? 0 : 1;
+      const bSpec = b.recipientType === 'selected' ? 0 : 1;
+      return aSpec - bSpec;
+    });
+
+    setLatestScheduleNotif(sorted[0] || null);
+  }, [user?.full_name, user?.id]);
+
+  useEffect(() => {
+    loadTeacherScheduleNotification();
+    window.addEventListener('storage', loadTeacherScheduleNotification);
+    window.addEventListener('plsnhs-schedule-files-updated', loadTeacherScheduleNotification);
+    window.addEventListener('plsnhs:notification-sent', loadTeacherScheduleNotification);
+    return () => {
+      window.removeEventListener('storage', loadTeacherScheduleNotification);
+      window.removeEventListener('plsnhs-schedule-files-updated', loadTeacherScheduleNotification);
+      window.removeEventListener('plsnhs:notification-sent', loadTeacherScheduleNotification);
+    };
+  }, [loadTeacherScheduleNotification]);
 
   const fetchTeacherDashboardData = useCallback(async () => {
     try {
@@ -233,6 +303,52 @@ export const TeacherDashboardPage: React.FC = () => {
           <PageHeaderNotificationSlot />
         </div>
       </div>
+
+      {/* Live Class Schedule Notification Alert from Admin / Registrar */}
+      {latestScheduleNotif && (
+        <div className="rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/60 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-[#F5C518] shadow-xs">
+              <Bell className="h-5 w-5 animate-bounce" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-700 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  <ShieldCheck className="h-3 w-3 text-[#F5C518]" />
+                  Class Schedule Notification
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-900">
+                  {String(latestScheduleNotif.sentBy || '').toLowerCase().includes('registrar')
+                    ? 'Sent by Registrar'
+                    : 'Sent by Admin'}
+                </span>
+                {latestScheduleNotif.targetGradeLevel && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                    {latestScheduleNotif.targetGradeLevel}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                {latestScheduleNotif.title}
+              </h3>
+              <p className="text-xs text-slate-600">
+                Attached File: <span className="font-bold text-emerald-800">{latestScheduleNotif.fileName}</span> ({latestScheduleNotif.fileSize}) &bull; Issued by {latestScheduleNotif.sentBy} ({latestScheduleNotif.sentAt})
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to="/teacher/class-program"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Calendar className="h-4 w-4 text-[#F5C518]" />
+              <span>View Class Program</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* 3 Executive Metrics Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-5">

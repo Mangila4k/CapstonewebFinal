@@ -206,7 +206,7 @@ export const App: React.FC = () => {
           <Route
             path="/admin/create-schedule"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'principal']}>
+              <ProtectedRoute allowedRoles={['admin', 'registrar', 'principal']}>
                 <AdminCreateSchedulePage />
               </ProtectedRoute>
             }
@@ -292,6 +292,16 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['registrar', 'admin', 'principal']}>
                 <AdminTeachersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/registrar/create_schedule.html" element={<Navigate to="/registrar/create-schedule" replace />} />
+          <Route path="/registrar/schedules" element={<Navigate to="/registrar/create-schedule" replace />} />
+          <Route
+            path="/registrar/create-schedule"
+            element={
+              <ProtectedRoute allowedRoles={['registrar', 'admin', 'principal']}>
+                <AdminCreateSchedulePage />
               </ProtectedRoute>
             }
           />
