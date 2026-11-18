@@ -417,6 +417,7 @@ export const AdminDashboardPage: React.FC = () => {
             email: safeEmail,
             parent_name: enr.guardian_name || 'Parent / Guardian',
             parent_contact: enr.guardian_contact || '09123456789',
+            parent_email: (enr as any).guardian_email || null,
             grade_level: enr.grade_level || 'Grade 10',
             strand: enr.strand || null,
             section_id: secList?.[0]?.id || null,
@@ -455,14 +456,19 @@ export const AdminDashboardPage: React.FC = () => {
               .eq('id', enr.id);
           }
 
-          // Automatically send official email with username (Gmail) and temporary password (last name)
+          // Automatically send official emails to BOTH Student Gmail and Parent/Guardian Gmail
           await sendStudentApprovalEmail({
             toEmail: safeEmail,
             firstName: safeFirstName,
             lastName: safeLastName,
             gradeLevel: enr.grade_level || 'Grade 10',
             strand: enr.strand,
+            sectionName: secList?.[0]?.name || null,
             studentId,
+            lrn: generatedLrn,
+            parentEmail: (enr as any).guardian_email || null,
+            parentName: enr.guardian_name || 'Parent / Guardian',
+            enrollmentId: enr.id,
           });
 
           localStorage.removeItem('plsnhs_students_cache_v2');

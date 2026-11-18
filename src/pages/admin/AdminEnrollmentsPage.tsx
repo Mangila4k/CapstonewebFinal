@@ -392,6 +392,10 @@ export const AdminEnrollmentsPage: React.FC = () => {
     gradeLevel: string;
     section: string;
     lrn: string;
+    studentId?: string | number | null;
+    parentEmail?: string;
+    parentName?: string;
+    parentPassword?: string;
   } | null>(null);
   const [approvalGmailCopied, setApprovalGmailCopied] = useState(false);
   const [approvalGmailSending, setApprovalGmailSending] = useState(false);
@@ -742,8 +746,15 @@ export const AdminEnrollmentsPage: React.FC = () => {
             enrollment_id: targetEnr.id,
           });
 
-          // Automatically send official email with username (Gmail) and temporary password (last name)
-          await sendStudentApprovalEmail({
+          // Automatically send official emails to BOTH Student Gmail and Parent/Guardian Gmail with their respective usernames & passwords
+          const guardianEmailRaw = String((targetEnr as any).guardian_email || '').trim().toLowerCase();
+          const guardianNameRaw =
+            targetEnr.guardian_name ||
+            (targetEnr as any).mother_name ||
+            (targetEnr as any).father_name ||
+            'Parent / Guardian';
+
+          const approvalRes = await sendStudentApprovalEmail({
             toEmail: safeEmail,
             firstName: safeFirstName,
             lastName: safeLastName,
@@ -751,9 +762,13 @@ export const AdminEnrollmentsPage: React.FC = () => {
             strand: targetEnr.strand,
             sectionName: chosenSectionName,
             studentId: resolvedStudentId,
+            lrn: resolvedLrn,
+            parentEmail: guardianEmailRaw || null,
+            parentName: guardianNameRaw,
+            enrollmentId: targetEnr.id,
           });
 
-          // Present instant Gmail dispatch modal to Admin/Registrar
+          // Present instant Gmail dispatch modal to Admin/Registrar showing both Student & Parent credentials
           setApprovalGmailDialog({
             studentName: `${safeFirstName} ${safeLastName}`,
             email: safeEmail,
@@ -762,20 +777,27 @@ export const AdminEnrollmentsPage: React.FC = () => {
             gradeLevel: normalizedGrade,
             section: chosenSectionName,
             lrn: resolvedLrn,
+            studentId: resolvedStudentId,
+            parentEmail: approvalRes.parentUsername || guardianEmailRaw || '',
+            parentName: approvalRes.parentName || guardianNameRaw,
+            parentPassword: approvalRes.parentTemporaryPassword || safeLastName,
           });
           setApprovalGmailCopied(false);
           setApprovalGmailSending(false);
-          setApprovalGmailStatus(null);
+          setApprovalGmailStatus(approvalRes.message);
         } catch (syncErr) {
           console.warn('Student masterlist sync note:', syncErr);
         }
       }
 
+      const approvedParentEmail = targetEnr ? String((targetEnr as any).guardian_email || '').trim() : '';
       setNotice({
         type: 'success',
         message:
           newStatus === 'Approved' && targetEnr
-            ? `Enrollment approved for ${targetEnr.first_name} ${targetEnr.last_name}! Login credentials sent to ${targetEnr.email || 'Gmail'} (Username: ${targetEnr.email || 'student Gmail'}, Temp Password: ${targetEnr.last_name}).`
+            ? approvedParentEmail
+              ? `Enrollment approved for ${targetEnr.first_name} ${targetEnr.last_name}! Official credentials sent to Student (${targetEnr.email || 'Gmail'}) AND Parent/Guardian (${approvedParentEmail}).`
+              : `Enrollment approved for ${targetEnr.first_name} ${targetEnr.last_name}! Login credentials sent to ${targetEnr.email || 'Gmail'} (Username: ${targetEnr.email || 'student Gmail'}, Temp Password: ${targetEnr.last_name}).`
             : `Enrollment application marked as ${newStatus}.`,
       });
 
@@ -1836,12 +1858,16 @@ export const AdminEnrollmentsPage: React.FC = () => {
         </Modal>
       )}
 
-      {/* APPROVAL GMAIL DISPATCH MODAL */}
+      {/* APPROVAL GMAIL DISPATCH MODAL (Student + Parent/Guardian) */}
       {approvalGmailDialog && (() => {
         const studentEmail = approvalGmailDialog.email.trim().toLowerCase();
         const safeFirstName = approvalGmailDialog.firstName.trim();
         const safeLastName = approvalGmailDialog.lastName.trim();
         const tempPassword = safeLastName; // Student's last name is their temporary password
+        const parentEmail = (approvalGmailDialog.parentEmail || '').trim().toLowerCase();
+        const parentName = (approvalGmailDialog.parentName || 'Parent / Guardian').trim();
+        const parentPassword = (approvalGmailDialog.parentPassword || safeLastName).trim();
+
         const studentLrn =
           approvalGmailDialog.lrn && String(approvalGmailDialog.lrn).trim() !== 'N/A'
             ? String(approvalGmailDialog.lrn).trim()
@@ -1866,36 +1892,80 @@ Warm regards,
 Placido L. Señor National High School
 Registrar & Admissions Office`;
 
+        const parentEmailSubject = `Placido L. Señor National High School - Parent Portal Access Credentials (${safeFirstName} ${safeLastName})`;
+        const parentEmailBody = `Dear ${parentName},
+
+Your child ${safeFirstName} ${safeLastName} (${sectionDisplay}) has been officially approved and enrolled at Placido L. Señor National High School.
+
+Your Parent / Guardian Portal account has been prepared:
+• Portal Link: ${window.location.origin}/login
+• Username (Parent/Guardian Gmail): ${parentEmail || 'parent@gmail.com'}
+• Temporary Password: ${parentPassword}
+• Linked Learner: ${safeFirstName} ${safeLastName} (LRN: ${studentLrn})
+
+Please log in to monitor your child's attendance, quarterly grades, and school announcements.
+
+Warm regards,
+Placido L. Señor National High School
+Registrar & Admissions Office`;
+
         const gmailWebComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
           studentEmail
         )}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+        const parentGmailWebComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+          parentEmail
+        )}&su=${encodeURIComponent(parentEmailSubject)}&body=${encodeURIComponent(parentEmailBody)}`;
 
         return (
           <Modal
             isOpen={!!approvalGmailDialog}
             onClose={() => setApprovalGmailDialog(null)}
-            title={`Send Credentials to Gmail: ${safeFirstName} ${safeLastName}`}
-            subtitle={`Target Address: ${studentEmail}`}
+            title={`Enrollment Approved: ${safeFirstName} ${safeLastName}`}
+            subtitle={`Official credentials dispatched to Student & Parent/Guardian Gmail`}
           >
             <div className="space-y-4 text-xs">
+              {/* 1. STUDENT GMAIL & CREDENTIALS */}
               <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2 text-slate-700">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-[#152e69] text-xs">Email Payload Preview</span>
-                  <span className="font-mono text-[11px] text-blue-700">{studentEmail}</span>
+                  <span className="font-bold text-[#152e69] text-xs">
+                    1. Student Portal Credentials (Student Gmail)
+                  </span>
+                  <span className="font-mono text-[11px] font-bold text-blue-700">{studentEmail}</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-white border border-blue-100 font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed shadow-2xs">
-{`Subject: Placido L. Señor National High School - Student Portal Access Credentials
-
-Dear ${safeFirstName} ${safeLastName},
-
-Your student portal account has been prepared:
-• Portal Link: ${window.location.origin}/login
-• Username (Gmail): ${studentEmail}
+                <div className="p-3 rounded-xl bg-white border border-blue-100 font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed shadow-2xs">
+{`• Portal Link: ${window.location.origin}/login
+• Username (Student Gmail): ${studentEmail}
 • Temporary Password: ${tempPassword}
-• Learner Reference No. (LRN): ${studentLrn}
-• Grade & Section: ${sectionDisplay}
+• LRN: ${studentLrn} | Grade & Section: ${sectionDisplay}`}
+                </div>
+              </div>
 
-Please keep your credentials safe and log in to verify your enrollment status.`}
+              {/* 2. PARENT / GUARDIAN GMAIL & CREDENTIALS */}
+              <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-2 text-slate-700">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-amber-900 text-xs">
+                    2. Parent / Guardian Portal Credentials ({parentName})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="email"
+                    value={approvalGmailDialog.parentEmail || ''}
+                    onChange={(e) =>
+                      setApprovalGmailDialog((prev) =>
+                        prev ? { ...prev, parentEmail: e.target.value } : null
+                      )
+                    }
+                    placeholder="Enter Parent / Guardian Gmail address (e.g. parent@gmail.com)"
+                    className="w-full rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-mono text-slate-800 focus:border-[#152e69] focus:outline-hidden"
+                  />
+                </div>
+                <div className="p-3 rounded-xl bg-white border border-amber-100 font-mono text-[11px] text-slate-800 whitespace-pre-wrap leading-relaxed shadow-2xs">
+{`• Portal Link: ${window.location.origin}/login
+• Username (Parent/Guardian Gmail): ${parentEmail || '(Enter Parent Gmail above)'}
+• Temporary Password: ${parentPassword}
+• Linked Child: ${safeFirstName} ${safeLastName} (${sectionDisplay})`}
                 </div>
               </div>
 
@@ -1910,14 +1980,14 @@ Please keep your credentials safe and log in to verify your enrollment status.`}
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(emailBody);
+                    navigator.clipboard.writeText(`${emailBody}\n\n---\n\n${parentEmailBody}`);
                     setApprovalGmailCopied(true);
                     setTimeout(() => setApprovalGmailCopied(false), 2500);
                   }}
                   className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-all"
                 >
                   <Copy className="h-3.5 w-3.5 text-slate-500" />
-                  <span>{approvalGmailCopied ? 'Copied to Clipboard!' : 'Copy Credentials'}</span>
+                  <span>{approvalGmailCopied ? 'Copied Both Credentials!' : 'Copy Credentials'}</span>
                 </button>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -1929,26 +1999,32 @@ Please keep your credentials safe and log in to verify your enrollment status.`}
                     Done
                   </button>
 
-                  {/* 1-Click Direct Delivery via Gmail Web */}
+                  {/* 1-Click Direct Delivery via Gmail Web (Student) */}
                   <a
                     href={gmailWebComposeUrl}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => {
-                      setNotice({
-                        type: 'success',
-                        message: `Opened Gmail composer for ${studentEmail}. Click 'Send' in Gmail to deliver immediately!`,
-                      });
-                      setApprovalGmailDialog(null);
-                    }}
-                    className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#ea4335] hover:bg-[#d93025] text-white font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
-                    title="Open directly in Gmail web composer to send"
+                    className="px-3 py-2.5 rounded-xl bg-[#ea4335] hover:bg-[#d93025] text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all"
+                    title="Open Student credentials in Gmail web composer"
                   >
-                    <Mail className="h-4 w-4" />
-                    <span>Send via Gmail Web</span>
+                    <Mail className="h-3.5 w-3.5" />
+                    <span>Student Gmail</span>
                   </a>
 
-                  {/* Direct Cloud Auto-Dispatch */}
+                  {parentEmail && (
+                    <a
+                      href={parentGmailWebComposeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all"
+                      title="Open Parent/Guardian credentials in Gmail web composer"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      <span>Parent Gmail</span>
+                    </a>
+                  )}
+
+                  {/* Direct Cloud Auto-Dispatch to Both Student & Parent */}
                   <button
                     type="button"
                     disabled={approvalGmailSending}
@@ -1961,6 +2037,10 @@ Please keep your credentials safe and log in to verify your enrollment status.`}
                           lastName: safeLastName,
                           gradeLevel: approvalGmailDialog.gradeLevel,
                           sectionName: approvalGmailDialog.section,
+                          studentId: approvalGmailDialog.studentId,
+                          lrn: approvalGmailDialog.lrn,
+                          parentEmail: parentEmail || null,
+                          parentName,
                         });
                         setApprovalGmailStatus(res.message);
                       } finally {
@@ -1970,7 +2050,7 @@ Please keep your credentials safe and log in to verify your enrollment status.`}
                     className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#152e69] hover:bg-[#0f1c3f] text-white font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
                   >
                     <Send className="h-4 w-4 text-[#F5C518]" />
-                    <span>{approvalGmailSending ? 'Dispatching...' : 'Auto-Dispatch'}</span>
+                    <span>{approvalGmailSending ? 'Sending Emails...' : 'Send Both Emails'}</span>
                   </button>
                 </div>
               </div>

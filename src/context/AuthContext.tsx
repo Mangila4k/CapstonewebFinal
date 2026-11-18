@@ -321,8 +321,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const uPass = (u.password || '').trim();
           if (uPass && uPass === cleanPass) return true;
 
-          // For student role initial temporary password: exact match against last_name
-          if (u.role === 'student') {
+          // For student or parent role initial temporary password: exact match against last_name
+          if (u.role === 'student' || u.role === 'parent') {
             const uLast = (u.last_name || '').trim();
             if (uLast && uLast === cleanPass) return true;
           }
@@ -336,7 +336,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const uLast = (u.last_name || '').trim().toLowerCase();
             return (
               (uPass && uPass === cleanPass.toLowerCase()) ||
-              (u.role === 'student' && uLast && uLast === cleanPass.toLowerCase())
+              ((u.role === 'student' || u.role === 'parent') && uLast && uLast === cleanPass.toLowerCase())
             );
           });
 
@@ -350,7 +350,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Incorrect password. Please verify your credentials.' };
         }
       } else {
-        // Fallback check against students table
+        // Fallback check against students table (for student email or parent_email)
         const { data: fallbackStudent } = await supabase
           .from('students')
           .select('*')
@@ -372,6 +372,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               success: false,
               error: 'Incorrect password. Passwords are strictly case-sensitive—check your uppercase and lowercase letters.',
             };
+          }
+        }
+
+        if (!matchedUser) {
+          const { data: fallbackParentStudent } = await supabase
+            .from('students')
+            .select('*')
+            .ilike('parent_email', cleanEmail)
+            .limit(1)
+            .maybeSingle();
+
+          if (fallbackParentStudent) {
+            const rawGuardian = String(fallbackParentStudent.parent_name || '')
+              .replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|engr\.?|atty\.?)\s+/i, '')
+              .trim();
+            const gParts = rawGuardian.split(/\s+/).filter(Boolean);
+            const gLast = gParts.length > 0 ? gParts[gParts.length - 1] : '';
+            const gFirst = gParts.length > 1 ? gParts.slice(0, -1).join(' ') : rawGuardian || 'Parent';
+            const stLast = (fallbackParentStudent.last_name || '').trim();
+
+            if ((gLast && gLast === cleanPass) || (stLast && stLast === cleanPass)) {
+              matchedUser = {
+                id: fallbackParentStudent.parent_id || fallbackParentStudent.id,
+                email: cleanEmail,
+                role: 'parent',
+                first_name: gFirst,
+                last_name: gLast || stLast,
+                student_id: fallbackParentStudent.id,
+              };
+            } else if (
+              (gLast && gLast.toLowerCase() === cleanPass.toLowerCase()) ||
+              (stLast && stLast.toLowerCase() === cleanPass.toLowerCase())
+            ) {
+              return {
+                success: false,
+                error: 'Incorrect password. Passwords are strictly case-sensitive—check your uppercase and lowercase letters.',
+              };
+            }
           }
         }
 

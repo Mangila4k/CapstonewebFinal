@@ -450,6 +450,11 @@ export const EnrollmentWizardPage: React.FC = () => {
         return;
       }
 
+      if (!formData.guardianEmail.trim() || !formData.guardianEmail.includes('@')) {
+        setError('Please provide the Parent or Guardian Gmail address so they can receive their Parent Portal login credentials upon approval.');
+        return;
+      }
+
       if (!documents.report_card) {
         setError('Please upload your Form 138 / SF9 Report Card.');
         return;
@@ -1768,13 +1773,16 @@ export const EnrollmentWizardPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="enrollment-group">
-                  <label>Guardian's Email</label>
+                  <label>
+                    Parent / Guardian's Gmail <span>*</span>
+                  </label>
                   <div className="enrollment-input-wrap">
                     <input
                       type="email"
                       placeholder="guardian@gmail.com"
                       value={formData.guardianEmail}
                       onChange={(e) => handleChange('guardianEmail', e.target.value)}
+                      required
                     />
                   </div>
                 </div>
