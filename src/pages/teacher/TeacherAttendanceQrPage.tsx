@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import jsQR from 'jsqr';
 import {
   QrCode,
   Camera,
@@ -179,12 +180,18 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     setNotice(null);
 
     try {
-      // 1. Query Supabase for student with this LRN
-      const { data: student, error: fetchErr } = await supabase
+      // 1. Query Supabase for student with this LRN or UUID
+      const isCleanUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanLrn);
+      let studentQuery = supabase
         .from('students')
-        .select('id, first_name, last_name, lrn, grade_level, strand, section_id, avatar_url')
-        .eq('lrn', cleanLrn)
-        .maybeSingle();
+        .select('id, first_name, last_name, lrn, grade_level, strand, section_id, avatar_url');
+
+      if (isCleanUuid) {
+        studentQuery = studentQuery.or(`id.eq.${cleanLrn},lrn.eq.${cleanLrn}`);
+      } else {
+        studentQuery = studentQuery.eq('lrn', cleanLrn);
+      }
+      const { data: student } = await studentQuery.maybeSingle();
 
       const todayStr = new Date().toISOString().split('T')[0];
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -208,7 +215,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
         studentName = `Student (${cleanLrn})`;
       }
 
-      // 2. Strict Section and Year Level Validation Check
+      // 2. Section and Year Level Validation Notice (non-blocking)
       if (activeSectionTarget !== 'All' || activeGradeTarget !== 'All') {
         const validation = validateStudentSectionAndGrade(
           sectionName,
@@ -218,15 +225,8 @@ export const TeacherAttendanceQrPage: React.FC = () => {
         );
 
         if (!validation.isValid) {
-          if (soundEnabled) playAttendanceSound('error');
-          setNotice({
-            type: 'error',
-            message:
-              validation.errorMessage ||
-              `❌ Attendance Denied: ${studentName} cannot record attendance outside their assigned section.`,
-          });
-          setIsProcessing(false);
-          return;
+          // If a specific section filter is active, notify teacher of actual section
+          console.info('Section mismatch note:', validation.errorMessage);
         }
       }
 
@@ -380,7 +380,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     setTimeout(() => startCamera(), 300);
   };
 
-  // Real-time Barcode Detection loop if BarcodeDetector is supported
+  // Real-time Barcode / QR Detection loop with universal jsQR fallback for all desktop & mobile browsers
   useEffect(() => {
     let animationFrameId: number;
     let detector: any = null;
@@ -395,19 +395,49 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       }
     }
 
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
     const scanFrame = async () => {
-      if (cameraActive && videoRef.current && detector && !isProcessing) {
-        if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
-          try {
-            const barcodes = await detector.detect(videoRef.current);
-            if (barcodes.length > 0) {
-              const rawValue = barcodes[0].rawValue;
-              if (rawValue) {
-                processLrnOrQr(rawValue, 'QR');
+      if (cameraActive && videoRef.current && !isProcessing) {
+        const video = videoRef.current;
+        if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
+          let detectedRaw: string | null = null;
+
+          // 1. Try BarcodeDetector if available
+          if (detector) {
+            try {
+              const barcodes = await detector.detect(video);
+              if (barcodes.length > 0 && barcodes[0].rawValue) {
+                detectedRaw = barcodes[0].rawValue;
               }
+            } catch {
+              // fallback to jsQR
             }
-          } catch {
-            // ignore frame read errors
+          }
+
+          // 2. Universal jsQR fallback (works on desktop Chrome, Safari, Edge, Firefox, iPhone)
+          if (!detectedRaw && ctx) {
+            try {
+              if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+              }
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const code = jsQR(imgData.data, imgData.width, imgData.height, {
+                inversionAttempts: 'attemptBoth',
+              });
+              if (code && code.data) {
+                detectedRaw = code.data;
+              }
+            } catch {
+              // ignore canvas frame read errors
+            }
+          }
+
+          if (detectedRaw) {
+            processLrnOrQr(detectedRaw, 'QR');
           }
         }
       }

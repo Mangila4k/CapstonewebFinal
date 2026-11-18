@@ -10,7 +10,9 @@
  */
 export function parseLrnFromInput(rawInput: string): string {
   if (!rawInput) return '';
-  const trimmed = rawInput.trim();
+  let trimmed = String(rawInput).trim();
+  // Strip enclosing quotes from barcode scanner inputs
+  trimmed = trimmed.replace(/^["']|["']$/g, '').trim();
 
   // 1. Try URL parsing
   if (trimmed.includes('http://') || trimmed.includes('https://') || trimmed.includes('verify-id')) {
@@ -19,6 +21,10 @@ export function parseLrnFromInput(rawInput: string): string {
       const lrnParam = url.searchParams.get('lrn');
       if (lrnParam && lrnParam.trim()) {
         return lrnParam.trim();
+      }
+      const idParam = url.searchParams.get('id');
+      if (idParam && idParam.trim()) {
+        return idParam.trim();
       }
     } catch {
       // Fall through to regex
@@ -37,19 +43,31 @@ export function parseLrnFromInput(rawInput: string): string {
     }
   }
 
-  // 3. Regex match for lrn=XXXX parameter
-  const lrnMatch = trimmed.match(/lrn=([0-9]{10,12})/i);
-  if (lrnMatch && lrnMatch[1]) {
-    return lrnMatch[1];
+  // 3. Match explicit LRN prefix e.g. "LRN:11951680082", "LRN=11951680082", "LRN-11951680082"
+  const lrnExplicitMatch = trimmed.match(/lrn[:=-]\s*([0-9]{10,12})/i);
+  if (lrnExplicitMatch && lrnExplicitMatch[1]) {
+    return lrnExplicitMatch[1].trim();
   }
 
-  // 4. Regex match for 10-12 continuous digits (Standard DepEd LRN)
+  // 4. Match explicit ID:UUID or id=UUID
+  const uuidExplicitMatch = trimmed.match(/id[:=-]\s*([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})/i);
+  if (uuidExplicitMatch && uuidExplicitMatch[1]) {
+    return uuidExplicitMatch[1].trim();
+  }
+
+  // 5. Match standalone 10-12 continuous digits (Standard DepEd LRN)
   const digitsMatch = trimmed.match(/\b([0-9]{10,12})\b/);
   if (digitsMatch && digitsMatch[1]) {
-    return digitsMatch[1];
+    return digitsMatch[1].trim();
   }
 
-  // 5. Fallback: digits only extraction if between 6 and 14 digits
+  // 6. Match standalone UUID
+  const standaloneUuid = trimmed.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+  if (standaloneUuid && standaloneUuid[0]) {
+    return standaloneUuid[0].trim();
+  }
+
+  // 7. Fallback: digits only extraction if between 6 and 14 digits
   const allDigits = trimmed.replace(/\D/g, '');
   if (allDigits.length >= 6 && allDigits.length <= 14) {
     return allDigits;

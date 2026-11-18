@@ -362,7 +362,7 @@ export const App: React.FC = () => {
             }
           />
           <Route path="/teacher/student-attendance.html" element={<Navigate to="/teacher/attendance" replace />} />
-          <Route path="/teacher/attendance-qr.html" element={<Navigate to="/teacher/attendance" replace />} />
+          <Route path="/teacher/attendance-qr.html" element={<Navigate to="/teacher/attendance-qr" replace />} />
           <Route path="/teacher/attendance-face.html" element={<Navigate to="/teacher/face-attendance" replace />} />
           <Route
             path="/teacher/face-attendance"
@@ -372,7 +372,14 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/teacher/attendance-qr" element={<Navigate to="/teacher/attendance" replace />} />
+          <Route
+            path="/teacher/attendance-qr"
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin', 'registrar']}>
+                <TeacherAttendanceQrPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/teacher/attendance"
             element={

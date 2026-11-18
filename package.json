@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
     "html2canvas": "^1.4.1",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.62.0",
     "nodemailer": "^10.5.0",
     "qrcode": "^1.5.4",
