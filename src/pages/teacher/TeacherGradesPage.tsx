@@ -452,12 +452,17 @@ export const TeacherGradesPage: React.FC = () => {
       if (typeof entry.q4 === 'number') activeQuarters.push(entry.q4);
     }
 
-    if (activeQuarters.length === 0) {
+    const requiredQuarterCount = termView === 'full' ? 4 : 2;
+    const isComplete = activeQuarters.length === requiredQuarterCount;
+
+    // Under DepEd DO 8, s. 2015:
+    // Final grade and average can ONLY be computed if all required grading periods have been entered.
+    if (!isComplete) {
       return {
         average: null,
         finalGrade: null,
         remarks: 'Pending' as const,
-        descriptor: 'No Marks Encoded',
+        descriptor: activeQuarters.length > 0 ? 'In Progress' : 'No Marks Encoded',
         descriptorCode: '—',
         badgeVariant: 'neutral' as const,
         isComplete: false,
@@ -477,7 +482,7 @@ export const TeacherGradesPage: React.FC = () => {
       descriptor: descInfo.descriptor,
       descriptorCode: descInfo.code,
       badgeVariant: descInfo.badgeVariant,
-      isComplete: termView === 'full' ? activeQuarters.length === 4 : activeQuarters.length === 2,
+      isComplete: true,
     };
   };
 

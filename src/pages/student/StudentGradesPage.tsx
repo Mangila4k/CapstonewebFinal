@@ -205,30 +205,30 @@ export const StudentGradesPage: React.FC = () => {
 
   // Base Subject templates for JHS and SHS TVL-ICT (with unrated default state)
   const BASE_JHS_SUBJECTS: JhsSubjectGrade[] = [
-    { code: 'FIL', title: 'Filipino', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'ENG', title: 'English', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'MATH', title: 'Mathematics', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'SCI', title: 'Science', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'AP', title: 'Araling Panlipunan (AP)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'ESP', title: 'Edukasyon sa Pagpapakatao (EsP)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'TLE', title: 'Technology and Livelihood Education (TLE)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'MAPEH', title: 'Music, Arts, Physical Education & Health (MAPEH)', isMapehParent: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'MUSIC', title: 'Music', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'ARTS', title: 'Arts', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'PE', title: 'Physical Education (P.E.)', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'HEALTH', title: 'Health', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'FIL', title: 'Filipino', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'ENG', title: 'English', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'MATH', title: 'Mathematics', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'SCI', title: 'Science', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'AP', title: 'Araling Panlipunan (AP)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'ESP', title: 'Edukasyon sa Pagpapakatao (EsP)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'TLE', title: 'Technology and Livelihood Education (TLE)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'MAPEH', title: 'Music, Arts, Physical Education & Health (MAPEH)', isMapehParent: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'MUSIC', title: 'Music', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'ARTS', title: 'Arts', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'PE', title: 'Physical Education (P.E.)', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'HEALTH', title: 'Health', isMapehChild: true, q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
   ];
 
   const BASE_SHS_SUBJECTS: JhsSubjectGrade[] = [
-    { code: 'CORE-1', title: 'Oral Communication in Context', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'CORE-3', title: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'CORE-8', title: 'General Mathematics', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'CORE-10', title: 'Earth and Life Science', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'CORE-12', title: 'Introduction to the Philosophy of the Human Person', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'CORE-13-1', title: 'Physical Education and Health 1', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'APP-3', title: 'English for Academic and Professional Purposes', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'APP-5', title: 'Empowerment Technologies: ICT for Professional Tracks', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
-    { code: 'APP-1', title: 'Computer Systems Servicing NC II (CSS 1)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'Passed' },
+    { code: 'CORE-1', title: 'Oral Communication in Context', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'CORE-3', title: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'CORE-8', title: 'General Mathematics', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'CORE-10', title: 'Earth and Life Science', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'CORE-12', title: 'Introduction to the Philosophy of the Human Person', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'CORE-13-1', title: 'Physical Education and Health 1', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'APP-3', title: 'English for Academic and Professional Purposes', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'APP-5', title: 'Empowerment Technologies: ICT for Professional Tracks', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
+    { code: 'APP-1', title: 'Computer Systems Servicing NC II (CSS 1)', q1: 0, q2: 0, q3: 0, q4: 0, final: 0, remarks: 'In Progress' },
   ];
 
   const [jhsSubjects, setJhsSubjects] = useState<JhsSubjectGrade[]>(() =>
@@ -356,15 +356,20 @@ export const StudentGradesPage: React.FC = () => {
                 const q4 = marks[4] !== undefined ? marks[4] : sub.q4;
 
                 // Under DepEd DO 8, s. 2015:
-                // Final Grade of a subject can ONLY be computed if all 4 quarters have been entered (> 0).
-                const allQuartersPresent =
-                  typeof q1 === 'number' && q1 > 0 &&
-                  typeof q2 === 'number' && q2 > 0 &&
-                  typeof q3 === 'number' && q3 > 0 &&
-                  typeof q4 === 'number' && q4 > 0;
+                // Final Grade of a subject can ONLY be computed if all required quarters have been entered (> 0).
+                // For Senior High School (SHS 1st Semester), both Q1 and Q2 are required.
+                // For Junior High School (JHS), all 4 quarters (Q1, Q2, Q3, Q4) are required.
+                const allQuartersPresent = isSeniorHigh
+                  ? typeof q1 === 'number' && q1 > 0 && typeof q2 === 'number' && q2 > 0
+                  : typeof q1 === 'number' && q1 > 0 &&
+                    typeof q2 === 'number' && q2 > 0 &&
+                    typeof q3 === 'number' && q3 > 0 &&
+                    typeof q4 === 'number' && q4 > 0;
 
                 const final = allQuartersPresent
-                  ? Math.round((q1 + q2 + q3 + q4) / 4)
+                  ? isSeniorHigh
+                    ? Math.round(((q1 || 0) + (q2 || 0)) / 2)
+                    : Math.round(((q1 || 0) + (q2 || 0) + (q3 || 0) + (q4 || 0)) / 4)
                   : 0;
 
                 return {
@@ -460,26 +465,34 @@ export const StudentGradesPage: React.FC = () => {
     return (sum / mainLearningAreas.length).toFixed(2);
   }, [mainLearningAreas]);
 
-  // General Final Average (Total Average of all learning areas for the School Year)
+  // General Final Average (Total Average of all learning areas)
   // There shouldn't be a total average yet if not all of the student's grades have been entered.
   const generalFinalAverage = useMemo(() => {
     if (mainLearningAreas.length === 0) return '—';
 
-    // Must have all 4 quarters entered and non-zero for every learning area
-    const allQuartersComplete = mainLearningAreas.every(
-      (s) =>
+    // Must have all required quarters entered and non-zero for EVERY learning area
+    const allQuartersComplete = mainLearningAreas.every((s) => {
+      if (isSeniorHigh) {
+        return (
+          typeof s.q1 === 'number' && s.q1 > 0 &&
+          typeof s.q2 === 'number' && s.q2 > 0 &&
+          typeof s.final === 'number' && s.final > 0
+        );
+      }
+      return (
         typeof s.q1 === 'number' && s.q1 > 0 &&
         typeof s.q2 === 'number' && s.q2 > 0 &&
         typeof s.q3 === 'number' && s.q3 > 0 &&
         typeof s.q4 === 'number' && s.q4 > 0 &&
         typeof s.final === 'number' && s.final > 0
-    );
+      );
+    });
 
     if (!allQuartersComplete) return '—';
 
     const sum = mainLearningAreas.reduce((acc, s) => acc + s.final, 0);
     return (sum / mainLearningAreas.length).toFixed(2);
-  }, [mainLearningAreas]);
+  }, [mainLearningAreas, isSeniorHigh]);
 
   // DepEd Learner's Observed Values (DepEd Core Values)
   const coreValues: CoreValueItem[] = [

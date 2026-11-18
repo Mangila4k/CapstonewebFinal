@@ -402,7 +402,8 @@ export const ParentsDashboardPage: React.FC = () => {
       }
 
       const gradesList = Object.values(bySubject).map((item) => {
-        const avg = item.q1 && item.q2 ? Math.round((item.q1 + item.q2) / 2) : (item.q1 || item.q2 || null);
+        // Average can only be computed if all required grading terms (both Q1 and Q2) are entered
+        const avg = item.q1 !== null && item.q2 !== null ? Math.round((item.q1 + item.q2) / 2) : null;
         return {
           code: item.code,
           title: item.title,
@@ -758,7 +759,7 @@ export const ParentsDashboardPage: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {liveGrades.map((sub) => {
-                      const avg = sub.q1 && sub.q2 ? Math.round((sub.q1 + sub.q2) / 2) : (sub.q1 || sub.q2 || null);
+                      const avg = sub.q1 !== null && sub.q2 !== null ? Math.round((sub.q1 + sub.q2) / 2) : null;
                       return (
                         <tr key={sub.code} className="hover:bg-slate-50/70">
                           <td className="py-3 pr-3">
