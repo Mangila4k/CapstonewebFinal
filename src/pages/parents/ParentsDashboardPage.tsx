@@ -279,7 +279,7 @@ export const ParentsDashboardPage: React.FC = () => {
   // Live Child Attendance, Grades & Violations from Supabase
   const [liveAttendance, setLiveAttendance] = useState<any[]>([]);
   const [liveGrades, setLiveGrades] = useState<any[]>([]);
-  const [liveGpa, setLiveGpa] = useState<string>('97.00');
+  const [liveGpa, setLiveGpa] = useState<string>('—');
   const [violationsCount, setViolationsCount] = useState<number>(0);
   const [conductStatus, setConductStatus] = useState<string>('Exemplary');
   const [latestGateStatus, setLatestGateStatus] = useState<string>('Checked In');
@@ -409,9 +409,13 @@ export const ParentsDashboardPage: React.FC = () => {
 
         if (gradesList.length > 0) setLiveGrades(gradesList);
 
-        if (allNumericGrades.length > 0) {
+        // Only compute General Average if all subjects have all grades entered
+        const isComplete = gradesList.length > 0 && gradesList.every((g) => g.q1 > 0 && g.q2 > 0);
+        if (isComplete && allNumericGrades.length > 0) {
           const sum = allNumericGrades.reduce((a, b) => a + b, 0);
           setLiveGpa((sum / allNumericGrades.length).toFixed(2));
+        } else {
+          setLiveGpa('—');
         }
       } catch (err) {
         console.warn('Child progress fetch note:', err);
@@ -438,15 +442,17 @@ export const ParentsDashboardPage: React.FC = () => {
     ? `Section ${rawSection.replace(/^section\s+/i, '')}`
     : 'Section Almario';
 
-  const gpaNum = parseFloat(liveGpa) || 97;
+  const gpaNum = liveGpa !== '—' ? parseFloat(liveGpa) : null;
   const honorsStanding =
-    gpaNum >= 98
-      ? 'With Highest Honors'
-      : gpaNum >= 95
-      ? 'With High Honors'
-      : gpaNum >= 90
-      ? 'With Honors'
-      : 'Good Standing';
+    gpaNum !== null
+      ? gpaNum >= 98
+        ? 'With Highest Honors'
+        : gpaNum >= 95
+        ? 'With High Honors'
+        : gpaNum >= 90
+        ? 'With Honors'
+        : 'Good Standing'
+      : 'In Progress';
 
   const getChildInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);

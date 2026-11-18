@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Tag,
   Check,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -49,7 +50,7 @@ export interface JhsSubjectGrade {
   q3: number;
   q4: number;
   final: number;
-  remarks: 'Passed' | 'Failed';
+  remarks: 'Passed' | 'Failed' | 'In Progress';
 }
 
 interface CoreValueItem {
@@ -353,11 +354,19 @@ export const StudentGradesPage: React.FC = () => {
                 const q2 = marks[2] !== undefined ? marks[2] : sub.q2;
                 const q3 = marks[3] !== undefined ? marks[3] : sub.q3;
                 const q4 = marks[4] !== undefined ? marks[4] : sub.q4;
-                const validMarks = [q1, q2, q3, q4].filter((v): v is number => typeof v === 'number' && v > 0);
-                const final =
-                  validMarks.length > 0
-                    ? Math.round(validMarks.reduce((a, b) => a + b, 0) / validMarks.length)
-                    : sub.final;
+
+                // Under DepEd DO 8, s. 2015:
+                // Final Grade of a subject can ONLY be computed if all 4 quarters have been entered (> 0).
+                const allQuartersPresent =
+                  typeof q1 === 'number' && q1 > 0 &&
+                  typeof q2 === 'number' && q2 > 0 &&
+                  typeof q3 === 'number' && q3 > 0 &&
+                  typeof q4 === 'number' && q4 > 0;
+
+                const final = allQuartersPresent
+                  ? Math.round((q1 + q2 + q3 + q4) / 4)
+                  : 0;
+
                 return {
                   ...sub,
                   q1,
@@ -365,7 +374,9 @@ export const StudentGradesPage: React.FC = () => {
                   q3,
                   q4,
                   final,
-                  remarks: final >= 75 ? 'Passed' : 'Failed',
+                  remarks: allQuartersPresent
+                    ? (final >= 75 ? 'Passed' : 'Failed')
+                    : 'In Progress',
                 };
               }
               return sub;
@@ -416,41 +427,58 @@ export const StudentGradesPage: React.FC = () => {
     [jhsSubjects]
   );
 
-  // Quarterly General Averages
+  // Quarterly General Averages (Only computed if ALL major learning areas have a grade entered for that quarter)
   const q1GeneralAverage = useMemo(() => {
-    const valid = mainLearningAreas.filter((s) => typeof s.q1 === 'number' && s.q1 > 0);
-    if (valid.length === 0) return '—';
-    const sum = valid.reduce((acc, s) => acc + s.q1, 0);
-    return (sum / valid.length).toFixed(2);
+    if (mainLearningAreas.length === 0) return '—';
+    const allHaveQ1 = mainLearningAreas.every((s) => typeof s.q1 === 'number' && s.q1 > 0);
+    if (!allHaveQ1) return '—';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q1, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
   }, [mainLearningAreas]);
 
   const q2GeneralAverage = useMemo(() => {
-    const valid = mainLearningAreas.filter((s) => typeof s.q2 === 'number' && s.q2 > 0);
-    if (valid.length === 0) return '—';
-    const sum = valid.reduce((acc, s) => acc + s.q2, 0);
-    return (sum / valid.length).toFixed(2);
+    if (mainLearningAreas.length === 0) return '—';
+    const allHaveQ2 = mainLearningAreas.every((s) => typeof s.q2 === 'number' && s.q2 > 0);
+    if (!allHaveQ2) return '—';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q2, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
   }, [mainLearningAreas]);
 
   const q3GeneralAverage = useMemo(() => {
-    const valid = mainLearningAreas.filter((s) => typeof s.q3 === 'number' && s.q3 > 0);
-    if (valid.length === 0) return '—';
-    const sum = valid.reduce((acc, s) => acc + s.q3, 0);
-    return (sum / valid.length).toFixed(2);
+    if (mainLearningAreas.length === 0) return '—';
+    const allHaveQ3 = mainLearningAreas.every((s) => typeof s.q3 === 'number' && s.q3 > 0);
+    if (!allHaveQ3) return '—';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q3, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
   }, [mainLearningAreas]);
 
   const q4GeneralAverage = useMemo(() => {
-    const valid = mainLearningAreas.filter((s) => typeof s.q4 === 'number' && s.q4 > 0);
-    if (valid.length === 0) return '—';
-    const sum = valid.reduce((acc, s) => acc + s.q4, 0);
-    return (sum / valid.length).toFixed(2);
+    if (mainLearningAreas.length === 0) return '—';
+    const allHaveQ4 = mainLearningAreas.every((s) => typeof s.q4 === 'number' && s.q4 > 0);
+    if (!allHaveQ4) return '—';
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.q4, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
   }, [mainLearningAreas]);
 
-  // General Final Average (Sum of final ratings of major learning areas)
+  // General Final Average (Total Average of all learning areas for the School Year)
+  // There shouldn't be a total average yet if not all of the student's grades have been entered.
   const generalFinalAverage = useMemo(() => {
-    const valid = mainLearningAreas.filter((s) => typeof s.final === 'number' && s.final > 0);
-    if (valid.length === 0) return '—';
-    const sum = valid.reduce((acc, s) => acc + s.final, 0);
-    return (sum / valid.length).toFixed(2);
+    if (mainLearningAreas.length === 0) return '—';
+
+    // Must have all 4 quarters entered and non-zero for every learning area
+    const allQuartersComplete = mainLearningAreas.every(
+      (s) =>
+        typeof s.q1 === 'number' && s.q1 > 0 &&
+        typeof s.q2 === 'number' && s.q2 > 0 &&
+        typeof s.q3 === 'number' && s.q3 > 0 &&
+        typeof s.q4 === 'number' && s.q4 > 0 &&
+        typeof s.final === 'number' && s.final > 0
+    );
+
+    if (!allQuartersComplete) return '—';
+
+    const sum = mainLearningAreas.reduce((acc, s) => acc + s.final, 0);
+    return (sum / mainLearningAreas.length).toFixed(2);
   }, [mainLearningAreas]);
 
   // DepEd Learner's Observed Values (DepEd Core Values)
@@ -579,7 +607,7 @@ export const StudentGradesPage: React.FC = () => {
       ].join(','));
     });
     csvLines.push(
-      `"","General Average","${q1GeneralAverage}","${q2GeneralAverage}","${q3GeneralAverage}","${q4GeneralAverage}","${generalFinalAverage}","Passed"`
+      `"","General Average","${q1GeneralAverage}","${q2GeneralAverage}","${q3GeneralAverage}","${q4GeneralAverage}","${generalFinalAverage}","${generalFinalAverage !== '—' ? (Number(generalFinalAverage) >= 75 ? 'Passed' : 'Failed') : 'In Progress'}"`
     );
     csvLines.push('""');
 
@@ -804,20 +832,30 @@ export const StudentGradesPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 self-start md:self-auto">
-              {generalFinalAverage !== '—' && Number(generalFinalAverage) >= 90 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 shadow-2xs">
-                  <Award className="h-4 w-4 text-amber-600" />
-                  {Number(generalFinalAverage) >= 95 ? 'With High Honors' : 'With Honors'}
-                </span>
-              ) : generalFinalAverage !== '—' ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-900 shadow-2xs">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  Passed (Promoted)
-                </span>
+              {generalFinalAverage !== '—' ? (
+                Number(generalFinalAverage) >= 90 ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 shadow-2xs">
+                    <Award className="h-4 w-4 text-amber-600" />
+                    {Number(generalFinalAverage) >= 98
+                      ? 'With Highest Honors'
+                      : Number(generalFinalAverage) >= 95
+                      ? 'With High Honors'
+                      : 'With Honors'}
+                  </span>
+                ) : Number(generalFinalAverage) >= 75 ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-900 shadow-2xs">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Passed (Promoted)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-900 shadow-2xs">
+                    Needs Remediation
+                  </span>
+                )
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-900 shadow-2xs">
-                  <BookOpen className="h-4 w-4 text-blue-600" />
-                  Awaiting Teacher Submissions
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs">
+                  <Clock className="h-4 w-4 text-slate-500" />
+                  Grades Incomplete · In Progress
                 </span>
               )}
             </div>
@@ -835,7 +873,7 @@ export const StudentGradesPage: React.FC = () => {
                   ? Number(generalFinalAverage) >= 75
                     ? 'Passed (Final)'
                     : 'Awaiting Makeup'
-                  : 'In Progress'}
+                  : 'Pending Completion'}
               </span>
             </div>
 
@@ -1226,7 +1264,11 @@ export const StudentGradesPage: React.FC = () => {
                         {generalFinalAverage}
                       </td>
                       <td className="px-5 py-4 text-right font-black uppercase tracking-wider text-emerald-800 text-xs">
-                        PASSED
+                        {generalFinalAverage !== '—'
+                          ? Number(generalFinalAverage) >= 75
+                            ? 'PASSED'
+                            : 'FAILED'
+                          : 'IN PROGRESS'}
                       </td>
                     </tr>
                   </tbody>
@@ -1701,7 +1743,11 @@ export const StudentGradesPage: React.FC = () => {
                     {generalFinalAverage}
                   </td>
                   <td className="border border-black px-1.5 py-0.5 text-center text-emerald-900 font-black uppercase tracking-wider text-[7pt]">
-                    Passed
+                    {generalFinalAverage !== '—'
+                      ? Number(generalFinalAverage) >= 75
+                        ? 'Passed'
+                        : 'Failed'
+                      : 'In Progress'}
                   </td>
                 </tr>
               </tbody>
