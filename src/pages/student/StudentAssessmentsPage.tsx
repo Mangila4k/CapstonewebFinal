@@ -144,6 +144,21 @@ export const StudentAssessmentsPage: React.FC = () => {
     };
   }, []);
 
+  // Sync state immediately when user context hydrates
+  useEffect(() => {
+    const userGrade = user?.student_grade || (user as any)?.grade_level || '';
+    const userSection = user?.student_section || (user as any)?.section || '';
+    if (userGrade || userSection) {
+      setStudentMeta((prev) => ({
+        ...prev,
+        grade_level: prev.grade_level || userGrade,
+        section: prev.section || userSection,
+        fullName: user?.full_name || prev.fullName,
+        id: user?.student_id || user?.id || prev.id,
+      }));
+    }
+  }, [user]);
+
   // Resolve logged-in student's section & ID from Supabase so their Turn-In syncs directly with Teacher's section roster
   useEffect(() => {
     async function loadStudentSection() {
@@ -311,8 +326,12 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
 
   // Strictly filter classwork to only those assigned to the student's Grade Level & Section
   const filtered = useMemo(() => {
-    const studentGradeNorm = normalizeGradeNumber(studentMeta.grade_level);
-    const studentSecNorm = normalizeSectionName(studentMeta.section);
+    const studentGradeNorm = normalizeGradeNumber(
+      studentMeta.grade_level || user?.student_grade || (user as any)?.grade_level
+    );
+    const studentSecNorm = normalizeSectionName(
+      studentMeta.section || user?.student_section || (user as any)?.section
+    );
 
     return assessments.filter((a) => {
       // 1. Tab category filter
@@ -336,7 +355,7 @@ DepEd K-12 Curriculum Standard • S.Y. 2025-2026
 
       return true;
     });
-  }, [assessments, filter, studentMeta.grade_level, studentMeta.section]);
+  }, [assessments, filter, studentMeta.grade_level, studentMeta.section, user]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -466,26 +466,22 @@ export const StudentGradesPage: React.FC = () => {
   }, [mainLearningAreas]);
 
   // General Final Average (Total Average of all learning areas)
-  // There shouldn't be a total average yet if not all of the student's grades have been entered.
+  // DepEd DO 8, s. 2015: There shouldn't be a total general average yet if not all of the student's grades have been entered.
   const generalFinalAverage = useMemo(() => {
-    if (mainLearningAreas.length === 0) return '—';
+    if (!mainLearningAreas || mainLearningAreas.length === 0) return '—';
 
     // Must have all required quarters entered and non-zero for EVERY learning area
     const allQuartersComplete = mainLearningAreas.every((s) => {
+      const hasQ1 = typeof s.q1 === 'number' && s.q1 > 0;
+      const hasQ2 = typeof s.q2 === 'number' && s.q2 > 0;
+      const hasFinal = typeof s.final === 'number' && s.final > 0;
+
       if (isSeniorHigh) {
-        return (
-          typeof s.q1 === 'number' && s.q1 > 0 &&
-          typeof s.q2 === 'number' && s.q2 > 0 &&
-          typeof s.final === 'number' && s.final > 0
-        );
+        return hasQ1 && hasQ2 && hasFinal;
       }
-      return (
-        typeof s.q1 === 'number' && s.q1 > 0 &&
-        typeof s.q2 === 'number' && s.q2 > 0 &&
-        typeof s.q3 === 'number' && s.q3 > 0 &&
-        typeof s.q4 === 'number' && s.q4 > 0 &&
-        typeof s.final === 'number' && s.final > 0
-      );
+      const hasQ3 = typeof s.q3 === 'number' && s.q3 > 0;
+      const hasQ4 = typeof s.q4 === 'number' && s.q4 > 0;
+      return hasQ1 && hasQ2 && hasQ3 && hasQ4 && hasFinal;
     });
 
     if (!allQuartersComplete) return '—';
@@ -600,7 +596,20 @@ export const StudentGradesPage: React.FC = () => {
     csvLines.push(`"Curriculum Program:","${curriculumProgram}"`);
     csvLines.push(`"School Year:","${schoolYear}"`);
     csvLines.push(`"General Final Average:","${generalFinalAverage}"`);
-    csvLines.push('"DepEd Academic Descriptor:","Outstanding (With High Honors)"');
+    const gpaVal = Number(generalFinalAverage);
+    const academicDescriptor =
+      generalFinalAverage !== '—'
+        ? gpaVal >= 90
+          ? 'Outstanding (With Honors)'
+          : gpaVal >= 85
+          ? 'Very Satisfactory'
+          : gpaVal >= 80
+          ? 'Satisfactory'
+          : gpaVal >= 75
+          ? 'Fairly Satisfactory'
+          : 'Did Not Meet Expectations'
+        : 'Awaiting Complete Term Ratings · In Progress';
+    csvLines.push(`"DepEd Academic Descriptor:","${academicDescriptor}"`);
     csvLines.push('""');
 
     // Learning Areas Matrix
@@ -611,11 +620,11 @@ export const StudentGradesPage: React.FC = () => {
       csvLines.push([
         `"${s.code}"`,
         `"${indent}${s.title}"`,
-        String(s.q1),
-        String(s.q2),
-        String(s.q3),
-        String(s.q4),
-        String(s.final),
+        s.q1 > 0 ? String(s.q1) : '"—"',
+        s.q2 > 0 ? String(s.q2) : '"—"',
+        s.q3 > 0 ? String(s.q3) : '"—"',
+        s.q4 > 0 ? String(s.q4) : '"—"',
+        s.final > 0 ? String(s.final) : '"—"',
         `"${s.remarks}"`,
       ].join(','));
     });
@@ -1875,7 +1884,16 @@ export const StudentGradesPage: React.FC = () => {
           <div className="pt-0.5 border-t-2 border-black space-y-1">
             <div className="text-[6.6pt] text-slate-900 leading-tight">
               <p>
-                <strong>CERTIFICATE OF TRANSFER &amp; PROMOTION:</strong> This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>{nextGradeLevel}</strong>.
+                <strong>CERTIFICATE OF TRANSFER &amp; PROMOTION:</strong>{' '}
+                {generalFinalAverage !== '—' ? (
+                  <>
+                    This is to certify that <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) of <strong>{learnerGrade} – {learnerSection}</strong> has completed the required academic competencies for School Year <strong>{schoolYear}</strong> and is eligible for admission to <strong>{nextGradeLevel}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Academic progress for <strong>{learnerName.toUpperCase()}</strong> (LRN: {learnerLrn}) for School Year <strong>{schoolYear}</strong> is currently <strong>In Progress</strong>. Official promotion and transfer eligibility will be certified upon completion and submission of all grading period ratings.
+                  </>
+                )}
               </p>
             </div>
 
