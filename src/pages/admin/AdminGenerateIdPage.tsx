@@ -25,6 +25,7 @@ import {
   ExternalLink,
   X,
   Upload,
+  GraduationCap,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -47,14 +48,15 @@ const computeStudentQrPayload = (
   const lrn = st.lrn || '';
   const id = st.student_id || st.id || '';
   const level = st.level_category || st.grade_level || 'Junior High';
+  const section = st.section || '';
   const guardian = st.parent_name || '';
   const phone = st.parent_contact || '';
 
   if (mode === 'raw') {
-    return `PLSNHS-STUDENT|LRN:${lrn}|ID:${id}|NAME:${name}|GRADE:${level}|CONTACT:${phone}|STATUS:OFFICIAL_ENROLLED`;
+    return `PLSNHS-STUDENT|LRN:${lrn}|ID:${id}|NAME:${name}|GRADE:${level}|SECTION:${section}|CONTACT:${phone}|STATUS:OFFICIAL_ENROLLED`;
   }
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}/verify-id?lrn=${encodeURIComponent(lrn)}&id=${encodeURIComponent(String(id))}&name=${encodeURIComponent(name)}&grade=${encodeURIComponent(level)}&guardian=${encodeURIComponent(guardian)}&contact=${encodeURIComponent(phone)}`;
+  return `${origin}/verify-id?lrn=${encodeURIComponent(lrn)}&id=${encodeURIComponent(String(id))}&name=${encodeURIComponent(name)}&grade=${encodeURIComponent(level)}&section=${encodeURIComponent(section)}&guardian=${encodeURIComponent(guardian)}&contact=${encodeURIComponent(phone)}`;
 };
 
 const INITIAL_STUDENTS: CreatedStudentIdRecord[] = [
@@ -66,6 +68,7 @@ const INITIAL_STUDENTS: CreatedStudentIdRecord[] = [
     last_name: 'Abalo',
     lrn: '119518160054',
     grade_level: 'Grade 10',
+    section: 'Generosity',
     level_category: 'Junior High',
     strand: '',
     school_year: '2026-2027',
@@ -83,6 +86,7 @@ const INITIAL_STUDENTS: CreatedStudentIdRecord[] = [
     last_name: 'Baylocon',
     lrn: '187030160003',
     grade_level: 'Grade 10',
+    section: 'Generosity',
     level_category: 'Junior High',
     strand: '',
     school_year: '2026-2027',
@@ -100,6 +104,7 @@ const INITIAL_STUDENTS: CreatedStudentIdRecord[] = [
     last_name: 'Pengoc',
     lrn: '11951680082',
     grade_level: 'Grade 11',
+    section: 'Almario',
     level_category: 'Senior High',
     strand: 'TVL-ICT',
     school_year: '2026-2027',
@@ -117,6 +122,7 @@ const INITIAL_STUDENTS: CreatedStudentIdRecord[] = [
     last_name: 'Ceballos',
     lrn: '141525469312',
     grade_level: 'Grade 7',
+    section: 'De Gracia',
     level_category: 'Junior High',
     strand: '',
     school_year: '2026-2027',
@@ -134,6 +140,7 @@ const INITIAL_STUDENTS: CreatedStudentIdRecord[] = [
     last_name: 'Maurin',
     lrn: '123456789101',
     grade_level: 'Grade 8',
+    section: 'Yakal',
     level_category: 'Junior High',
     strand: '',
     school_year: '2026-2027',
@@ -149,6 +156,7 @@ export const AdminGenerateIdPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [students, setStudents] = useState<CreatedStudentIdRecord[]>(INITIAL_STUDENTS);
   const [gradeFilter, setGradeFilter] = useState<string>('all');
+  const [sectionFilter, setSectionFilter] = useState<string>('all');
   const [selectedStudentId, setSelectedStudentId] = useState<string>(INITIAL_STUDENTS[0].id as string);
   const [flipped, setFlipped] = useState<boolean>(false);
   const [tableSearch, setTableSearch] = useState<string>('');
@@ -184,35 +192,65 @@ export const AdminGenerateIdPage: React.FC = () => {
     }
   }, [alert]);
 
-  // Load students from Supabase on mount
+  // Load students and sections from Supabase on mount
   useEffect(() => {
     async function loadDbStudents() {
       let combined: CreatedStudentIdRecord[] = [...INITIAL_STUDENTS];
       try {
-        const { data: stData } = await supabase
-          .from('students')
-          .select('*')
-          .order('last_name', { ascending: true });
+        const [stRes, secRes] = await Promise.all([
+          supabase
+            .from('students')
+            .select('*')
+            .order('last_name', { ascending: true }),
+          supabase
+            .from('sections')
+            .select('id, name, grade_level, strand'),
+        ]);
+
+        const stData = stRes.data || [];
+        const secData = secRes.data || [];
+        const secMap = new Map<string, { name: string; grade_level: string; strand?: string }>();
+        secData.forEach((sec: any) => {
+          secMap.set(String(sec.id), {
+            name: sec.name,
+            grade_level: sec.grade_level,
+            strand: sec.strand,
+          });
+        });
 
         if (stData && stData.length > 0) {
-          const mapped: CreatedStudentIdRecord[] = stData.map((s) => ({
-            id: s.id,
-            student_id: s.id,
-            fullname: `${s.first_name} ${s.last_name}`.trim(),
-            first_name: s.first_name,
-            last_name: s.last_name,
-            lrn: s.lrn || '',
-            grade_level: s.grade_level || 'Grade 10',
-            level_category: parseInt(String(s.grade_level).replace(/\D/g, '') || '10', 10) >= 11 ? 'Senior High' : 'Junior High',
-            strand: s.strand || '',
-            photo_url: (s as any).two_by_two_picture_url || (s as any).photo_url || (s as any).avatar_url || '',
-            parent_name: s.guardian_name || (s as any).parent_name || '',
-            parent_contact: s.guardian_contact || (s as any).parent_contact || '',
-            principal_name: 'Dr. Ryan R. Quiroga',
-            school_year: '2026-2027',
-            created_at: s.created_at || new Date().toISOString(),
-            status: s.status || 'Active',
-          }));
+          const mapped: CreatedStudentIdRecord[] = stData.map((s: any) => {
+            const secInfo = s.section_id ? secMap.get(String(s.section_id)) : undefined;
+            const resolvedSection = s.section || secInfo?.name || '';
+            const rawGrade = s.grade_level || secInfo?.grade_level || 'Grade 10';
+            const cleanGrade = rawGrade.toLowerCase().startsWith('grade')
+              ? rawGrade
+              : `Grade ${rawGrade}`;
+
+            return {
+              id: s.id,
+              student_id: s.id,
+              fullname: `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Student',
+              first_name: s.first_name || '',
+              last_name: s.last_name || '',
+              lrn: s.lrn || '',
+              grade_level: cleanGrade,
+              section: resolvedSection,
+              level_category:
+                parseInt(String(cleanGrade).replace(/\D/g, '') || '10', 10) >= 11
+                  ? 'Senior High'
+                  : 'Junior High',
+              strand: s.strand || secInfo?.strand || '',
+              photo_url:
+                s.two_by_two_picture_url || s.photo_url || s.avatar_url || '',
+              parent_name: s.guardian_name || s.parent_name || '',
+              parent_contact: s.guardian_contact || s.parent_contact || '',
+              principal_name: 'Dr. Ryan R. Quiroga',
+              school_year: '2026-2027',
+              created_at: s.created_at || new Date().toISOString(),
+              status: s.status || 'Active',
+            };
+          });
 
           // Merge loaded with initials to ensure demo records stay available
           combined = [...mapped];
@@ -231,6 +269,7 @@ export const AdminGenerateIdPage: React.FC = () => {
       const queryLrn = searchParams.get('lrn');
       const queryName = searchParams.get('name');
       const queryGrade = searchParams.get('grade');
+      const querySection = searchParams.get('section');
       const queryStrand = searchParams.get('strand');
       const queryGuardian = searchParams.get('guardian');
       const queryContact = searchParams.get('contact');
@@ -256,6 +295,7 @@ export const AdminGenerateIdPage: React.FC = () => {
           last_name: lastName,
           lrn: queryLrn || '',
           grade_level: gLevel,
+          section: querySection || '',
           level_category: isShs ? 'Senior High' : 'Junior High',
           strand: queryStrand || '',
           photo_url: queryPhoto || '',
@@ -296,6 +336,7 @@ export const AdminGenerateIdPage: React.FC = () => {
         last_name: '',
         lrn: '',
         grade_level: gradeFilter !== 'all' ? gradeFilter : 'Junior High',
+        section: sectionFilter !== 'all' ? sectionFilter : '',
         level_category: isShs ? 'Senior High' : 'Junior High',
         strand: isShs ? 'TVL-ICT' : '',
         photo_url: '',
@@ -312,16 +353,110 @@ export const AdminGenerateIdPage: React.FC = () => {
     }
   };
 
+  // Available unique sections for current grade filter
+  const availableSectionsForFilter = useMemo(() => {
+    const set = new Set<string>();
+    students.forEach((s) => {
+      if (gradeFilter !== 'all') {
+        const filterNum = gradeFilter.replace(/\D/g, '');
+        const sGradeNum = String(s.grade_level || '').replace(/\D/g, '');
+        if (filterNum && sGradeNum && filterNum !== sGradeNum) return;
+      }
+      if (s.section && s.section.trim()) {
+        set.add(s.section.trim());
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [students, gradeFilter]);
+
   // Filter students for dropdown
-  const filteredForDropdown = students.filter((s) => {
-    if (gradeFilter === 'all') return true;
-    const filterNum = gradeFilter.replace(/\D/g, '');
-    const sGradeNum = String(s.grade_level || '').replace(/\D/g, '');
-    if (filterNum && sGradeNum) {
-      return filterNum === sGradeNum;
-    }
-    return String(s.grade_level || '').toLowerCase().includes(gradeFilter.toLowerCase());
-  });
+  const filteredForDropdown = useMemo(() => {
+    return students.filter((s) => {
+      // 1. Grade level filter
+      if (gradeFilter !== 'all') {
+        const filterNum = gradeFilter.replace(/\D/g, '');
+        const sGradeNum = String(s.grade_level || '').replace(/\D/g, '');
+        if (filterNum && sGradeNum) {
+          if (filterNum !== sGradeNum) return false;
+        } else if (
+          !String(s.grade_level || '').toLowerCase().includes(gradeFilter.toLowerCase())
+        ) {
+          return false;
+        }
+      }
+
+      // 2. Section filter
+      if (sectionFilter !== 'all') {
+        const secName = (s.section || '').trim().toLowerCase();
+        if (secName !== sectionFilter.trim().toLowerCase()) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [students, gradeFilter, sectionFilter]);
+
+  // Group filtered students by Year Level & Section (sorted in proper educational sequence)
+  const groupedStudentsForDropdown = useMemo(() => {
+    type GroupItem = {
+      groupKey: string;
+      groupLabel: string;
+      gradeNum: number;
+      gradeLabel: string;
+      sectionName: string;
+      students: CreatedStudentIdRecord[];
+    };
+
+    const groupsMap = new Map<string, GroupItem>();
+
+    filteredForDropdown.forEach((st) => {
+      const rawGrade = st.grade_level || 'Grade 10';
+      const gradeNum = parseInt(rawGrade.replace(/\D/g, '') || '10', 10);
+      const gradeLabel = rawGrade.toLowerCase().startsWith('grade') ? rawGrade : `Grade ${rawGrade}`;
+      const sectionLabel = st.section && st.section.trim() ? st.section.trim() : 'Unassigned';
+
+      const groupKey = `${gradeNum}:::${sectionLabel}`;
+      const displayLabel =
+        sectionLabel !== 'Unassigned'
+          ? `${gradeLabel} — Section ${sectionLabel}`
+          : `${gradeLabel} — Section Unassigned`;
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, {
+          groupKey,
+          groupLabel: displayLabel,
+          gradeNum,
+          gradeLabel,
+          sectionName: sectionLabel,
+          students: [],
+        });
+      }
+
+      groupsMap.get(groupKey)!.students.push(st);
+    });
+
+    // Sort groups: Grade 7 -> Grade 12, then section alphabetical
+    const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => {
+      if (a.gradeNum !== b.gradeNum) {
+        return a.gradeNum - b.gradeNum;
+      }
+      if (a.sectionName === 'Unassigned') return 1;
+      if (b.sectionName === 'Unassigned') return -1;
+      return a.sectionName.localeCompare(b.sectionName);
+    });
+
+    // Sort students in each section alphabetically by last name or fullname
+    sortedGroups.forEach((g) => {
+      g.students.sort((a, b) => {
+        const nameA = a.last_name || a.fullname || '';
+        const nameB = b.last_name || b.fullname || '';
+        return nameA.localeCompare(nameB);
+      });
+    });
+
+    return sortedGroups;
+  }, [filteredForDropdown]);
 
   // Photo Upload Handler for Top Studio
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -403,6 +538,7 @@ export const AdminGenerateIdPage: React.FC = () => {
         last_name: lastName,
         lrn: editModalFormData.lrn || '',
         grade_level: editModalFormData.grade_level || 'Grade 10',
+        section: editModalFormData.section || '',
         level_category:
           editModalFormData.level_category ||
           (parseInt(String(editModalFormData.grade_level).replace(/\D/g, '') || '10', 10) >= 11
@@ -427,6 +563,7 @@ export const AdminGenerateIdPage: React.FC = () => {
               last_name: lastName,
               lrn: updatedRecord.lrn,
               grade_level: updatedRecord.grade_level,
+              section: updatedRecord.section,
               strand: updatedRecord.strand,
               parent_name: updatedRecord.parent_name,
               parent_contact: updatedRecord.parent_contact,
@@ -505,6 +642,7 @@ export const AdminGenerateIdPage: React.FC = () => {
         last_name: lastName,
         lrn: formData.lrn || '',
         grade_level: formData.grade_level || 'Grade 10',
+        section: (formData as any).section || '',
         level_category:
           formData.level_category ||
           (parseInt(String(formData.grade_level).replace(/\D/g, '') || '10', 10) >= 11
@@ -527,6 +665,7 @@ export const AdminGenerateIdPage: React.FC = () => {
               last_name: lastName,
               lrn: updatedRecord.lrn,
               grade_level: updatedRecord.grade_level,
+              section: updatedRecord.section,
               strand: updatedRecord.strand,
               parent_name: updatedRecord.parent_name,
               parent_contact: updatedRecord.parent_contact,
@@ -627,13 +766,41 @@ export const AdminGenerateIdPage: React.FC = () => {
 
   // Filter created students for table
   const filteredTableStudents = students.filter((s) => {
+    // Grade filter
+    if (gradeFilter !== 'all') {
+      const filterNum = gradeFilter.replace(/\D/g, '');
+      const sGradeNum = String(s.grade_level || '').replace(/\D/g, '');
+      if (filterNum && sGradeNum) {
+        if (filterNum !== sGradeNum) return false;
+      } else if (
+        !String(s.grade_level || '').toLowerCase().includes(gradeFilter.toLowerCase())
+      ) {
+        return false;
+      }
+    }
+
+    // Section filter
+    if (sectionFilter !== 'all') {
+      const secName = (s.section || '').trim().toLowerCase();
+      if (secName !== sectionFilter.trim().toLowerCase()) {
+        return false;
+      }
+    }
+
     const q = tableSearch.toLowerCase().trim();
     if (!q) return true;
     const name = (s.fullname || '').toLowerCase();
     const lrn = (s.lrn || '').toLowerCase();
     const grade = (s.grade_level || '').toLowerCase();
     const strand = (s.strand || '').toLowerCase();
-    return name.includes(q) || lrn.includes(q) || grade.includes(q) || strand.includes(q);
+    const section = (s.section || '').toLowerCase();
+    return (
+      name.includes(q) ||
+      lrn.includes(q) ||
+      grade.includes(q) ||
+      strand.includes(q) ||
+      section.includes(q)
+    );
   });
 
   const handleDelete = (id: string | number | undefined) => {
@@ -725,16 +892,19 @@ export const AdminGenerateIdPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Filter by Year Level & School Year */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Filter by Year Level, Section & School Year */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <Filter className="h-3 w-3 text-[#1B2A4A]" /> Filter by Year Level
+                  <Filter className="h-3 w-3 text-[#1B2A4A]" /> Year Level
                 </label>
                 <select
                   value={gradeFilter}
-                  onChange={(e) => setGradeFilter(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
+                  onChange={(e) => {
+                    setGradeFilter(e.target.value);
+                    setSectionFilter('all');
+                  }}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
                 >
                   <option value="all">All Year Levels</option>
                   <option value="Grade 7">Grade 7 (Junior High)</option>
@@ -748,22 +918,43 @@ export const AdminGenerateIdPage: React.FC = () => {
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="h-3 w-3 text-[#1B2A4A]" /> Section
+                </label>
+                <select
+                  value={sectionFilter}
+                  onChange={(e) => setSectionFilter(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
+                >
+                  <option value="all">All Sections ({availableSectionsForFilter.length})</option>
+                  {availableSectionsForFilter.map((sec) => (
+                    <option key={sec} value={sec}>
+                      Section {sec}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="h-3 w-3 text-[#1B2A4A]" /> School Year (S.Y.)
                 </label>
                 <input
                   type="text"
                   value={formData.school_year || '2026-2027'}
                   onChange={(e) => setFormData({ ...formData, school_year: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
                 />
               </div>
             </div>
 
-            {/* Select Student */}
+            {/* Select Student (Organized by Year Level & Section) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                   <Search className="h-3 w-3 text-[#1B2A4A]" /> Select Student
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    ({filteredForDropdown.length} available)
+                  </span>
                 </label>
                 <button
                   type="button"
@@ -780,11 +971,21 @@ export const AdminGenerateIdPage: React.FC = () => {
                 className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
               >
                 <option value="blank">➕ Blank ID Template / Manual Fill (No Student Selected)</option>
-                {filteredForDropdown.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.fullname} ({st.lrn}) - {st.grade_level} {st.strand ? `(${st.strand})` : ''}
+                {groupedStudentsForDropdown.length === 0 ? (
+                  <option disabled value="">
+                    No students found matching selected filters
                   </option>
-                ))}
+                ) : (
+                  groupedStudentsForDropdown.map((group) => (
+                    <optgroup key={group.groupKey} label={`📁 ${group.groupLabel} (${group.students.length})`}>
+                      {group.students.map((st) => (
+                        <option key={st.id} value={st.id}>
+                          {st.fullname} ({st.lrn}) — {st.grade_level}{st.section ? ` · Section ${st.section}` : ''}{st.strand ? ` (${st.strand})` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))
+                )}
               </select>
             </div>
 
@@ -840,6 +1041,35 @@ export const AdminGenerateIdPage: React.FC = () => {
                   <option value="Grade 11">Grade 11</option>
                   <option value="Grade 12">Grade 12</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Year Level & Class Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <GraduationCap className="h-3 w-3 text-[#1B2A4A]" /> Year Level
+                </label>
+                <input
+                  type="text"
+                  value={formData.grade_level || ''}
+                  onChange={(e) => setFormData({ ...formData, grade_level: e.target.value })}
+                  placeholder="e.g. Grade 10"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="h-3 w-3 text-[#1B2A4A]" /> Class Section
+                </label>
+                <input
+                  type="text"
+                  value={formData.section || ''}
+                  onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                  placeholder="e.g. Generosity / Almario"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
+                />
               </div>
             </div>
 
@@ -1079,10 +1309,19 @@ export const AdminGenerateIdPage: React.FC = () => {
                         {st.lrn || '—'}
                       </td>
 
-                      {/* Grade & Strand */}
-                      <td className="px-5 py-3.5 font-semibold text-slate-800">
-                        {st.grade_level || 'Grade 10'}
-                        {st.strand ? ` · ${st.strand}` : ''}
+                      {/* Grade, Section & Strand */}
+                      <td className="px-5 py-3.5">
+                        <span className="font-bold text-slate-800">{st.grade_level || 'Grade 10'}</span>
+                        {st.section && (
+                          <span className="block text-[11px] font-semibold text-emerald-800">
+                            Section {st.section}
+                          </span>
+                        )}
+                        {st.strand && (
+                          <span className="block text-[10.5px] text-slate-500 font-medium">
+                            {st.strand}
+                          </span>
+                        )}
                       </td>
 
                       {/* QR Code badge */}
@@ -1461,20 +1700,37 @@ export const AdminGenerateIdPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Strand (Senior High) */}
-                <div>
-                  <label className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
-                    Strand / Specialization
-                  </label>
-                  <input
-                    type="text"
-                    value={editModalFormData.strand || ''}
-                    onChange={(e) =>
-                      setEditModalFormData((prev) => ({ ...prev, strand: e.target.value }))
-                    }
-                    placeholder="e.g. TVL-ICT, STEM, HUMSS, GAS, ABM"
-                    className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-xs font-medium text-slate-800 focus:border-[#152e69] focus:outline-hidden"
-                  />
+                {/* Section & Strand */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Class Section
+                    </label>
+                    <input
+                      type="text"
+                      value={editModalFormData.section || ''}
+                      onChange={(e) =>
+                        setEditModalFormData((prev) => ({ ...prev, section: e.target.value }))
+                      }
+                      placeholder="e.g. Generosity / Almario"
+                      className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-xs font-medium text-slate-800 focus:border-[#152e69] focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Strand / Specialization
+                    </label>
+                    <input
+                      type="text"
+                      value={editModalFormData.strand || ''}
+                      onChange={(e) =>
+                        setEditModalFormData((prev) => ({ ...prev, strand: e.target.value }))
+                      }
+                      placeholder="e.g. TVL-ICT, STEM, HUMSS, GAS, ABM"
+                      className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-xs font-medium text-slate-800 focus:border-[#152e69] focus:outline-hidden"
+                    />
+                  </div>
                 </div>
 
                 {/* Emergency Guardian & Contact */}

@@ -13,6 +13,7 @@ export interface StudentIdCardData {
   grade_level?: string;
   level_category?: string;
   strand?: string;
+  section?: string;
   photo_url?: string;
   parent_name?: string;
   parent_contact?: string;
@@ -461,7 +462,10 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
               <GraduationCap className="h-2.5 w-2.5 inline text-[#f5b72e]" /> ACADEMIC CLASSIFICATION
             </div>
             <div className="id-back-level-row">
-              <span className="id-back-level-main">{levelVal}</span>
+              <span className="id-back-level-main">
+                {data.grade_level || levelVal}
+                {data.section ? ` · Sec. ${data.section}` : ''}
+              </span>
               <span className="id-back-level-pill">{deptPill}</span>
             </div>
           </div>
