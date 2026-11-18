@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { GraduationCap, Phone, Shield, Camera } from 'lucide-react';
 import { saveStudentQrToSupabase } from '../../lib/studentQrService';
@@ -45,6 +45,59 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
   layout = 'column',
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [measuredWidth, setMeasuredWidth] = useState<number>(0);
+
+  // Auto-measure container width to ensure the card auto-adjusts on mobile screens
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0) {
+        setMeasuredWidth(rect.width);
+      }
+    };
+
+    measure();
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width;
+          if (w > 0) {
+            setMeasuredWidth(w);
+          }
+        }
+      });
+      ro.observe(el);
+    }
+
+    window.addEventListener('resize', measure);
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
+  // Compute effective scale:
+  // Base CR80 card width is 500px (500x316).
+  // On mobile or narrow containers, auto-adjust the scale so the card
+  // perfectly fits within the container without overflowing, horizontal scrolling, or clipping.
+  const effectiveScale = useMemo(() => {
+    const requestedScale = scale !== undefined && scale > 0 ? scale : 1;
+    if (measuredWidth > 0) {
+      // Allow 16px horizontal breathing room for container padding
+      const maxAvailableWidth = Math.max(200, measuredWidth - 16);
+      const maxPossibleScale = maxAvailableWidth / 500;
+      if (maxPossibleScale < requestedScale) {
+        return Math.max(0.4, Math.min(1, Math.round(maxPossibleScale * 1000) / 1000));
+      }
+    }
+    return requestedScale;
+  }, [scale, measuredWidth]);
 
   // Computations
   const defaultSchoolYear = '2026-2027';
@@ -214,216 +267,263 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({
     </svg>
   );
 
-  const frontCard = (
-    <div key="front" className="id-badge-unit" id="unitFront">
-      <div className="student-id-card id-card-front" id={frontId}>
-        {/* Blue & Gold Wavy Corner Ribbon Overlay */}
-        {renderCornerWaveDesign(`${frontId}-front`)}
+  const isScaled = effectiveScale < 0.999;
+  const scaledW = Math.round(500 * effectiveScale);
+  const scaledH = Math.round(316 * effectiveScale);
 
-        {/* Background Watermark Logo */}
-        <div className="id-bg-watermark">
-          <img
-            className="id-watermark-img"
-            src="/pictures/logo sa skwelahan.png"
-            alt="School Seal Watermark"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
+  const wrapCardWithScaler = (cardEl: React.ReactNode, faceLabel: string, unitId: string) => (
+    <div key={unitId} className="id-badge-unit" id={unitId}>
+      {showFaceTag && <span className="card-face-tag">{faceLabel}</span>}
+      <div
+        className="id-card-scaler"
+        style={
+          isScaled
+            ? {
+                width: `${scaledW}px`,
+                height: `${scaledH}px`,
+                position: 'relative',
+                maxWidth: '100%',
+                margin: '0 auto',
+                flexShrink: 0,
+              }
+            : {
+                width: '500px',
+                height: '316px',
+                position: 'relative',
+                maxWidth: '100%',
+                flexShrink: 0,
+              }
+        }
+      >
+        <div
+          className="id-card-scaler-inner"
+          style={
+            isScaled
+              ? {
+                  width: '500px',
+                  height: '316px',
+                  transform: `scale(${effectiveScale})`,
+                  transformOrigin: 'top center',
+                  position: 'absolute',
+                  top: 0,
+                  left: '50%',
+                  marginLeft: '-250px',
+                }
+              : {
+                  width: '500px',
+                  height: '316px',
+                  position: 'relative',
+                }
+          }
+        >
+          {cardEl}
+        </div>
+      </div>
+    </div>
+  );
+
+  const frontContent = (
+    <div className="student-id-card id-card-front" id={frontId}>
+      {/* Blue & Gold Wavy Corner Ribbon Overlay */}
+      {renderCornerWaveDesign(`${frontId}-front`)}
+
+      {/* Background Watermark Logo */}
+      <div className="id-bg-watermark">
+        <img
+          className="id-watermark-img"
+          src="/pictures/logo sa skwelahan.png"
+          alt="School Seal Watermark"
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
+      </div>
+
+      {/* Top Header Row */}
+      <div className="id-front-header-row">
+        <img
+          className="id-school-logo"
+          src="/pictures/logo sa skwelahan.png"
+          alt="School Seal"
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
+        <div className="id-school-info">
+          <div className="id-school-title">Placido L. Señor National High School</div>
+          <div className="id-school-subtitle">OFFICIAL STUDENT ID</div>
+        </div>
+      </div>
+
+      {/* Body Row: Photo + Metadata */}
+      <div className="id-card-body-row">
+        <div className="id-photo-box">
+          {data.photo_url ? (
+            <img
+              src={data.photo_url}
+              alt={fullName || 'Student Photo'}
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : isBlankTemplate && !fullName ? (
+            <div className="flex flex-col items-center justify-center w-full h-full text-slate-300 p-2 text-center select-none">
+              <Camera className="h-8 w-8 text-[#f5b72e]/80 mb-1" />
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f5b72e]">2x2 PHOTO</span>
+              <span className="text-[8px] text-slate-300 font-medium">AFFIX HERE</span>
+            </div>
+          ) : (
+            <div className="id-photo-initial">{getInitial(fullName || '—')}</div>
+          )}
         </div>
 
-        {/* Top Header Row */}
-        <div className="id-front-header-row">
+        <div className="id-student-info">
+          <div className="id-student-fullname">
+            {fullName ? (
+              fullName
+            ) : (
+              <div className="border-b-2 border-dashed border-[#f5b72e]/60 min-w-[200px] h-7 flex items-end">
+                <span className="text-xs text-slate-300 italic font-normal">Student Full Name</span>
+              </div>
+            )}
+          </div>
+
+          <div className="id-meta-list">
+            <div className="id-meta-item">
+              <span className="id-meta-lbl">LRN:</span>
+              <span className="id-meta-val">{lrn}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row: Principal & QR Code */}
+      <div className="id-card-bottom-row">
+        <div className="id-principal-wrap">
+          <div className="id-principal-sig">{principalName}</div>
+          <div className="id-principal-title">SCHOOL PRINCIPAL</div>
+        </div>
+
+        <div className="id-qr-box-wrap">
+          <div className="id-qr-code-box">
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="Student QR Code" />
+            ) : (
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#162d6b] border-t-transparent" />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const backContent = (
+    <div className="student-id-card id-card-back" id={backId}>
+      {/* Blue & Gold Wavy Corner Ribbon Overlay */}
+      {renderCornerWaveDesign(`${backId}-back`)}
+
+      {/* Background Watermark Logo */}
+      <div className="id-bg-watermark">
+        <img
+          className="id-watermark-img"
+          src="/pictures/logo sa skwelahan.png"
+          alt="School Seal Watermark"
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
+      </div>
+
+      {/* Top Header */}
+      <div className="id-back-header">
+        <div className="id-back-header-left">
           <img
-            className="id-school-logo"
+            className="id-back-logo"
             src="/pictures/logo sa skwelahan.png"
             alt="School Seal"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
             }}
           />
-          <div className="id-school-info">
-            <div className="id-school-title">Placido L. Señor National High School</div>
-            <div className="id-school-subtitle">OFFICIAL STUDENT ID</div>
-          </div>
-        </div>
-
-        {/* Body Row: Photo + Metadata */}
-        <div className="id-card-body-row">
-          <div className="id-photo-box">
-            {data.photo_url ? (
-              <img
-                src={data.photo_url}
-                alt={fullName || 'Student Photo'}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            ) : isBlankTemplate && !fullName ? (
-              <div className="flex flex-col items-center justify-center w-full h-full text-slate-300 p-2 text-center select-none">
-                <Camera className="h-8 w-8 text-[#f5b72e]/80 mb-1" />
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f5b72e]">2x2 PHOTO</span>
-                <span className="text-[8px] text-slate-300 font-medium">AFFIX HERE</span>
-              </div>
-            ) : (
-              <div className="id-photo-initial">{getInitial(fullName || '—')}</div>
-            )}
-          </div>
-
-          <div className="id-student-info">
-            <div className="id-student-fullname">
-              {fullName ? (
-                fullName
-              ) : (
-                <div className="border-b-2 border-dashed border-[#f5b72e]/60 min-w-[200px] h-7 flex items-end">
-                  <span className="text-xs text-slate-300 italic font-normal">Student Full Name</span>
-                </div>
-              )}
-            </div>
-
-            <div className="id-meta-list">
-              <div className="id-meta-item">
-                <span className="id-meta-lbl">LRN:</span>
-                <span className="id-meta-val">{lrn}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Row: Principal & QR Code */}
-        <div className="id-card-bottom-row">
-          <div className="id-principal-wrap">
-            <div className="id-principal-sig">{principalName}</div>
-            <div className="id-principal-title">SCHOOL PRINCIPAL</div>
-          </div>
-
-          <div className="id-qr-box-wrap">
-            <div className="id-qr-code-box">
-              {qrDataUrl ? (
-                <img src={qrDataUrl} alt="Student QR Code" />
-              ) : (
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#162d6b] border-t-transparent" />
-              )}
-            </div>
+          <div>
+            <div className="id-back-school-name">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</div>
+            <div className="id-back-school-sub">Langtad, City of Naga, Cebu • School ID: 303035</div>
           </div>
         </div>
       </div>
-      {showFaceTag && <span className="card-face-tag">Front Side</span>}
-    </div>
-  );
 
-  const backCard = (
-    <div key="back" className="id-badge-unit" id="unitBack">
-      <div className="student-id-card id-card-back" id={backId}>
-        {/* Blue & Gold Wavy Corner Ribbon Overlay */}
-        {renderCornerWaveDesign(`${backId}-back`)}
-
-        {/* Background Watermark Logo */}
-        <div className="id-bg-watermark">
-          <img
-            className="id-watermark-img"
-            src="/pictures/logo sa skwelahan.png"
-            alt="School Seal Watermark"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-        </div>
-
-        {/* Top Header */}
-        <div className="id-back-header">
-          <div className="id-back-header-left">
-            <img
-              className="id-back-logo"
-              src="/pictures/logo sa skwelahan.png"
-              alt="School Seal"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-            <div>
-              <div className="id-back-school-name">PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL</div>
-              <div className="id-back-school-sub">Langtad, City of Naga, Cebu • School ID: 303035</div>
+      {/* Body Grid: 2 Columns */}
+      <div className="id-back-body-grid">
+        {/* Left Column: Academic & Emergency */}
+        <div className="id-back-col">
+          <div className="id-back-level-card">
+            <div className="id-back-level-hdr">
+              <GraduationCap className="h-2.5 w-2.5 inline text-[#f5b72e]" /> ACADEMIC CLASSIFICATION
             </div>
-          </div>
-        </div>
-
-        {/* Body Grid: 2 Columns */}
-        <div className="id-back-body-grid">
-          {/* Left Column: Academic & Emergency */}
-          <div className="id-back-col">
-            <div className="id-back-level-card">
-              <div className="id-back-level-hdr">
-                <GraduationCap className="h-2.5 w-2.5 inline text-[#f5b72e]" /> ACADEMIC CLASSIFICATION
-              </div>
-              <div className="id-back-level-row">
-                <span className="id-back-level-main">{levelVal}</span>
-                <span className="id-back-level-pill">{deptPill}</span>
-              </div>
-            </div>
-
-            <div className="id-back-section-title">
-              <Phone className="h-2.5 w-2.5 inline text-[#f5b72e]" /> IN CASE OF EMERGENCY
-            </div>
-            <div className="id-back-field">
-              <span className="id-back-field-lbl">Parent / Guardian:</span>
-              <span className="id-back-field-val">{parentName}</span>
-            </div>
-            <div className="id-back-field">
-              <span className="id-back-field-lbl">Emergency Contact:</span>
-              <span className="id-back-field-val">{parentContact}</span>
-            </div>
-
-            {/* Signature Block */}
-            <div className="id-back-sig-box">
-              <div className="id-back-sig-line"></div>
-              <div className="id-back-sig-name">
-                {fullName ? fullName.toUpperCase() : 'STUDENT SIGNATURE OVER PRINTED NAME'}
-              </div>
-              <div className="id-back-sig-role">STUDENT SIGNATURE</div>
+            <div className="id-back-level-row">
+              <span className="id-back-level-main">{levelVal}</span>
+              <span className="id-back-level-pill">{deptPill}</span>
             </div>
           </div>
 
-          {/* Right Column: Reminders */}
-          <div className="id-back-col">
-            <div className="id-back-section-title">
-              <Shield className="h-2.5 w-2.5 inline text-[#f5b72e]" /> IMPORTANT REMINDERS
+          <div className="id-back-section-title">
+            <Phone className="h-2.5 w-2.5 inline text-[#f5b72e]" /> IN CASE OF EMERGENCY
+          </div>
+          <div className="id-back-field">
+            <span className="id-back-field-lbl">Parent / Guardian:</span>
+            <span className="id-back-field-val">{parentName}</span>
+          </div>
+          <div className="id-back-field">
+            <span className="id-back-field-lbl">Emergency Contact:</span>
+            <span className="id-back-field-val">{parentContact}</span>
+          </div>
+
+          {/* Signature Block */}
+          <div className="id-back-sig-box">
+            <div className="id-back-sig-line"></div>
+            <div className="id-back-sig-name">
+              {fullName ? fullName.toUpperCase() : 'STUDENT SIGNATURE OVER PRINTED NAME'}
             </div>
-            <ul className="id-back-rules-list">
-              <li>This card is official school property and non-transferable.</li>
-              <li>Must be worn visibly at all times within school grounds.</li>
-              <li>Use QR code on front for gate attendance tracking.</li>
-              <li>Report immediately to the Principal&apos;s Office if lost.</li>
-              <li>If found, return to PLSNHS, Langtad, Naga, Cebu.</li>
-            </ul>
+            <div className="id-back-sig-role">STUDENT SIGNATURE</div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="id-back-footer">
-          <span>PROPERTY OF PLSNHS • OFFICIAL STUDENT IDENTIFICATION</span>
-          <span>
-            VALID S.Y. <span className="text-[#f5b72e] font-extrabold">{schoolYear}</span>
-          </span>
+        {/* Right Column: Reminders */}
+        <div className="id-back-col">
+          <div className="id-back-section-title">
+            <Shield className="h-2.5 w-2.5 inline text-[#f5b72e]" /> IMPORTANT REMINDERS
+          </div>
+          <ul className="id-back-rules-list">
+            <li>This card is official school property and non-transferable.</li>
+            <li>Must be worn visibly at all times within school grounds.</li>
+            <li>Use QR code on front for gate attendance tracking.</li>
+            <li>Report immediately to the Principal&apos;s Office if lost.</li>
+            <li>If found, return to PLSNHS, Langtad, Naga, Cebu.</li>
+          </ul>
         </div>
       </div>
-      {showFaceTag && <span className="card-face-tag">Back Side</span>}
+
+      {/* Footer */}
+      <div className="id-back-footer">
+        <span>PROPERTY OF PLSNHS • OFFICIAL STUDENT IDENTIFICATION</span>
+        <span>
+          VALID S.Y. <span className="text-[#f5b72e] font-extrabold">{schoolYear}</span>
+        </span>
+      </div>
     </div>
   );
+
+  const frontCard = wrapCardWithScaler(frontContent, 'Front Side', 'unitFront');
+  const backCard = wrapCardWithScaler(backContent, 'Back Side', 'unitBack');
 
   const units = side === 'front' ? [frontCard] : side === 'back' ? [backCard] : flipped ? [backCard, frontCard] : [frontCard, backCard];
 
-  const scaleStyle: React.CSSProperties = scale !== 1 ? {
-    transform: `scale(${scale})`,
-    transformOrigin: 'top center',
-  } : {};
-
   return (
     <div
+      ref={containerRef}
       className={`printable-id-card-area id-showcase-container ${
         layout === 'row' ? 'side-by-side' : ''
       } ${className}`}
-      style={scaleStyle}
     >
       {units}
     </div>

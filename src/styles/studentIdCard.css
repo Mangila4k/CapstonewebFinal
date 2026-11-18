@@ -566,6 +566,18 @@
   font-weight: 800;
 }
 
+/* Responsive Scaler Wrapper for Seamless Auto-Adjustment */
+.id-card-scaler {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.id-card-scaler-inner {
+  display: block;
+  box-sizing: border-box;
+}
+
 /* ========================================================
    8. RESPONSIVE ADJUSTMENTS FOR PHONES, TABLETS & GADGETS
    ======================================================== */
@@ -573,41 +585,51 @@
   .id-showcase-container {
     padding: 10px 4px !important;
     gap: 14px !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
     width: 100% !important;
+    max-width: 100% !important;
   }
 
   .id-badge-unit {
     width: 100% !important;
     max-width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-  }
-
-  .student-id-card {
-    /* Auto-scale smoothly on phones: 500px card scaled cleanly to container width */
-    transform: scale(min(calc((100vw - 52px) / 500), 0.95)) !important;
-    transform-origin: top center !important;
-    margin-bottom: calc(316px * (min(calc((100vw - 52px) / 500), 0.95) - 1)) !important;
   }
 }
 
 @media screen and (min-width: 561px) and (max-width: 768px) {
   .id-showcase-container {
-    padding: 18px 10px !important;
+    padding: 16px 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
-  .student-id-card {
-    /* Scaled for tablets portrait mode */
-    transform: scale(0.92) !important;
-    transform-origin: top center !important;
-    margin-bottom: -25px !important;
+  .id-badge-unit {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 }
 
 @media print {
+  .id-card-scaler {
+    width: 500px !important;
+    height: 316px !important;
+    transform: none !important;
+  }
+
+  .id-card-scaler-inner {
+    width: 500px !important;
+    height: 316px !important;
+    transform: none !important;
+    position: static !important;
+    margin-left: 0 !important;
+  }
   /* Universal reset for clean printing without browser date/title headers */
   html,
   body {

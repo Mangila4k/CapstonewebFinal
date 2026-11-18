@@ -680,7 +680,7 @@ export const AdminGenerateIdPage: React.FC = () => {
       {/* Main Two-Column Generator Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
         {/* Left Column: Live Preview Area */}
-        <div className="xl:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col h-full">
+        <div className="xl:col-span-7 bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs flex flex-col h-full">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 flex-wrap gap-3 no-print">
             <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
               <span className="text-[#f5b72e]">🪪</span> Official Student ID Card Preview
@@ -698,7 +698,7 @@ export const AdminGenerateIdPage: React.FC = () => {
 
           {/* Card Preview Component */}
           <div
-            className="overflow-x-auto flex-1 flex flex-col justify-center"
+            className="w-full max-w-full flex-1 flex flex-col items-center justify-center py-1 sm:py-2 overflow-x-hidden sm:overflow-x-auto"
             id="printableCardContainer"
           >
             <StudentIdCard
@@ -714,7 +714,7 @@ export const AdminGenerateIdPage: React.FC = () => {
         </div>
 
         {/* Right Column: Customization Controls */}
-        <div className="xl:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between h-full id-controls-pane no-print">
+        <div className="xl:col-span-5 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs flex flex-col justify-between h-full id-controls-pane no-print">
           <div className="space-y-3.5">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
               <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
@@ -1302,7 +1302,7 @@ export const AdminGenerateIdPage: React.FC = () => {
 
                 <div
                   id="modalCardPreviewContainer"
-                  className="w-full flex-1 overflow-x-auto flex items-center justify-center py-2"
+                  className="w-full max-w-full flex-1 overflow-x-hidden sm:overflow-x-auto flex items-center justify-center py-2"
                 >
                   <StudentIdCard
                     data={{
