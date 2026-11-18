@@ -545,23 +545,23 @@ export const generateBondPaperHtml = (
     .map(
       (slot, i) => `
     <tr>
-      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">${i + 1}</td>
-      <td style="font-family:monospace;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};white-space:nowrap;">${slot.period}</td>
-      <td style="text-align:center;font-family:monospace;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">60</td>
-      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">M – F</td>
-      <td style="border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">
-        <strong>${slot.subject}</strong>
+      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};">${i + 1}</td>
+      <td style="font-family:monospace;font-weight:bold;border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};white-space:nowrap;">${slot.period}</td>
+      <td style="text-align:center;font-family:monospace;border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};">60</td>
+      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};">M – F</td>
+      <td style="border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};">
+        <strong style="font-size:${isLong ? '9.4pt' : '8.8pt'};">${slot.subject}</strong>
         ${
           slot.role === 'Advisory & Subject Load'
-            ? `<span style="display:block;font-size:${isLong ? '6.5pt' : '5.8pt'};color:#1e3a8a;font-weight:bold;text-transform:uppercase;">★ Designated Advisory Section Subject</span>`
+            ? `<span style="display:block;font-size:${isLong ? '7.2pt' : '6.6pt'};color:#1e3a8a;font-weight:bold;text-transform:uppercase;">★ Designated Advisory Section Subject</span>`
             : ''
         }
       </td>
-      <td style="border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};font-weight:bold;">
+      <td style="border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};font-weight:bold;">
         ${slot.grade_level} – ${slot.section}${slot.strand ? ` (${slot.strand})` : ''}
       </td>
-      <td style="border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">${slot.room}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};white-space:nowrap;">
+      <td style="border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};">${slot.room}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:bold;border:1px solid #000;padding:${isLong ? '3px 4px' : '2.5px 3.5px'};white-space:nowrap;">
         300 mins (5h)
       </td>
     </tr>
@@ -587,8 +587,8 @@ export const generateBondPaperHtml = (
       background: #ffffff;
       color: #000000;
       font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-      font-size: ${isLong ? '8pt' : isA4 ? '7.4pt' : '7.2pt'};
-      line-height: 1.15;
+      font-size: ${isLong ? '9.2pt' : isA4 ? '8.8pt' : '8.6pt'};
+      line-height: 1.2;
       height: 100%;
     }
     .bond-sheet {
@@ -603,7 +603,7 @@ export const generateBondPaperHtml = (
     .header-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 1px;
+      margin-bottom: 2px;
     }
     .header-table td {
       padding: 0;
@@ -611,56 +611,56 @@ export const generateBondPaperHtml = (
     }
     .header-center {
       text-align: center;
-      padding: 0 6px;
+      padding: 0 8px;
     }
     .header-center .rep {
-      font-size: ${isLong ? '7pt' : '6.5pt'};
+      font-size: ${isLong ? '7.8pt' : '7.4pt'};
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
       margin: 0;
       color: #1e293b;
     }
     .header-center .deped {
-      font-size: ${isLong ? '9.2pt' : '8.5pt'};
+      font-size: ${isLong ? '11pt' : '10.2pt'};
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
       margin: 0;
       color: #000000;
     }
     .header-center .division {
-      font-size: ${isLong ? '7.2pt' : '6.6pt'};
-      margin: 0;
+      font-size: ${isLong ? '8pt' : '7.5pt'};
+      margin: 1px 0;
       color: #334155;
     }
     .header-center .school {
-      font-size: ${isLong ? '11pt' : '10.2pt'};
+      font-size: ${isLong ? '13.5pt' : '12.5pt'};
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-      margin: 1px 0 0 0;
+      letter-spacing: 0.5px;
+      margin: 2px 0 1px 0;
       font-family: Georgia, serif;
       color: #000000;
     }
     .header-center .address {
-      font-size: ${isLong ? '6.8pt' : '6.2pt'};
+      font-size: ${isLong ? '7.5pt' : '7pt'};
       margin: 0;
       color: #475569;
     }
     .logo-container {
-      width: ${isLong ? '52px' : '44px'};
+      width: ${isLong ? '62px' : '54px'};
       text-align: center;
     }
     .logo-img {
-      width: ${isLong ? '48px' : '40px'};
-      height: ${isLong ? '48px' : '40px'};
+      width: ${isLong ? '56px' : '48px'};
+      height: ${isLong ? '56px' : '48px'};
       object-fit: contain;
       border-radius: 50%;
     }
     .deped-seal-box {
-      width: ${isLong ? '48px' : '40px'};
-      height: ${isLong ? '48px' : '40px'};
+      width: ${isLong ? '56px' : '48px'};
+      height: ${isLong ? '56px' : '48px'};
       border: 1.5px solid #000000;
       border-radius: 50%;
       display: flex;
@@ -672,69 +672,69 @@ export const generateBondPaperHtml = (
       margin: 0 auto;
     }
     .deped-seal-title {
-      font-size: ${isLong ? '6.8pt' : '6pt'};
+      font-size: ${isLong ? '7.5pt' : '6.8pt'};
       font-weight: 900;
       line-height: 1;
     }
     .deped-seal-sub {
-      font-size: ${isLong ? '5.2pt' : '4.6pt'};
+      font-size: ${isLong ? '6pt' : '5.2pt'};
       line-height: 1.1;
       text-transform: uppercase;
     }
     .double-rule-top {
       border: 0;
-      border-top: 1.5px solid #000000;
+      border-top: 1.8px solid #000000;
       margin: 2px 0 1px 0;
     }
     .double-rule-bottom {
       border: 0;
-      border-top: 0.75px solid #000000;
-      margin: 0 0 2px 0;
+      border-top: 0.8px solid #000000;
+      margin: 0 0 3px 0;
     }
     .title-banner {
       background-color: #f1f5f9;
-      border: 1px solid #000000;
-      padding: ${isLong ? '2.5px 5px' : '1.8px 4px'};
+      border: 1.5px solid #000000;
+      padding: ${isLong ? '3.5px 6px' : '3px 5px'};
       text-align: center;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
     .title-banner h2 {
       margin: 0;
-      font-size: ${isLong ? '9.2pt' : '8.4pt'};
+      font-size: ${isLong ? '11pt' : '10pt'};
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
       color: #000000;
     }
     .title-banner .sy {
-      margin: 0;
-      font-size: ${isLong ? '7.5pt' : '7pt'};
+      margin: 1px 0 0 0;
+      font-size: ${isLong ? '8.8pt' : '8.2pt'};
       font-weight: 700;
       color: #0f172a;
     }
     .title-banner .mandate {
       margin: 0;
-      font-size: ${isLong ? '6.4pt' : '5.8pt'};
+      font-size: ${isLong ? '7.2pt' : '6.8pt'};
       color: #475569;
       font-style: italic;
     }
     .profile-table {
       width: 100%;
       border-collapse: collapse;
-      border: 1px solid #000000;
-      margin-bottom: 2px;
-      font-size: ${isLong ? '7.4pt' : '6.8pt'};
+      border: 1.5px solid #000000;
+      margin-bottom: 3px;
+      font-size: ${isLong ? '8.5pt' : '8pt'};
     }
     .profile-table td {
       border: 1px solid #cbd5e1;
-      padding: ${isLong ? '1.8px 4px' : '1.2px 3px'};
+      padding: ${isLong ? '2.5px 5px' : '2px 4px'};
       vertical-align: middle;
     }
     .profile-label {
       font-weight: bold;
       color: #334155;
       text-transform: uppercase;
-      width: 100px;
+      width: 110px;
     }
     .profile-val {
       font-weight: 800;
@@ -744,67 +744,67 @@ export const generateBondPaperHtml = (
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      margin-bottom: 2px;
-      font-size: ${isLong ? '7.3pt' : '6.7pt'};
+      margin-bottom: 3px;
+      font-size: ${isLong ? '8.2pt' : '7.8pt'};
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
     .schedule-table th {
       background-color: #f1f5f9;
       border: 1px solid #000000;
-      padding: ${isLong ? '2px 3px' : '1.5px 2.5px'};
+      padding: ${isLong ? '3px 4px' : '2.5px 3.5px'};
       font-weight: 900;
       text-transform: uppercase;
-      font-size: ${isLong ? '6.8pt' : '6.2pt'};
+      font-size: ${isLong ? '7.8pt' : '7.2pt'};
       text-align: center;
     }
     .schedule-table td {
       border: 1px solid #000000;
-      padding: ${isLong ? '1.8px 3px' : '1.2px 2.5px'};
-      line-height: 1.12;
+      padding: ${isLong ? '2.5px 4px' : '2px 3.5px'};
+      line-height: 1.18;
     }
     .routine-row td {
       background-color: #f8fafc;
       font-style: italic;
       color: #475569;
       font-weight: 600;
-      font-size: ${isLong ? '6.8pt' : '6.2pt'};
+      font-size: ${isLong ? '7.8pt' : '7.2pt'};
     }
     .workload-table {
       width: 100%;
       border-collapse: collapse;
-      border: 1px solid #000000;
-      margin-bottom: 2px;
-      font-size: ${isLong ? '6.8pt' : '6.3pt'};
+      border: 1.5px solid #000000;
+      margin-bottom: 3px;
+      font-size: ${isLong ? '7.8pt' : '7.4pt'};
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
     .workload-table th {
       background-color: #f1f5f9;
       border: 1px solid #000000;
-      padding: ${isLong ? '1.8px 4px' : '1.2px 3px'};
+      padding: ${isLong ? '2.5px 5px' : '2px 4px'};
       font-weight: 800;
       text-transform: uppercase;
       text-align: left;
     }
     .workload-table td {
       border: 1px solid #cbd5e1;
-      padding: ${isLong ? '1.2px 4px' : '1px 3px'};
+      padding: ${isLong ? '2px 5px' : '1.5px 4px'};
     }
     .workload-total td {
       background-color: #f1f5f9;
       font-weight: 900;
       color: #000000;
-      border-top: 1px solid #000000;
+      border-top: 1.5px solid #000000;
     }
     .attestation-box {
       border: 1px solid #000000;
-      padding: ${isLong ? '2.5px 5px' : '1.8px 3.5px'};
-      font-size: ${isLong ? '6.2pt' : '5.7pt'};
-      line-height: 1.12;
+      padding: ${isLong ? '3.5px 6px' : '3px 5px'};
+      font-size: ${isLong ? '7pt' : '6.5pt'};
+      line-height: 1.2;
       text-align: justify;
       background-color: #fafafa;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
       color: #1e293b;
       page-break-inside: avoid !important;
       break-inside: avoid !important;
@@ -812,8 +812,8 @@ export const generateBondPaperHtml = (
     .signatories-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 2px;
-      font-size: ${isLong ? '7.2pt' : '6.6pt'};
+      margin-top: 3px;
+      font-size: ${isLong ? '8.2pt' : '7.6pt'};
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
@@ -821,36 +821,36 @@ export const generateBondPaperHtml = (
       width: 25%;
       text-align: center;
       vertical-align: top;
-      padding: 0 3px;
+      padding: 0 4px;
     }
     .sign-label {
-      font-size: ${isLong ? '6.4pt' : '5.8pt'};
+      font-size: ${isLong ? '7.2pt' : '6.6pt'};
       color: #475569;
       text-transform: uppercase;
       font-weight: bold;
-      margin-bottom: ${isLong ? '10px' : '6px'};
+      margin-bottom: ${isLong ? '12px' : '8px'};
     }
     .sign-name {
       font-weight: 900;
-      font-size: ${isLong ? '7.3pt' : '6.7pt'};
+      font-size: ${isLong ? '8.8pt' : '8.2pt'};
       text-transform: uppercase;
-      border-bottom: 1.5px solid #000000;
-      padding-bottom: 1px;
-      margin-bottom: 1px;
+      border-bottom: 1.8px solid #000000;
+      padding-bottom: 1.5px;
+      margin-bottom: 1.5px;
       color: #000000;
     }
     .sign-title {
-      font-size: ${isLong ? '6.4pt' : '5.8pt'};
+      font-size: ${isLong ? '7.2pt' : '6.6pt'};
       color: #334155;
-      line-height: 1.05;
+      line-height: 1.1;
     }
     .security-bar {
-      margin-top: 2px;
-      padding-top: 1.5px;
+      margin-top: 3px;
+      padding-top: 2px;
       border-top: 1px dashed #94a3b8;
       display: flex;
       justify-content: space-between;
-      font-size: 5.8pt;
+      font-size: 6.8pt;
       color: #64748b;
     }
     @media print {
@@ -1403,116 +1403,119 @@ export const TeacherClassProgramPage: React.FC = () => {
 
         {/* 
           ========================================================================
-          BOND PAPER ACTION & FORMAT SELECTION BAR
+          BOND PAPER ACTION & FORMAT SELECTION BAR (Prominent & Large Controls)
           ========================================================================
         */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
             {/* Paper Size Selector */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-emerald-700" />
                   DepEd Bond Paper Size:
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Fits strictly on 1 Page
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-extrabold text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                  Official DepEd Size
                 </span>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+
+              <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setPaperSize('short')}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 sm:px-6 sm:py-3.5 text-sm sm:text-base font-black transition-all cursor-pointer shadow-xs ${
                     paperSize === 'short'
-                      ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-600 ring-offset-1'
-                      : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      ? 'bg-emerald-700 text-white ring-3 ring-emerald-600 ring-offset-2'
+                      : 'border-2 border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-5 w-5" />
                   <span>Short Bond Paper</span>
                   <span
-                    className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                    className={`rounded-lg px-2 py-0.5 text-xs font-mono font-bold ${
                       paperSize === 'short' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     8.5&quot; × 11&quot;
                   </span>
-                  {paperSize === 'short' && <Check className="h-3.5 w-3.5 text-emerald-200 ml-0.5" />}
+                  {paperSize === 'short' && <Check className="h-4 w-4 text-emerald-200 ml-0.5 stroke-[3]" />}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaperSize('a4')}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 sm:px-6 sm:py-3.5 text-sm sm:text-base font-black transition-all cursor-pointer shadow-xs ${
                     paperSize === 'a4'
-                      ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-600 ring-offset-1'
-                      : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      ? 'bg-emerald-700 text-white ring-3 ring-emerald-600 ring-offset-2'
+                      : 'border-2 border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-5 w-5" />
                   <span>A4 Standard</span>
                   <span
-                    className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                    className={`rounded-lg px-2 py-0.5 text-xs font-mono font-bold ${
                       paperSize === 'a4' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     8.27&quot; × 11.69&quot;
                   </span>
-                  {paperSize === 'a4' && <Check className="h-3.5 w-3.5 text-emerald-200 ml-0.5" />}
+                  {paperSize === 'a4' && <Check className="h-4 w-4 text-emerald-200 ml-0.5 stroke-[3]" />}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaperSize('long')}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-2.5 rounded-2xl px-5 py-3 sm:px-6 sm:py-3.5 text-sm sm:text-base font-black transition-all cursor-pointer shadow-xs ${
                     paperSize === 'long'
-                      ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-600 ring-offset-1'
-                      : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      ? 'bg-emerald-700 text-white ring-3 ring-emerald-600 ring-offset-2'
+                      : 'border-2 border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-5 w-5" />
                   <span>Long Bond Paper</span>
                   <span
-                    className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                    className={`rounded-lg px-2 py-0.5 text-xs font-mono font-bold ${
                       paperSize === 'long' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     8.5&quot; × 13&quot;
                   </span>
-                  {paperSize === 'long' && <Check className="h-3.5 w-3.5 text-emerald-200 ml-0.5" />}
+                  {paperSize === 'long' && <Check className="h-4 w-4 text-emerald-200 ml-0.5 stroke-[3]" />}
                 </button>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Action Buttons (Large & Prominent) */}
+            <div className="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => setIsOfficialDocModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-extrabold text-slate-800 transition-all cursor-pointer shadow-2xs"
               >
                 <Eye className="h-4 w-4 text-emerald-700" />
-                Preview Full Screen
+                <span>Preview Full Screen</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleDownloadBondPaperHtml(paperSize)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-extrabold text-slate-800 transition-all cursor-pointer shadow-2xs"
                 title="Download Standalone Printable HTML"
               >
                 <Download className="h-4 w-4 text-slate-600" />
-                Download Document
+                <span>Download Document</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handlePrintBondPaper(paperSize)}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 text-xs font-extrabold shadow-sm hover:shadow transition-all cursor-pointer"
+                className="inline-flex items-center gap-2.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white px-6 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-black shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
               >
-                <Printer className="h-4 w-4 text-white" />
+                <Printer className="h-5 w-5 text-white" />
                 <span>Print on Bond Paper</span>
-                <span className="rounded bg-emerald-900/60 px-1.5 py-0.5 text-[10px] uppercase font-mono font-bold tracking-tight">
+                <span className="rounded-lg bg-emerald-900/80 px-2 py-0.5 text-xs uppercase font-mono font-black tracking-tight">
                   {paperSize === 'short' ? '8.5×11' : paperSize === 'a4' ? 'A4' : '8.5×13'}
                 </span>
               </button>
@@ -1525,28 +1528,28 @@ export const TeacherClassProgramPage: React.FC = () => {
           AUTHENTIC DEPED BOND PAPER SHEET SIMULATION (On-Screen Interactive)
           ========================================================================
         */}
-        <div className="rounded-3xl border border-slate-300 bg-slate-200/70 p-3 sm:p-6 lg:p-8 shadow-inner flex flex-col items-center">
-          <div className="w-full max-w-[820px] mb-3 flex items-center justify-between text-xs text-slate-600 px-1">
-            <span className="font-bold flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4 text-emerald-700" />
+        <div className="rounded-3xl border border-slate-300 bg-slate-200/70 p-4 sm:p-8 lg:p-10 shadow-inner flex flex-col items-center">
+          <div className="w-full max-w-[1040px] mb-3.5 flex items-center justify-between text-xs sm:text-sm text-slate-700 px-1">
+            <span className="font-extrabold flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-emerald-700" />
               DepEd Bond Paper Preview ({paperSize === 'short' ? 'Short 8.5" × 11"' : paperSize === 'a4' ? 'A4 8.27" × 11.69"' : 'Long 8.5" × 13"'} • 1-Page Fit)
             </span>
-            <span className="text-[11px] font-mono text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+            <span className="text-xs font-mono text-emerald-900 font-extrabold bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-full shadow-2xs">
               ✓ Page 1 of 1 • 100% DepEd RA 4670 Compliant
             </span>
           </div>
 
-          {/* Realistic Bond Paper Sheet */}
-          <div className="w-full max-w-[820px] rounded-xs bg-white p-5 sm:p-8 lg:p-10 shadow-2xl ring-1 ring-slate-300 text-slate-900 font-sans transition-all">
+          {/* Realistic Bond Paper Sheet (Enlarged for Maximum Readability) */}
+          <div className="w-full max-w-[1040px] rounded-xs bg-white p-6 sm:p-10 lg:p-12 shadow-2xl ring-1 ring-slate-400 text-slate-900 font-sans transition-all">
             {/* Header */}
-            <div className="text-center pb-2 border-b-2 border-slate-900">
-              <div className="flex items-center justify-between gap-3">
+            <div className="text-center pb-2.5 border-b-2 border-slate-900">
+              <div className="flex items-center justify-between gap-4">
                 {/* School Logo */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
                   <img
                     src="/pictures/logo sa skwelahan.png"
                     alt="PLSNHS Logo"
-                    className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-full shadow-2xs"
+                    className="w-14 h-14 sm:w-18 sm:h-18 object-contain rounded-full shadow-2xs"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
@@ -1554,284 +1557,284 @@ export const TeacherClassProgramPage: React.FC = () => {
                 </div>
 
                 {/* Central Letterhead */}
-                <div className="flex-1 px-1 sm:px-2 text-center">
-                  <p className="text-[8pt] sm:text-[9pt] uppercase tracking-wider font-semibold text-slate-700 leading-tight">
+                <div className="flex-1 px-2 text-center">
+                  <p className="text-xs sm:text-sm uppercase tracking-wider font-bold text-slate-700 leading-tight">
                     Republic of the Philippines • Republika ng Pilipinas
                   </p>
-                  <p className="text-[9.5pt] sm:text-[11pt] uppercase font-black text-slate-950 leading-tight mt-0.5">
+                  <p className="text-sm sm:text-base uppercase font-black text-slate-950 leading-tight mt-0.5">
                     Department of Education • Kagawaran ng Edukasyon
                   </p>
-                  <p className="text-[7.5pt] sm:text-[8.5pt] text-slate-700 leading-tight mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-700 leading-tight mt-0.5">
                     Region VII, Central Visayas • Schools Division of Cebu Province • District of Boljoon
                   </p>
-                  <h2 className="text-[11pt] sm:text-[13pt] font-black uppercase tracking-wide text-slate-950 mt-1 leading-tight font-serif">
+                  <h2 className="text-base sm:text-2xl font-black uppercase tracking-wide text-slate-950 mt-1 leading-tight font-serif">
                     PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL
                   </h2>
-                  <p className="text-[7pt] sm:text-[8pt] text-slate-600 leading-tight mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-600 leading-tight mt-0.5">
                     Langub, Boljoon, Cebu • School Identification Number (ID): <strong>303035</strong>
                   </p>
                 </div>
 
                 {/* DepEd Seal Box */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-slate-900 flex flex-col items-center justify-center text-center p-1 font-serif">
-                    <span className="text-[6.5pt] sm:text-[7.5pt] font-black uppercase leading-none">DEPED</span>
-                    <span className="text-[5.5pt] sm:text-[6.5pt] leading-tight">Region VII</span>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
+                  <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full border-2 border-slate-900 flex flex-col items-center justify-center text-center p-1 font-serif">
+                    <span className="text-[8pt] sm:text-[9.5pt] font-black uppercase leading-none">DEPED</span>
+                    <span className="text-[7pt] sm:text-[8pt] font-bold leading-tight mt-0.5">Region VII</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Double Border Rule */}
-            <div className="border-b border-slate-900 mt-0.5 mb-2.5" />
+            <div className="border-b-2 border-slate-900 mt-1 mb-3" />
 
             {/* Form Title Banner */}
-            <div className="text-center py-2 bg-slate-100 border border-slate-900 mb-2.5">
-              <h3 className="text-[9.5pt] sm:text-[11pt] font-black uppercase tracking-wider text-slate-950 leading-tight">
+            <div className="text-center py-2.5 sm:py-3 bg-slate-100 border border-slate-900 mb-3">
+              <h3 className="text-sm sm:text-lg font-black uppercase tracking-wider text-slate-950 leading-tight">
                 TEACHER'S INDIVIDUAL CLASS PROGRAM &amp; TEACHING LOAD
               </h3>
-              <p className="text-[8pt] sm:text-[9pt] font-bold text-slate-800 mt-0.5">
+              <p className="text-xs sm:text-sm font-extrabold text-slate-800 mt-0.5">
                 School Year 2026–2027 • First &amp; Second Semesters
               </p>
-              <p className="text-[6.8pt] sm:text-[7.5pt] text-slate-600 italic mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-600 italic mt-0.5">
                 In Strict Compliance with DepEd Order No. 31, s. 2012 &amp; Republic Act No. 4670 (Magna Carta for Public School Teachers)
               </p>
             </div>
 
             {/* Faculty Profile Matrix Box */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 border border-slate-900 text-[8pt] sm:text-[8.5pt] mb-2.5 bg-white">
-              <div className="p-2 sm:p-2.5 border-b sm:border-b-0 sm:border-r border-slate-900 space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 border border-slate-900 text-xs sm:text-sm mb-3 bg-white">
+              <div className="p-3 sm:p-3.5 border-b sm:border-b-0 sm:border-r border-slate-900 space-y-1.5">
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Faculty Teacher:</span>
-                  <span className="font-extrabold text-slate-950 uppercase">{teacherName}</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Faculty Teacher:</span>
+                  <span className="font-black text-slate-950 uppercase">{teacherName}</span>
                 </div>
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Employee ID:</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Employee ID:</span>
                   <span className="font-mono font-bold text-slate-900">{facultyProfile.employee_id}</span>
                 </div>
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Civil Service Rank:</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Civil Service Rank:</span>
                   <span className="font-semibold text-slate-900">{facultyProfile.position}</span>
                 </div>
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Specialization:</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Specialization:</span>
                   <span className="font-bold text-slate-900">{facultyProfile.specialization}</span>
                 </div>
               </div>
 
-              <div className="p-2 sm:p-2.5 space-y-1">
+              <div className="p-3 sm:p-3.5 space-y-1.5">
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Advisory Section:</span>
-                  <span className="font-extrabold text-slate-950">
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Advisory Section:</span>
+                  <span className="font-black text-slate-950">
                     {facultyProfile.advisory_grade} – Section {facultyProfile.advisory_section}
                   </span>
                 </div>
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Designated Room:</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Designated Room:</span>
                   <span className="font-semibold text-slate-900">{facultyProfile.room}</span>
                 </div>
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Status:</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Status:</span>
                   <span className="font-semibold text-slate-900">Permanent Regular Full-Time</span>
                 </div>
                 <div className="flex">
-                  <span className="w-28 sm:w-32 font-bold text-slate-600 uppercase text-[7.5pt]">Official Hours:</span>
+                  <span className="w-32 sm:w-36 font-bold text-slate-600 uppercase text-xs">Official Hours:</span>
                   <span className="font-semibold text-slate-900">07:30 AM – 04:30 PM (M–F)</span>
                 </div>
               </div>
             </div>
 
             {/* Schedule Timetable */}
-            <div className="border border-slate-900 mb-2.5 overflow-x-auto">
-              <table className="w-full text-left text-[7.8pt] sm:text-[8.2pt] border-collapse">
-                <thead className="bg-slate-100 text-slate-950 uppercase font-black text-[7.2pt] sm:text-[7.8pt] border-b border-slate-900">
+            <div className="border border-slate-900 mb-3 overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-[13px] border-collapse">
+                <thead className="bg-slate-100 text-slate-950 uppercase font-black text-xs sm:text-[13px] border-b border-slate-900">
                   <tr>
-                    <th className="p-1.5 border-r border-slate-900 text-center w-7">#</th>
-                    <th className="p-1.5 border-r border-slate-900 w-32 whitespace-nowrap">Time Period</th>
-                    <th className="p-1.5 border-r border-slate-900 text-center w-14">Mins</th>
-                    <th className="p-1.5 border-r border-slate-900 text-center w-14">Days</th>
-                    <th className="p-1.5 border-r border-slate-900">Learning Area / Subject</th>
-                    <th className="p-1.5 border-r border-slate-900">Grade &amp; Section</th>
-                    <th className="p-1.5 border-r border-slate-900">Room</th>
-                    <th className="p-1.5 text-right w-24">Weekly Load</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900 text-center w-8">#</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900 w-36 whitespace-nowrap">Time Period</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900 text-center w-16">Mins</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900 text-center w-16">Days</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900">Learning Area / Subject</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900">Grade &amp; Section</th>
+                    <th className="p-2 sm:p-2.5 border-r border-slate-900">Room</th>
+                    <th className="p-2 sm:p-2.5 text-right w-28 whitespace-nowrap">Weekly Load</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300">
-                  <tr className="bg-slate-50 italic text-slate-600 text-[7.5pt]">
-                    <td className="p-1.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-1.5 border-r border-slate-900 font-mono whitespace-nowrap">07:15 AM – 07:30 AM</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center font-mono">15</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center">M – F</td>
-                    <td colSpan={3} className="p-1.5 border-r border-slate-900">
+                  <tr className="bg-slate-50 italic text-slate-600">
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">07:15 AM – 07:30 AM</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">15</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
+                    <td colSpan={3} className="p-2 sm:p-2.5 border-r border-slate-900 font-medium">
                       Flag Raising Ceremony &amp; Morning Rituals
                     </td>
-                    <td className="p-1.5 text-right font-mono">75 mins</td>
+                    <td className="p-2 sm:p-2.5 text-right font-mono">75 mins</td>
                   </tr>
 
                   {teachingLoads.map((slot, i) => (
                     <tr key={i} className="hover:bg-slate-50">
-                      <td className="p-1.5 border-r border-slate-900 text-center font-bold">{i + 1}</td>
-                      <td className="p-1.5 border-r border-slate-900 font-mono font-bold whitespace-nowrap">
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-black">{i + 1}</td>
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono font-bold whitespace-nowrap">
                         {slot.period}
                       </td>
-                      <td className="p-1.5 border-r border-slate-900 text-center font-mono">60</td>
-                      <td className="p-1.5 border-r border-slate-900 text-center font-bold">M – F</td>
-                      <td className="p-1.5 border-r border-slate-900 font-bold">
-                        {slot.subject}
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">60</td>
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-bold">M – F</td>
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 font-black">
+                        <span className="text-slate-950 font-black">{slot.subject}</span>
                         {slot.role === 'Advisory & Subject Load' && (
-                          <span className="block text-[7pt] font-extrabold text-blue-800 uppercase">
+                          <span className="block text-[11px] font-black text-blue-800 uppercase mt-0.5">
                             ★ Designated Advisory Subject
                           </span>
                         )}
                       </td>
-                      <td className="p-1.5 border-r border-slate-900 font-bold">
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 font-bold">
                         {slot.grade_level} – {slot.section}
                         {slot.strand ? ` (${slot.strand})` : ''}
                       </td>
-                      <td className="p-1.5 border-r border-slate-900 text-slate-700">{slot.room}</td>
-                      <td className="p-1.5 text-right font-mono font-bold whitespace-nowrap">300 mins (5h)</td>
+                      <td className="p-2 sm:p-2.5 border-r border-slate-900 text-slate-700">{slot.room}</td>
+                      <td className="p-2 sm:p-2.5 text-right font-mono font-bold whitespace-nowrap">300 mins (5h)</td>
                     </tr>
                   ))}
 
-                  <tr className="bg-slate-50 italic text-slate-600 text-[7.5pt]">
-                    <td className="p-1.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-1.5 border-r border-slate-900 font-mono whitespace-nowrap">11:00 AM – 12:00 PM</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center font-mono">60</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center">M – F</td>
-                    <td className="p-1.5 border-r border-slate-900 font-bold not-italic text-slate-800">
+                  <tr className="bg-slate-50 italic text-slate-600">
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">11:00 AM – 12:00 PM</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">60</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-bold not-italic text-slate-800">
                       Homeroom Guidance / Remediation / Catch-Up
                     </td>
-                    <td className="p-1.5 border-r border-slate-900 font-bold not-italic">
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-bold not-italic">
                       {facultyProfile.advisory_grade} – {facultyProfile.advisory_section}
                     </td>
-                    <td className="p-1.5 border-r border-slate-900">{facultyProfile.room}</td>
-                    <td className="p-1.5 text-right font-mono">300 mins</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900">{facultyProfile.room}</td>
+                    <td className="p-2 sm:p-2.5 text-right font-mono">300 mins</td>
                   </tr>
 
-                  <tr className="bg-slate-50 italic text-slate-600 text-[7.5pt]">
-                    <td className="p-1.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-1.5 border-r border-slate-900 font-mono whitespace-nowrap">12:00 PM – 01:00 PM</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center font-mono">60</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center">M – F</td>
-                    <td colSpan={3} className="p-1.5 border-r border-slate-900">
+                  <tr className="bg-slate-50 italic text-slate-600">
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">12:00 PM – 01:00 PM</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">60</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
+                    <td colSpan={3} className="p-2 sm:p-2.5 border-r border-slate-900">
                       Noon Break / Health &amp; Lunch Intermission
                     </td>
-                    <td className="p-1.5 text-right font-mono">—</td>
+                    <td className="p-2 sm:p-2.5 text-right font-mono">—</td>
                   </tr>
 
-                  <tr className="bg-slate-50 italic text-slate-600 text-[7.5pt]">
-                    <td className="p-1.5 border-r border-slate-900 text-center">•</td>
-                    <td className="p-1.5 border-r border-slate-900 font-mono whitespace-nowrap">04:00 PM – 04:30 PM</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center font-mono">30</td>
-                    <td className="p-1.5 border-r border-slate-900 text-center">M – F</td>
-                    <td colSpan={3} className="p-1.5 border-r border-slate-900">
+                  <tr className="bg-slate-50 italic text-slate-600">
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">•</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 font-mono whitespace-nowrap">04:00 PM – 04:30 PM</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center font-mono">30</td>
+                    <td className="p-2 sm:p-2.5 border-r border-slate-900 text-center">M – F</td>
+                    <td colSpan={3} className="p-2 sm:p-2.5 border-r border-slate-900">
                       Lesson Preparation, Assessment Records &amp; Ancillary Services
                     </td>
-                    <td className="p-1.5 text-right font-mono">150 mins</td>
+                    <td className="p-2 sm:p-2.5 text-right font-mono">150 mins</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Workload Allocation Box */}
-            <div className="border border-slate-900 p-2 sm:p-2.5 bg-slate-50 mb-2.5">
-              <p className="text-[7.8pt] sm:text-[8.5pt] font-black uppercase tracking-wider text-slate-900 mb-1">
+            <div className="border border-slate-900 p-3 sm:p-3.5 bg-slate-50 mb-3">
+              <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 mb-1.5">
                 Summary of Workload Allocation &amp; Time Distribution (RA 4670 Magna Carta Standard)
               </p>
-              <table className="w-full text-left text-[7.5pt] sm:text-[8pt] border border-slate-400 bg-white">
+              <table className="w-full text-left text-xs sm:text-[13px] border border-slate-400 bg-white">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-400 font-bold">
-                    <th className="p-1 border-r border-slate-400">Workload Allocation Component</th>
-                    <th className="p-1 border-r border-slate-400 text-center">Daily Equivalent</th>
-                    <th className="p-1 border-r border-slate-400 text-center">Weekly Total</th>
-                    <th className="p-1">Statutory Basis</th>
+                    <th className="p-1.5 sm:p-2 border-r border-slate-400">Workload Allocation Component</th>
+                    <th className="p-1.5 sm:p-2 border-r border-slate-400 text-center">Daily Equivalent</th>
+                    <th className="p-1.5 sm:p-2 border-r border-slate-400 text-center">Weekly Total</th>
+                    <th className="p-1.5 sm:p-2">Statutory Basis</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300">
                   <tr>
-                    <td className="p-1 border-r border-slate-400 font-bold">
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 font-bold">
                       A. Actual Classroom Teaching Load (Instructional - 6 Classes)
                     </td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono">4.8 Hours / Day</td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono font-bold">24.0 Hours / Week</td>
-                    <td className="p-1 text-slate-600">RA 4670 (Max 6.0 hrs/day teaching)</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">4.8 Hours / Day</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono font-bold">24.0 Hours / Week</td>
+                    <td className="p-1.5 sm:p-2 text-slate-600">RA 4670 (Max 6.0 hrs/day teaching)</td>
                   </tr>
                   <tr>
-                    <td className="p-1 border-r border-slate-400 font-bold">
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 font-bold">
                       B. Homeroom Advisory, Remediation &amp; Student Guidance
                     </td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono">1.2 Hours / Day</td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono font-bold">6.0 Hours / Week</td>
-                    <td className="p-1 text-slate-600">DepEd Order No. 31, s. 2012</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">1.2 Hours / Day</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono font-bold">6.0 Hours / Week</td>
+                    <td className="p-1.5 sm:p-2 text-slate-600">DepEd Order No. 31, s. 2012</td>
                   </tr>
                   <tr>
-                    <td className="p-1 border-r border-slate-400 font-bold">
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 font-bold">
                       C. Lesson Preparation, Records Keeping &amp; Ancillary Duties
                     </td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono">2.0 Hours / Day</td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono font-bold">10.0 Hours / Week</td>
-                    <td className="p-1 text-slate-600">CSC Prescribed Working Hours</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">2.0 Hours / Day</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono font-bold">10.0 Hours / Week</td>
+                    <td className="p-1.5 sm:p-2 text-slate-600">CSC Prescribed Working Hours</td>
                   </tr>
                   <tr className="bg-slate-100 font-black text-slate-950">
-                    <td className="p-1 border-r border-slate-400 uppercase">Total Official Weekly Working Hours:</td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono">8.0 Hours / Day</td>
-                    <td className="p-1 border-r border-slate-400 text-center font-mono">40.0 Hours / Week</td>
-                    <td className="p-1 text-emerald-800 font-bold">✓ 100% DepEd Standard Compliant</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 uppercase">Total Official Weekly Working Hours:</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">8.0 Hours / Day</td>
+                    <td className="p-1.5 sm:p-2 border-r border-slate-400 text-center font-mono">40.0 Hours / Week</td>
+                    <td className="p-1.5 sm:p-2 text-emerald-800 font-bold">✓ 100% DepEd Standard Compliant</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Attestation */}
-            <div className="border border-slate-900 p-2 text-[7pt] sm:text-[7.5pt] text-justify text-slate-800 leading-tight mb-2.5 bg-white">
+            <div className="border border-slate-900 p-2.5 sm:p-3 text-xs sm:text-sm text-justify text-slate-800 leading-relaxed mb-3 bg-white">
               <p>
                 <strong>OFFICIAL ATTESTATION:</strong> I hereby certify that the individual teaching loads, room assignments, advisory designations, and official working hours detailed in this form have been duly assigned to me for School Year 2026–2027. I attest that I shall discharge my duties in accordance with the prescribed Department of Education curriculum and the Code of Ethics for Professional Teachers.
               </p>
             </div>
 
             {/* Four-Tier Signatories Block */}
-            <div className="border border-slate-900 p-2 sm:p-2.5 mb-2 bg-white">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-[7.2pt] sm:text-[7.8pt]">
+            <div className="border border-slate-900 p-3 sm:p-4 mb-2.5 bg-white">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-xs sm:text-sm">
                 <div className="flex flex-col items-center">
-                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Conformed &amp; Submitted by:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
+                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Conformed &amp; Submitted by:</p>
+                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
                     {teacherName}
                   </p>
-                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Teacher / Class Adviser</p>
-                  <p className="text-[6.2pt] text-slate-400 font-mono">Date: {new Date().toLocaleDateString()}</p>
+                  <p className="text-xs text-slate-600 mt-1 font-medium">Teacher / Class Adviser</p>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">Date: {new Date().toLocaleDateString()}</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Checked &amp; Verified by:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
+                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Checked &amp; Verified by:</p>
+                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
                     JHERICO MAURIN
                   </p>
-                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Academic Coordinator / MT I</p>
-                  <p className="text-[6.2pt] text-slate-400 font-mono">Date: {new Date().toLocaleDateString()}</p>
+                  <p className="text-xs text-slate-600 mt-1 font-medium">Academic Coordinator / MT I</p>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">Date: {new Date().toLocaleDateString()}</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Recommending Approval:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
+                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Recommending Approval:</p>
+                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
                     JUSTINE MANGILA, EdD
                   </p>
-                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Secondary School Principal II</p>
-                  <p className="text-[6.2pt] text-slate-400 font-mono">PLSNHS School Head</p>
+                  <p className="text-xs text-slate-600 mt-1 font-medium">Secondary School Principal II</p>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">PLSNHS School Head</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Approved:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
+                  <p className="text-xs uppercase font-bold text-slate-500 mb-3">Approved:</p>
+                  <p className="font-black text-slate-950 uppercase border-b-2 border-slate-900 pb-1 w-full text-xs sm:text-sm">
                     SENEN PRISCILLO P. PAULIN, CESO V
                   </p>
-                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Schools Division Superintendent</p>
-                  <p className="text-[6.2pt] text-slate-400 font-mono">DepEd Cebu Province</p>
+                  <p className="text-xs text-slate-600 mt-1 font-medium">Schools Division Superintendent</p>
+                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">DepEd Cebu Province</p>
                 </div>
               </div>
             </div>
 
             {/* Footer Bar */}
-            <div className="flex items-center justify-between text-[6.5pt] text-slate-500 pt-1 border-t border-slate-300">
+            <div className="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-300">
               <span>Placido L. Señor National High School • School ID: 303035</span>
               <span className="font-mono">Ref: PLSNHS-SF7-TCP-2026-08 • System Verified Form</span>
               <span>{paperSize === 'short' ? 'Short Bond Paper (8.5" × 11")' : paperSize === 'a4' ? 'A4 Paper (8.27" × 11.69")' : 'Long Bond Paper (8.5" × 13")'} • Page 1 of 1</span>
