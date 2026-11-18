@@ -518,11 +518,13 @@ export const generateTeachingLoads = (prof: FacultyProfileData): TeachingLoadSlo
  * Generates an official, publication-quality DepEd Bond Paper HTML document.
  * Formatted specifically for Short Bond Paper (8.5" x 11") or Long Bond Paper (8.5" x 13").
  */
+export type BondPaperSize = 'short' | 'long' | 'a4';
+
 export const generateBondPaperHtml = (
   prof: FacultyProfileData,
   name: string,
   loads: TeachingLoadSlot[],
-  paperSize: 'short' | 'long' = 'short'
+  paperSize: BondPaperSize = 'short'
 ): string => {
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
@@ -531,31 +533,35 @@ export const generateBondPaperHtml = (
   });
 
   const isLong = paperSize === 'long';
+  const isA4 = paperSize === 'a4';
+
   const pageSizeRule = isLong
-    ? '@page { size: 8.5in 13in; margin: 0.4in 0.45in 0.4in 0.45in; }'
-    : '@page { size: 8.5in 11in; margin: 0.32in 0.42in 0.32in 0.42in; }';
+    ? '@page { size: 8.5in 13in; margin: 0.28in 0.38in 0.28in 0.38in; }'
+    : isA4
+    ? '@page { size: 210mm 297mm; margin: 0.24in 0.34in 0.24in 0.34in; }'
+    : '@page { size: 8.5in 11in; margin: 0.2in 0.32in 0.2in 0.32in; }';
 
   const rows = loads
     .map(
       (slot, i) => `
     <tr>
-      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:3px 4px;">${i + 1}</td>
-      <td style="font-family:monospace;font-weight:bold;border:1px solid #000;padding:3px 4px;white-space:nowrap;">${slot.period}</td>
-      <td style="text-align:center;font-family:monospace;border:1px solid #000;padding:3px 4px;">60</td>
-      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:3px 4px;">M – F</td>
-      <td style="border:1px solid #000;padding:3px 4px;">
+      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">${i + 1}</td>
+      <td style="font-family:monospace;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};white-space:nowrap;">${slot.period}</td>
+      <td style="text-align:center;font-family:monospace;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">60</td>
+      <td style="text-align:center;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">M – F</td>
+      <td style="border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">
         <strong>${slot.subject}</strong>
         ${
           slot.role === 'Advisory & Subject Load'
-            ? '<span style="display:block;font-size:6.8pt;color:#1e3a8a;font-weight:bold;text-transform:uppercase;">★ Designated Advisory Section Subject</span>'
+            ? `<span style="display:block;font-size:${isLong ? '6.5pt' : '5.8pt'};color:#1e3a8a;font-weight:bold;text-transform:uppercase;">★ Designated Advisory Section Subject</span>`
             : ''
         }
       </td>
-      <td style="border:1px solid #000;padding:3px 4px;font-weight:bold;">
+      <td style="border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};font-weight:bold;">
         ${slot.grade_level} – ${slot.section}${slot.strand ? ` (${slot.strand})` : ''}
       </td>
-      <td style="border:1px solid #000;padding:3px 4px;">${slot.room}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:bold;border:1px solid #000;padding:3px 4px;white-space:nowrap;">
+      <td style="border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};">${slot.room}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:bold;border:1px solid #000;padding:${isLong ? '2px 3px' : '1.2px 2.5px'};white-space:nowrap;">
         300 mins (5h)
       </td>
     </tr>
@@ -567,7 +573,7 @@ export const generateBondPaperHtml = (
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>DepEd Class Program - ${name} (${isLong ? 'LONG BOND PAPER' : 'SHORT BOND PAPER'})</title>
+  <title>DepEd Class Program - ${name} (${isLong ? 'LONG BOND PAPER' : isA4 ? 'A4 PAPER' : 'SHORT BOND PAPER'})</title>
   <style>
     ${pageSizeRule}
     * {
@@ -581,20 +587,23 @@ export const generateBondPaperHtml = (
       background: #ffffff;
       color: #000000;
       font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-      font-size: ${isLong ? '8.8pt' : '8.2pt'};
-      line-height: 1.25;
+      font-size: ${isLong ? '8pt' : isA4 ? '7.4pt' : '7.2pt'};
+      line-height: 1.15;
+      height: 100%;
     }
     .bond-sheet {
       width: 100%;
-      max-width: ${isLong ? '7.7in' : '7.6in'};
+      max-width: ${isLong ? '7.7in' : isA4 ? '7.45in' : '7.6in'};
       margin: 0 auto;
       background: #ffffff;
       padding: 0;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
     .header-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
     .header-table td {
       padding: 0;
@@ -602,56 +611,56 @@ export const generateBondPaperHtml = (
     }
     .header-center {
       text-align: center;
-      padding: 0 8px;
+      padding: 0 6px;
     }
     .header-center .rep {
-      font-size: 7.5pt;
+      font-size: ${isLong ? '7pt' : '6.5pt'};
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       margin: 0;
       color: #1e293b;
     }
     .header-center .deped {
-      font-size: 10pt;
+      font-size: ${isLong ? '9.2pt' : '8.5pt'};
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin: 1px 0;
+      letter-spacing: 0.3px;
+      margin: 0;
       color: #000000;
     }
     .header-center .division {
-      font-size: 7.8pt;
-      margin: 1px 0;
+      font-size: ${isLong ? '7.2pt' : '6.6pt'};
+      margin: 0;
       color: #334155;
     }
     .header-center .school {
-      font-size: 11.5pt;
+      font-size: ${isLong ? '11pt' : '10.2pt'};
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin: 2px 0 1px 0;
+      letter-spacing: 0.3px;
+      margin: 1px 0 0 0;
       font-family: Georgia, serif;
       color: #000000;
     }
     .header-center .address {
-      font-size: 7.2pt;
+      font-size: ${isLong ? '6.8pt' : '6.2pt'};
       margin: 0;
       color: #475569;
     }
     .logo-container {
-      width: 64px;
+      width: ${isLong ? '52px' : '44px'};
       text-align: center;
     }
     .logo-img {
-      width: 58px;
-      height: 58px;
+      width: ${isLong ? '48px' : '40px'};
+      height: ${isLong ? '48px' : '40px'};
       object-fit: contain;
       border-radius: 50%;
     }
     .deped-seal-box {
-      width: 58px;
-      height: 58px;
+      width: ${isLong ? '48px' : '40px'};
+      height: ${isLong ? '48px' : '40px'};
       border: 1.5px solid #000000;
       border-radius: 50%;
       display: flex;
@@ -663,49 +672,49 @@ export const generateBondPaperHtml = (
       margin: 0 auto;
     }
     .deped-seal-title {
-      font-size: 7pt;
+      font-size: ${isLong ? '6.8pt' : '6pt'};
       font-weight: 900;
       line-height: 1;
     }
     .deped-seal-sub {
-      font-size: 5.5pt;
+      font-size: ${isLong ? '5.2pt' : '4.6pt'};
       line-height: 1.1;
       text-transform: uppercase;
     }
     .double-rule-top {
       border: 0;
-      border-top: 2px solid #000000;
-      margin: 3px 0 1px 0;
+      border-top: 1.5px solid #000000;
+      margin: 2px 0 1px 0;
     }
     .double-rule-bottom {
       border: 0;
       border-top: 0.75px solid #000000;
-      margin: 0 0 4px 0;
+      margin: 0 0 2px 0;
     }
     .title-banner {
       background-color: #f1f5f9;
       border: 1px solid #000000;
-      padding: 4px 6px;
+      padding: ${isLong ? '2.5px 5px' : '1.8px 4px'};
       text-align: center;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .title-banner h2 {
       margin: 0;
-      font-size: 9.5pt;
+      font-size: ${isLong ? '9.2pt' : '8.4pt'};
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       color: #000000;
     }
     .title-banner .sy {
-      margin: 1px 0 0 0;
-      font-size: 8pt;
+      margin: 0;
+      font-size: ${isLong ? '7.5pt' : '7pt'};
       font-weight: 700;
       color: #0f172a;
     }
     .title-banner .mandate {
       margin: 0;
-      font-size: 6.8pt;
+      font-size: ${isLong ? '6.4pt' : '5.8pt'};
       color: #475569;
       font-style: italic;
     }
@@ -713,19 +722,19 @@ export const generateBondPaperHtml = (
       width: 100%;
       border-collapse: collapse;
       border: 1px solid #000000;
-      margin-bottom: 4px;
-      font-size: 7.8pt;
+      margin-bottom: 2px;
+      font-size: ${isLong ? '7.4pt' : '6.8pt'};
     }
     .profile-table td {
       border: 1px solid #cbd5e1;
-      padding: 2.5px 5px;
+      padding: ${isLong ? '1.8px 4px' : '1.2px 3px'};
       vertical-align: middle;
     }
     .profile-label {
       font-weight: bold;
       color: #334155;
       text-transform: uppercase;
-      width: 110px;
+      width: 100px;
     }
     .profile-val {
       font-weight: 800;
@@ -735,48 +744,52 @@ export const generateBondPaperHtml = (
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      margin-bottom: 4px;
-      font-size: 7.8pt;
+      margin-bottom: 2px;
+      font-size: ${isLong ? '7.3pt' : '6.7pt'};
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
     .schedule-table th {
       background-color: #f1f5f9;
       border: 1px solid #000000;
-      padding: 3px 4px;
+      padding: ${isLong ? '2px 3px' : '1.5px 2.5px'};
       font-weight: 900;
       text-transform: uppercase;
-      font-size: 7.2pt;
+      font-size: ${isLong ? '6.8pt' : '6.2pt'};
       text-align: center;
     }
     .schedule-table td {
       border: 1px solid #000000;
-      padding: 2.5px 4px;
-      line-height: 1.2;
+      padding: ${isLong ? '1.8px 3px' : '1.2px 2.5px'};
+      line-height: 1.12;
     }
     .routine-row td {
       background-color: #f8fafc;
       font-style: italic;
       color: #475569;
       font-weight: 600;
-      font-size: 7.2pt;
+      font-size: ${isLong ? '6.8pt' : '6.2pt'};
     }
     .workload-table {
       width: 100%;
       border-collapse: collapse;
       border: 1px solid #000000;
-      margin-bottom: 4px;
-      font-size: 7.2pt;
+      margin-bottom: 2px;
+      font-size: ${isLong ? '6.8pt' : '6.3pt'};
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
     .workload-table th {
       background-color: #f1f5f9;
       border: 1px solid #000000;
-      padding: 2.5px 5px;
+      padding: ${isLong ? '1.8px 4px' : '1.2px 3px'};
       font-weight: 800;
       text-transform: uppercase;
       text-align: left;
     }
     .workload-table td {
       border: 1px solid #cbd5e1;
-      padding: 2px 5px;
+      padding: ${isLong ? '1.2px 4px' : '1px 3px'};
     }
     .workload-total td {
       background-color: #f1f5f9;
@@ -786,36 +799,40 @@ export const generateBondPaperHtml = (
     }
     .attestation-box {
       border: 1px solid #000000;
-      padding: 3.5px 6px;
-      font-size: 6.8pt;
-      line-height: 1.25;
+      padding: ${isLong ? '2.5px 5px' : '1.8px 3.5px'};
+      font-size: ${isLong ? '6.2pt' : '5.7pt'};
+      line-height: 1.12;
       text-align: justify;
       background-color: #fafafa;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       color: #1e293b;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
     .signatories-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 4px;
-      font-size: 7.5pt;
+      margin-top: 2px;
+      font-size: ${isLong ? '7.2pt' : '6.6pt'};
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
     .signatories-table td {
       width: 25%;
       text-align: center;
       vertical-align: top;
-      padding: 0 4px;
+      padding: 0 3px;
     }
     .sign-label {
-      font-size: 6.8pt;
+      font-size: ${isLong ? '6.4pt' : '5.8pt'};
       color: #475569;
       text-transform: uppercase;
       font-weight: bold;
-      margin-bottom: 24px;
+      margin-bottom: ${isLong ? '10px' : '6px'};
     }
     .sign-name {
       font-weight: 900;
-      font-size: 7.5pt;
+      font-size: ${isLong ? '7.3pt' : '6.7pt'};
       text-transform: uppercase;
       border-bottom: 1.5px solid #000000;
       padding-bottom: 1px;
@@ -823,18 +840,32 @@ export const generateBondPaperHtml = (
       color: #000000;
     }
     .sign-title {
-      font-size: 6.8pt;
+      font-size: ${isLong ? '6.4pt' : '5.8pt'};
       color: #334155;
-      line-height: 1.1;
+      line-height: 1.05;
     }
     .security-bar {
-      margin-top: 5px;
-      padding-top: 3px;
+      margin-top: 2px;
+      padding-top: 1.5px;
       border-top: 1px dashed #94a3b8;
       display: flex;
       justify-content: space-between;
-      font-size: 6.5pt;
+      font-size: 5.8pt;
       color: #64748b;
+    }
+    @media print {
+      html, body {
+        height: 100% !important;
+        overflow: hidden !important;
+      }
+      .bond-sheet {
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-before: avoid !important;
+        break-inside: avoid !important;
+      }
     }
   </style>
 </head>
@@ -906,14 +937,14 @@ export const generateBondPaperHtml = (
     <table class="schedule-table">
       <thead>
         <tr>
-          <th style="width:26px;">#</th>
-          <th style="width:130px;">Time Period</th>
-          <th style="width:50px;">Mins/Day</th>
-          <th style="width:55px;">Days</th>
+          <th style="width:24px;">#</th>
+          <th style="width:125px;">Time Period</th>
+          <th style="width:48px;">Mins/Day</th>
+          <th style="width:50px;">Days</th>
           <th>Subject / Learning Area</th>
           <th>Grade Level &amp; Section</th>
-          <th style="width:115px;">Room</th>
-          <th style="width:85px;text-align:right;">Weekly Load</th>
+          <th style="width:110px;">Room</th>
+          <th style="width:80px;text-align:right;">Weekly Load</th>
         </tr>
       </thead>
       <tbody>
@@ -969,8 +1000,8 @@ export const generateBondPaperHtml = (
       <thead>
         <tr>
           <th>Workload Allocation Component</th>
-          <th style="text-align:center;width:110px;">Daily Equivalent</th>
-          <th style="text-align:center;width:110px;">Weekly Total</th>
+          <th style="text-align:center;width:105px;">Daily Equivalent</th>
+          <th style="text-align:center;width:105px;">Weekly Total</th>
           <th>DepEd Statutory Compliance Basis</th>
         </tr>
       </thead>
@@ -1014,25 +1045,25 @@ export const generateBondPaperHtml = (
           <div class="sign-label">Conformed &amp; Submitted by:</div>
           <div class="sign-name">${name}</div>
           <div class="sign-title">Teacher / Class Adviser</div>
-          <div class="sign-title" style="font-size:6pt;color:#64748b;">Date: ${currentDate}</div>
+          <div class="sign-title" style="font-size:5.6pt;color:#64748b;">Date: ${currentDate}</div>
         </td>
         <td>
           <div class="sign-label">Checked &amp; Verified by:</div>
           <div class="sign-name">JHERICO MAURIN</div>
           <div class="sign-title">Academic Coordinator / MT I</div>
-          <div class="sign-title" style="font-size:6pt;color:#64748b;">Date: ${currentDate}</div>
+          <div class="sign-title" style="font-size:5.6pt;color:#64748b;">Date: ${currentDate}</div>
         </td>
         <td>
           <div class="sign-label">Recommending Approval:</div>
           <div class="sign-name">JUSTINE MANGILA, EdD</div>
           <div class="sign-title">Secondary School Principal II</div>
-          <div class="sign-title" style="font-size:6pt;color:#64748b;">PLSNHS School Head</div>
+          <div class="sign-title" style="font-size:5.6pt;color:#64748b;">PLSNHS School Head</div>
         </td>
         <td>
           <div class="sign-label">Approved:</div>
           <div class="sign-name">SENEN PRISCILLO P. PAULIN, CESO V</div>
           <div class="sign-title">Schools Division Superintendent</div>
-          <div class="sign-title" style="font-size:6pt;color:#64748b;">DepEd Cebu Province</div>
+          <div class="sign-title" style="font-size:5.6pt;color:#64748b;">DepEd Cebu Province</div>
         </td>
       </tr>
     </table>
@@ -1041,7 +1072,7 @@ export const generateBondPaperHtml = (
     <div class="security-bar">
       <span>Placido L. Señor National High School • School ID: 303035</span>
       <span style="font-family:monospace;">Ref: PLSNHS-SF7-TCP-2026-08 • Official DepEd Form</span>
-      <span>${isLong ? 'Long Bond Paper (8.5" × 13")' : 'Short Bond Paper (8.5" × 11")'} • Page 1 of 1</span>
+      <span>${isLong ? 'Long Bond Paper (8.5" × 13")' : isA4 ? 'A4 Paper (8.27" × 11.69")' : 'Short Bond Paper (8.5" × 11")'} • Page 1 of 1</span>
     </div>
   </div>
 </body>
@@ -1053,7 +1084,7 @@ export const TeacherClassProgramPage: React.FC = () => {
   const [adminFiles, setAdminFiles] = useState<AdminSentTeacherScheduleFile[]>([]);
   const [previewFile, setPreviewFile] = useState<AdminSentTeacherScheduleFile | null>(null);
   const [isOfficialDocModalOpen, setIsOfficialDocModalOpen] = useState(false);
-  const [paperSize, setPaperSize] = useState<'short' | 'long'>('short');
+  const [paperSize, setPaperSize] = useState<BondPaperSize>('short');
 
   // Resolved teacher display name
   const teacherName = useMemo(() => {
@@ -1212,7 +1243,7 @@ export const TeacherClassProgramPage: React.FC = () => {
    * Dedicated print function that isolates the bond paper document in an invisible iframe.
    * Guarantees 0% interference from web sidebars, web headers, buttons, or scrollbars.
    */
-  const handlePrintBondPaper = (selectedSize: 'short' | 'long' = paperSize) => {
+  const handlePrintBondPaper = (selectedSize: BondPaperSize = paperSize) => {
     const html = generateBondPaperHtml(facultyProfile, teacherName, teachingLoads, selectedSize);
 
     const iframe = document.createElement('iframe');
@@ -1255,7 +1286,7 @@ export const TeacherClassProgramPage: React.FC = () => {
   /**
    * Download the official Bond Paper document as standalone HTML
    */
-  const handleDownloadBondPaperHtml = (selectedSize: 'short' | 'long' = paperSize) => {
+  const handleDownloadBondPaperHtml = (selectedSize: BondPaperSize = paperSize) => {
     const html = generateBondPaperHtml(facultyProfile, teacherName, teachingLoads, selectedSize);
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -1288,12 +1319,13 @@ export const TeacherClassProgramPage: React.FC = () => {
         ========================================================================
         GLOBAL PRINT STYLES FOR NATIVE CTRL+P SHORTCUT
         Hides all web interface elements and exposes strictly the bond paper sheet.
+        Strictly fits on 1 Single Page without overflowing.
         ========================================================================
       */}
       <style>{`
         @page {
-          size: ${paperSize === 'long' ? '8.5in 13in' : '8.5in 11in'};
-          margin: 0.35in 0.45in 0.35in 0.45in;
+          size: ${paperSize === 'long' ? '8.5in 13in' : paperSize === 'a4' ? 'A4 portrait' : '8.5in 11in'};
+          margin: ${paperSize === 'long' ? '0.28in 0.38in' : paperSize === 'a4' ? '0.24in 0.34in' : '0.2in 0.32in'};
         }
         @media print {
           html, body {
@@ -1301,6 +1333,8 @@ export const TeacherClassProgramPage: React.FC = () => {
             padding: 0 !important;
             background: #ffffff !important;
             color: #000000 !important;
+            height: 100% !important;
+            overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -1320,10 +1354,16 @@ export const TeacherClassProgramPage: React.FC = () => {
             display: block !important;
             visibility: visible !important;
             width: 100% !important;
-            max-width: ${paperSize === 'long' ? '7.7in' : '7.6in'} !important;
+            max-width: ${paperSize === 'long' ? '7.7in' : paperSize === 'a4' ? '7.45in' : '7.6in'} !important;
             margin: 0 auto !important;
             padding: 0 !important;
             background: #ffffff !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
+            page-break-inside: avoid !important;
+            break-after: avoid !important;
+            break-before: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `}</style>
@@ -1370,9 +1410,14 @@ export const TeacherClassProgramPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Paper Size Selector */}
             <div className="space-y-1.5">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                DepEd Bond Paper Size:
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                  DepEd Bond Paper Size:
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Fits strictly on 1 Page
+                </span>
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
@@ -1393,6 +1438,27 @@ export const TeacherClassProgramPage: React.FC = () => {
                     8.5&quot; × 11&quot;
                   </span>
                   {paperSize === 'short' && <Check className="h-3.5 w-3.5 text-emerald-200 ml-0.5" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaperSize('a4')}
+                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                    paperSize === 'a4'
+                      ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-600 ring-offset-1'
+                      : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>A4 Standard</span>
+                  <span
+                    className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                      paperSize === 'a4' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    8.27&quot; × 11.69&quot;
+                  </span>
+                  {paperSize === 'a4' && <Check className="h-3.5 w-3.5 text-emerald-200 ml-0.5" />}
                 </button>
 
                 <button
@@ -1447,7 +1513,7 @@ export const TeacherClassProgramPage: React.FC = () => {
                 <Printer className="h-4 w-4 text-white" />
                 <span>Print on Bond Paper</span>
                 <span className="rounded bg-emerald-900/60 px-1.5 py-0.5 text-[10px] uppercase font-mono font-bold tracking-tight">
-                  {paperSize === 'short' ? '8.5×11' : '8.5×13'}
+                  {paperSize === 'short' ? '8.5×11' : paperSize === 'a4' ? 'A4' : '8.5×13'}
                 </span>
               </button>
             </div>
@@ -1463,10 +1529,10 @@ export const TeacherClassProgramPage: React.FC = () => {
           <div className="w-full max-w-[820px] mb-3 flex items-center justify-between text-xs text-slate-600 px-1">
             <span className="font-bold flex items-center gap-1.5">
               <FileCheck className="h-4 w-4 text-emerald-700" />
-              DepEd Bond Paper Preview ({paperSize === 'short' ? 'Short 8.5" × 11"' : 'Long 8.5" × 13"'})
+              DepEd Bond Paper Preview ({paperSize === 'short' ? 'Short 8.5" × 11"' : paperSize === 'a4' ? 'A4 8.27" × 11.69"' : 'Long 8.5" × 13"'} • 1-Page Fit)
             </span>
-            <span className="text-[11px] font-mono text-slate-500">
-              Ready for Print • 100% DepEd RA 4670 Compliant
+            <span className="text-[11px] font-mono text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              ✓ Page 1 of 1 • 100% DepEd RA 4670 Compliant
             </span>
           </div>
 
@@ -1724,42 +1790,42 @@ export const TeacherClassProgramPage: React.FC = () => {
             </div>
 
             {/* Four-Tier Signatories Block */}
-            <div className="border border-slate-900 p-2.5 sm:p-3 mb-2 bg-white">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-[7.5pt] sm:text-[8pt]">
+            <div className="border border-slate-900 p-2 sm:p-2.5 mb-2 bg-white">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-[7.2pt] sm:text-[7.8pt]">
                 <div className="flex flex-col items-center">
-                  <p className="text-[7pt] uppercase font-bold text-slate-500 mb-6">Conformed &amp; Submitted by:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[8pt] sm:text-[8.5pt]">
+                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Conformed &amp; Submitted by:</p>
+                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
                     {teacherName}
                   </p>
-                  <p className="text-[7pt] text-slate-600 mt-0.5">Teacher / Class Adviser</p>
-                  <p className="text-[6.5pt] text-slate-400 font-mono">Date: {new Date().toLocaleDateString()}</p>
+                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Teacher / Class Adviser</p>
+                  <p className="text-[6.2pt] text-slate-400 font-mono">Date: {new Date().toLocaleDateString()}</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-[7pt] uppercase font-bold text-slate-500 mb-6">Checked &amp; Verified by:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[8pt] sm:text-[8.5pt]">
+                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Checked &amp; Verified by:</p>
+                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
                     JHERICO MAURIN
                   </p>
-                  <p className="text-[7pt] text-slate-600 mt-0.5">Academic Coordinator / MT I</p>
-                  <p className="text-[6.5pt] text-slate-400 font-mono">Date: {new Date().toLocaleDateString()}</p>
+                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Academic Coordinator / MT I</p>
+                  <p className="text-[6.2pt] text-slate-400 font-mono">Date: {new Date().toLocaleDateString()}</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-[7pt] uppercase font-bold text-slate-500 mb-6">Recommending Approval:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[8pt] sm:text-[8.5pt]">
+                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Recommending Approval:</p>
+                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
                     JUSTINE MANGILA, EdD
                   </p>
-                  <p className="text-[7pt] text-slate-600 mt-0.5">Secondary School Principal II</p>
-                  <p className="text-[6.5pt] text-slate-400 font-mono">PLSNHS School Head</p>
+                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Secondary School Principal II</p>
+                  <p className="text-[6.2pt] text-slate-400 font-mono">PLSNHS School Head</p>
                 </div>
 
                 <div className="flex flex-col items-center">
-                  <p className="text-[7pt] uppercase font-bold text-slate-500 mb-6">Approved:</p>
-                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[8pt] sm:text-[8.5pt]">
+                  <p className="text-[6.8pt] uppercase font-bold text-slate-500 mb-2.5">Approved:</p>
+                  <p className="font-extrabold text-slate-950 uppercase border-b-2 border-slate-900 pb-0.5 w-full text-[7.8pt] sm:text-[8.2pt]">
                     SENEN PRISCILLO P. PAULIN, CESO V
                   </p>
-                  <p className="text-[7pt] text-slate-600 mt-0.5">Schools Division Superintendent</p>
-                  <p className="text-[6.5pt] text-slate-400 font-mono">DepEd Cebu Province</p>
+                  <p className="text-[6.8pt] text-slate-600 mt-0.5">Schools Division Superintendent</p>
+                  <p className="text-[6.2pt] text-slate-400 font-mono">DepEd Cebu Province</p>
                 </div>
               </div>
             </div>
@@ -1768,7 +1834,7 @@ export const TeacherClassProgramPage: React.FC = () => {
             <div className="flex items-center justify-between text-[6.5pt] text-slate-500 pt-1 border-t border-slate-300">
               <span>Placido L. Señor National High School • School ID: 303035</span>
               <span className="font-mono">Ref: PLSNHS-SF7-TCP-2026-08 • System Verified Form</span>
-              <span>{paperSize === 'short' ? 'Short Bond Paper (8.5" × 11")' : 'Long Bond Paper (8.5" × 13")'}</span>
+              <span>{paperSize === 'short' ? 'Short Bond Paper (8.5" × 11")' : paperSize === 'a4' ? 'A4 Paper (8.27" × 11.69")' : 'Long Bond Paper (8.5" × 13")'} • Page 1 of 1</span>
             </div>
           </div>
         </div>
@@ -1923,7 +1989,7 @@ export const TeacherClassProgramPage: React.FC = () => {
               <div className="flex items-center gap-2 text-xs text-slate-700">
                 <FileCheck className="h-4 w-4 text-emerald-600" />
                 <span className="font-bold">
-                  Document Size: {paperSize === 'short' ? 'Short Bond Paper (8.5" × 11")' : 'Long Bond Paper (8.5" × 13")'}
+                  Document Size: {paperSize === 'short' ? 'Short Bond Paper (8.5" × 11")' : paperSize === 'a4' ? 'A4 Paper (8.27" × 11.69")' : 'Long Bond Paper (8.5" × 13")'} • 1-Page Fit
                 </span>
               </div>
               <div className="flex items-center gap-2">
