@@ -157,6 +157,7 @@ export const AdminGenerateIdPage: React.FC = () => {
   const [students, setStudents] = useState<CreatedStudentIdRecord[]>(INITIAL_STUDENTS);
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sectionFilter, setSectionFilter] = useState<string>('all');
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>(INITIAL_STUDENTS[0].id as string);
   const [flipped, setFlipped] = useState<boolean>(false);
   const [tableSearch, setTableSearch] = useState<string>('');
@@ -372,6 +373,16 @@ export const AdminGenerateIdPage: React.FC = () => {
   // Filter students for dropdown
   const filteredForDropdown = useMemo(() => {
     return students.filter((s) => {
+      // 0. Search by Student Name or LRN query
+      if (studentSearchQuery.trim()) {
+        const q = studentSearchQuery.trim().toLowerCase();
+        const fullName = (s.fullname || `${s.first_name || ''} ${s.last_name || ''}`).toLowerCase();
+        const lrn = (s.lrn || '').toLowerCase();
+        if (!fullName.includes(q) && !lrn.includes(q)) {
+          return false;
+        }
+      }
+
       // 1. Grade level filter
       if (gradeFilter !== 'all') {
         const filterNum = gradeFilter.replace(/\D/g, '');
@@ -395,7 +406,7 @@ export const AdminGenerateIdPage: React.FC = () => {
 
       return true;
     });
-  }, [students, gradeFilter, sectionFilter]);
+  }, [students, gradeFilter, sectionFilter, studentSearchQuery]);
 
   // Group filtered students by Year Level & Section (sorted in proper educational sequence)
   const groupedStudentsForDropdown = useMemo(() => {
@@ -947,11 +958,47 @@ export const AdminGenerateIdPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Search Student by Name or LRN */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Search className="h-3 w-3 text-[#1B2A4A]" /> Search Student Name or LRN
+                </label>
+                {studentSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setStudentSearchQuery('')}
+                    className="text-[10.5px] font-bold text-rose-600 hover:underline cursor-pointer"
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  placeholder="Type student name (e.g. Charmelyn, Jorvin, Aguilar) or LRN..."
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden placeholder:text-slate-400"
+                />
+                {studentSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setStudentSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold p-1 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Select Student (Organized by Year Level & Section) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <Search className="h-3 w-3 text-[#1B2A4A]" /> Select Student
+                  <User className="h-3 w-3 text-[#1B2A4A]" /> Select Student
                   <span className="text-[10px] text-slate-400 font-normal">
                     ({filteredForDropdown.length} available)
                   </span>
@@ -989,6 +1036,29 @@ export const AdminGenerateIdPage: React.FC = () => {
               </select>
             </div>
 
+            {/* Student Name */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-[#1B2A4A]" /> Student Name
+              </label>
+              <input
+                type="text"
+                value={formData.fullname || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const parts = val.trim().split(' ');
+                  setFormData({
+                    ...formData,
+                    fullname: val,
+                    first_name: parts[0] || '',
+                    last_name: parts.slice(1).join(' ') || '',
+                  });
+                }}
+                placeholder="Enter Student Full Name (e.g. Charmelyn Abalo)"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 focus:border-[#1B2A4A] focus:outline-hidden"
+              />
+            </div>
+
             {/* 2x2 Photo Upload */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
@@ -1008,40 +1078,25 @@ export const AdminGenerateIdPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Student Full Name & Academic Classification */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="h-3 w-3 text-[#1B2A4A]" /> Student Full Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.fullname || ''}
-                  onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-                  placeholder="e.g. Student Full Name"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="h-3 w-3 text-[#1B2A4A]" /> Classification / Level
-                </label>
-                <select
-                  value={formData.level_category || (formData.grade_level?.includes('11') || formData.grade_level?.includes('12') ? 'Senior High' : 'Junior High')}
-                  onChange={(e) => setFormData({ ...formData, level_category: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
-                >
-                  <option value="Junior High">Junior High (Grades 7–10)</option>
-                  <option value="Senior High">Senior High (Grades 11–12)</option>
-                  <option value="Grade 7">Grade 7</option>
-                  <option value="Grade 8">Grade 8</option>
-                  <option value="Grade 9">Grade 9</option>
-                  <option value="Grade 10">Grade 10</option>
-                  <option value="Grade 11">Grade 11</option>
-                  <option value="Grade 12">Grade 12</option>
-                </select>
-              </div>
+            {/* Classification & Level */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="h-3 w-3 text-[#1B2A4A]" /> Classification / Level
+              </label>
+              <select
+                value={formData.level_category || (formData.grade_level?.includes('11') || formData.grade_level?.includes('12') ? 'Senior High' : 'Junior High')}
+                onChange={(e) => setFormData({ ...formData, level_category: e.target.value })}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1B2A4A] focus:outline-hidden"
+              >
+                <option value="Junior High">Junior High (Grades 7–10)</option>
+                <option value="Senior High">Senior High (Grades 11–12)</option>
+                <option value="Grade 7">Grade 7</option>
+                <option value="Grade 8">Grade 8</option>
+                <option value="Grade 9">Grade 9</option>
+                <option value="Grade 10">Grade 10</option>
+                <option value="Grade 11">Grade 11</option>
+                <option value="Grade 12">Grade 12</option>
+              </select>
             </div>
 
             {/* Year Level & Class Section */}
