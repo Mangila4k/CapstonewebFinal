@@ -1199,10 +1199,10 @@ export const TeacherAttendancePage: React.FC = () => {
               type="button"
               onClick={() => navigate('/teacher/attendance-qr')}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800"
-              title="Launch dedicated Fullscreen QR / Turnstile Kiosk"
+              title="Launch dedicated Fullscreen QR Scanner"
             >
               <Maximize2 className="h-4 w-4 text-emerald-700" />
-              <span>Fullscreen Kiosk</span>
+              <span>Fullscreen Scanner</span>
             </button>
           </div>
         </form>

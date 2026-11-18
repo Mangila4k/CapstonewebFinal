@@ -236,7 +236,7 @@ export const AdminLogsPage: React.FC = () => {
           subtext = match[2] ? match[2].trim() : '';
         }
         role = 'teacher';
-        cleanDetails = 'Registered facial recognition biometric template for automated attendance kiosk.';
+        cleanDetails = 'Registered facial recognition biometric template for automated attendance.';
       } else if (action === 'Teacher Time In' || action === 'Teacher Time Out') {
         const nameMatch = details.match(/(?:Teacher\s+)?([A-Za-z\s]+?)\s+(?:recorded|validated)/i);
         if (nameMatch) {

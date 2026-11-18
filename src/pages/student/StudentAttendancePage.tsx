@@ -1293,7 +1293,7 @@ export const StudentAttendancePage: React.FC = () => {
                     Official Student QR Attendance Pass
                   </h3>
                   <p className="text-[11px] text-slate-300">
-                    Present to Teacher QR Scanner Kiosk or Class Attendance
+                    Present to Teacher QR Scanner or Class Attendance
                   </p>
                 </div>
               </div>

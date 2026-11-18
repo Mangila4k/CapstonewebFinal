@@ -139,7 +139,7 @@ export const DashboardLayout: React.FC = () => {
               { name: 'Dashboard', path: '/teacher/dashboard', icon: Gauge },
               { name: 'My Classes', path: '/teacher/classes', icon: Layers },
               { name: 'Class Attendance', path: '/teacher/attendance', icon: CalendarCheck },
-              { name: 'QR Scanner Kiosk', path: '/teacher/attendance-qr', icon: QrCode },
+              { name: 'QR Scanner', path: '/teacher/attendance-qr', icon: QrCode },
               { name: 'Face Attendance', path: '/teacher/face-attendance', icon: Camera },
             ],
           },

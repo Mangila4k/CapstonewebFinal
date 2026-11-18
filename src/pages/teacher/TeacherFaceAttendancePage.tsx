@@ -390,7 +390,7 @@ export const TeacherFaceAttendancePage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-900">
-                    Faculty Biometric Video Kiosk
+                    Faculty Biometric Video Scanner
                   </h3>
                   <p className="text-[11px] text-slate-400">
                     Align your face inside the viewfinder to authenticate

@@ -225,10 +225,10 @@ export const TeacherDashboardPage: React.FC = () => {
           <Link
             to="/teacher/attendance-qr"
             className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors"
-            title="Launch QR Attendance Scanner Kiosk"
+            title="Launch QR Attendance Scanner"
           >
             <QrCode className="h-4 w-4 text-[#F5C518]" />
-            <span>QR Scanner Kiosk</span>
+            <span>QR Scanner</span>
           </Link>
           <PageHeaderNotificationSlot />
         </div>
@@ -416,7 +416,7 @@ export const TeacherDashboardPage: React.FC = () => {
                 <span className="h-1.5 w-1.5 rounded-full bg-purple-600 animate-pulse" />
                 Faculty Biometrics
               </span>
-              <span className="text-[10.5px] font-mono font-bold text-slate-400">AI Kiosk</span>
+              <span className="text-[10.5px] font-mono font-bold text-slate-400">AI Scanner</span>
             </div>
             <div>
               <h4 className="text-xs font-extrabold text-slate-900">Personal Face Attendance</h4>
@@ -446,7 +446,7 @@ export const TeacherDashboardPage: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <QrCode className="h-4 w-4 text-[#F5C518] shrink-0" />
-                  <span>Student QR Scanner Kiosk</span>
+                  <span>Student QR Scanner</span>
                 </div>
                 <ArrowRight className="h-3.5 w-3.5 opacity-80" />
               </Link>

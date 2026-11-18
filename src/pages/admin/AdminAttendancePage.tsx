@@ -934,10 +934,10 @@ export const AdminAttendancePage: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-                  title="Open live teacher face attendance kiosk camera"
+                  title="Open live teacher face attendance camera"
                 >
                   <Camera className="h-3.5 w-3.5 text-purple-700" />
-                  <span>Live Face Kiosk</span>
+                  <span>Live Face Scanner</span>
                 </Link>
               </div>
             </div>
@@ -1288,7 +1288,7 @@ export const AdminAttendancePage: React.FC = () => {
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 focus:border-emerald-600 focus:outline-hidden"
             >
               <option value="Face Biometrics (AI Camera)">Face Biometrics (AI Camera - 99.4% Match)</option>
-              <option value="Facial Recognition Kiosk">Facial Recognition Kiosk (Terminal 1)</option>
+              <option value="Facial Recognition Kiosk">Facial Recognition Scanner (Terminal 1)</option>
               <option value="Manual Override">Manual Override (Admin Verified)</option>
             </select>
           </div>
