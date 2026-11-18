@@ -119,12 +119,12 @@ export const ParentsAnnouncementsPage: React.FC = () => {
     async function fetchAnnouncements() {
       setLoading(true);
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('announcements')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (data && data.length > 0) {
+        if (!error && data && data.length > 0) {
           const seen = new Set<string>();
           const unique = data.filter((a: any) => {
             const sig = `${(a.title || '').trim().toLowerCase()}|${(a.content || '')
@@ -135,6 +135,8 @@ export const ParentsAnnouncementsPage: React.FC = () => {
             return true;
           });
           setAnnouncements(unique);
+        } else if (!error && data && data.length === 0) {
+          setAnnouncements([]);
         } else {
           setAnnouncements(FALLBACK_ANNOUNCEMENTS);
         }
@@ -144,7 +146,19 @@ export const ParentsAnnouncementsPage: React.FC = () => {
         setLoading(false);
       }
     }
+
     fetchAnnouncements();
+
+    const channel = supabase
+      .channel('parent-announcements-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+        fetchAnnouncements();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const markAsRead = (id: string | number) => {
