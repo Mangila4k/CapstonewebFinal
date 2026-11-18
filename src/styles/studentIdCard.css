@@ -656,7 +656,6 @@
   textarea,
   .no-print,
   .id-controls-pane,
-  .card-face-tag,
   .chat-widget,
   .chatbot-toggler,
   .chat-container,
@@ -703,8 +702,10 @@
   .student-id-card {
     position: relative !important;
     margin: 0 auto !important;
-    box-shadow: none !important;
-    border: 1px dashed #94a3b8 !important; /* Visual cut guide */
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.16) !important;
+    border: none !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     -webkit-print-color-adjust: exact !important;

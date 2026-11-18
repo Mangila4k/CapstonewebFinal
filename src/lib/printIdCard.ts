@@ -30,22 +30,36 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
 
   if (targetEl) {
     const clone = targetEl.cloneNode(true) as HTMLElement;
-    // Remove face tags and no-print elements from clone
-    clone.querySelectorAll('.card-face-tag, .no-print, button').forEach((el) => el.remove());
+    // Remove no-print buttons and controls, but KEEP .card-face-tag (FRONT SIDE / BACK SIDE)
+    clone.querySelectorAll('.no-print, button, input, select').forEach((el) => el.remove());
     // Reset transform scale on cloned cards so they print at 100% true physical size
     clone.style.transform = 'none';
     clone.style.transformOrigin = 'initial';
     printWrapper.appendChild(clone);
   } else if (frontEl || backEl) {
     if (frontEl) {
+      const unit = document.createElement('div');
+      unit.className = 'id-badge-unit';
+      const tag = document.createElement('span');
+      tag.className = 'card-face-tag';
+      tag.textContent = 'FRONT SIDE';
+      unit.appendChild(tag);
       const frontClone = frontEl.cloneNode(true) as HTMLElement;
-      frontClone.querySelectorAll('.card-face-tag, .no-print, button').forEach((el) => el.remove());
-      printWrapper.appendChild(frontClone);
+      frontClone.querySelectorAll('.no-print, button').forEach((el) => el.remove());
+      unit.appendChild(frontClone);
+      printWrapper.appendChild(unit);
     }
     if (backEl) {
+      const unit = document.createElement('div');
+      unit.className = 'id-badge-unit';
+      const tag = document.createElement('span');
+      tag.className = 'card-face-tag';
+      tag.textContent = 'BACK SIDE';
+      unit.appendChild(tag);
       const backClone = backEl.cloneNode(true) as HTMLElement;
-      backClone.querySelectorAll('.card-face-tag, .no-print, button').forEach((el) => el.remove());
-      printWrapper.appendChild(backClone);
+      backClone.querySelectorAll('.no-print, button').forEach((el) => el.remove());
+      unit.appendChild(backClone);
+      printWrapper.appendChild(unit);
     }
   } else {
     // If no card element found at all, fall back to native print
@@ -90,7 +104,7 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
       <style>
         @page {
           size: A4 portrait;
-          margin: 0mm !important;
+          margin: 10mm 8mm !important;
         }
         * {
           box-sizing: border-box;
@@ -100,7 +114,7 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
         }
         html, body {
           margin: 0 !important;
-          padding: 15mm 10mm !important;
+          padding: 8mm 0 !important;
           background: #ffffff !important;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
           width: 100%;
@@ -114,34 +128,12 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
           padding: 0;
           margin: 0 auto;
         }
-        .print-official-header {
-          text-align: center;
-          margin-bottom: 8mm;
-          padding-bottom: 3mm;
-          border-bottom: 1px dashed #cbd5e1;
-          width: 100%;
-          max-width: 540px;
-        }
-        .print-official-header h2 {
-          margin: 0;
-          font-size: 13px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          color: #0d1e4a;
-        }
-        .print-official-header p {
-          margin: 2px 0 0;
-          font-size: 10px;
-          color: #64748b;
-          font-weight: 600;
-        }
         .print-cards-stage {
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 12mm !important;
+          gap: 16px !important;
           width: 100% !important;
         }
         .printable-id-card-area,
@@ -150,7 +142,7 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
-          gap: 12mm !important;
+          gap: 16px !important;
           background: transparent !important;
           border: none !important;
           padding: 0 !important;
@@ -161,46 +153,65 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
+          justify-content: center !important;
+          gap: 8px !important;
+          margin-bottom: 20px !important;
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
+        .card-face-tag {
+          display: inline-block !important;
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 1px !important;
+          color: #334155 !important;
+          background: #e2e8f0 !important;
+          padding: 4px 16px !important;
+          border-radius: 20px !important;
+          border: none !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          user-select: none;
+        }
+        .id-card-scaler {
+          width: 500px !important;
+          height: 316px !important;
+          transform: none !important;
+          position: relative !important;
+          margin: 0 auto !important;
+        }
+        .id-card-scaler-inner {
+          width: 500px !important;
+          height: 316px !important;
+          transform: none !important;
+          position: static !important;
+          margin: 0 auto !important;
+          top: auto !important;
+          left: auto !important;
+        }
         .student-id-card {
-          border: 1px dashed #94a3b8 !important; /* Cutting line guide */
-          box-shadow: none !important;
+          width: 500px !important;
+          height: 316px !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+          box-shadow: 0 4px 16px rgba(15, 23, 42, 0.16) !important;
           page-break-inside: avoid !important;
           break-inside: avoid !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           color-adjust: exact !important;
         }
-        .card-face-tag, .no-print, button, input, select {
+        .no-print, button, input, select {
           display: none !important;
-        }
-        .print-official-footer {
-          margin-top: 10mm;
-          text-align: center;
-          font-size: 9px;
-          color: #94a3b8;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          border-top: 1px dashed #e2e8f0;
-          padding-top: 3mm;
-          width: 100%;
-          max-width: 540px;
         }
       </style>
     </head>
     <body>
       <div class="print-layout-container">
-        <div class="print-official-header">
-          <h2>Placido L. Señor National High School</h2>
-          <p>Official CR80 DepEd Student Identification Card (Front & Back)</p>
-        </div>
         <div class="print-cards-stage">
           ${printWrapper.innerHTML}
-        </div>
-        <div class="print-official-footer">
-          Cut along the dashed guide line • CR80 Landscape Standard (85.6mm × 54mm)
         </div>
       </div>
     </body>
