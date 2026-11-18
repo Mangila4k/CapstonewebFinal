@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchUserAvatarFromDatabase } from '../lib/avatarService';
+import { ensureAuthenticatedSession } from '../lib/studentDocumentsService';
 import type { User, UserRole } from '../types';
 
 interface AuthContextType {
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let active = true;
     async function restoreAndHydrate() {
+      ensureAuthenticatedSession().catch(() => {});
       try {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
@@ -580,6 +582,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(fullUser);
       localStorage.setItem('currentUser', JSON.stringify(fullUser));
+      ensureAuthenticatedSession().catch(() => {});
 
       // Asynchronously fetch latest cloud avatar from Supabase database to ensure sync
       fetchUserAvatarFromDatabase({ id: matchedUser.id, email: cleanEmail, role: userRole }).then((photo) => {

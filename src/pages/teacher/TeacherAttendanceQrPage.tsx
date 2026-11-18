@@ -20,9 +20,15 @@ import {
   Check,
   Calendar,
   Layers,
+  Upload,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { logAttendanceRecord, fetchAttendanceRecords } from '../../lib/attendanceService';
+import { useAuth } from '../../context/AuthContext';
+import {
+  logAttendanceRecord,
+  fetchAttendanceRecords,
+  getLocalTodayStr,
+} from '../../lib/attendanceService';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
 import {
@@ -41,13 +47,16 @@ interface ScannedEntry {
   section: string;
   grade_level?: string;
   time: string;
+  time_out?: string;
   date: string;
   status: 'Present' | 'Late';
   mode: 'QR' | 'LRN';
+  scanPeriod?: 'time_in' | 'time_out';
   avatar_url?: string;
 }
 
 export const TeacherAttendanceQrPage: React.FC = () => {
+  const { user } = useAuth();
   // Scanner Mode: 'time-in' (Morning) | 'time-out' (Afternoon)
   const [scanMode, setScanMode] = useState<'time-in' | 'time-out'>('time-in');
   const [lateCutoff, setLateCutoff] = useState('07:30'); // 7:30 AM default cutoff
@@ -68,6 +77,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const qrImageInputRef = useRef<HTMLInputElement | null>(null);
   const lastScannedRef = useRef<{ code: string; timestamp: number } | null>(null);
 
   // Scanned logs for today
@@ -95,85 +105,123 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     );
   }, [sections, activeGradeTarget]);
 
-  // Load sections and initial recent attendance from Supabase
-  useEffect(() => {
-    async function initData() {
-      try {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const [{ data: secData }, attRecords, { data: stData }] = await Promise.all([
-          supabase.from('sections').select('id, name, grade_level').order('name'),
-          fetchAttendanceRecords({ date: todayStr }),
-          supabase.from('students').select('id, first_name, last_name, lrn, grade_level, avatar_url, section_id'),
-        ]);
+  const loadTodayAttendance = useCallback(async () => {
+    try {
+      const todayStr = getLocalTodayStr();
+      const [{ data: secData }, attRecords, { data: stData }] = await Promise.all([
+        supabase.from('sections').select('id, name, grade_level').order('name'),
+        fetchAttendanceRecords({ date: todayStr }),
+        supabase.from('students').select('id, first_name, last_name, lrn, grade_level, avatar_url, section_id'),
+      ]);
 
-        if (secData) setSections(secData);
+      if (secData) setSections(secData);
 
-        const secMap = new Map<string, string>();
-        if (secData) secData.forEach((s: any) => secMap.set(String(s.id), s.name));
+      const secMap = new Map<string, string>();
+      if (secData) secData.forEach((s: any) => secMap.set(String(s.id), s.name));
 
-        const stMap = new Map<string, any>();
-        if (stData) {
-          stData.forEach((st: any) => {
-            if (st.id) stMap.set(String(st.id), st);
-            if (st.lrn) stMap.set(String(st.lrn), st);
-          });
-        }
-
-        if (attRecords && attRecords.length > 0) {
-          const mapped: ScannedEntry[] = attRecords.map((a: any) => {
-            const st = a.student_id ? stMap.get(String(a.student_id)) : null;
-            const secName =
-              (st?.section_id && secMap.get(String(st.section_id))) ||
-              (a.section_id && secMap.get(String(a.section_id))) ||
-              'Unassigned';
-            const rawStatus = String(a.status || 'present').toLowerCase();
-            return {
-              id: a.id,
-              student_id: a.student_id,
-              name: st ? `${st.first_name} ${st.last_name}` : 'Enrolled Student',
-              lrn: st?.lrn || a.qr_code?.match(/\d{12}/)?.[0] || '—',
-              section: secName,
-              grade_level: st?.grade_level || '',
-              time: a.time_in ? a.time_in.slice(0, 5) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              date: a.date,
-              status: rawStatus === 'late' ? 'Late' : 'Present',
-              mode: a.mode === 'LRN' ? 'LRN' : 'QR',
-              avatar_url: st?.avatar_url,
-            };
-          });
-          setScannedLogs(mapped);
-        } else {
-          // Fallback mock logs for demonstration if DB is empty
-          setScannedLogs([
-            { id: 1, name: 'Lucas Erawan Chappell', lrn: '446567190011', section: 'Kindness', grade_level: 'Grade 10', time: '07:15 AM', date: todayStr, status: 'Present', mode: 'QR' },
-            { id: 2, name: 'Justine Mangila', lrn: '11951680099', section: '11-Diamond', grade_level: 'Grade 11', time: '07:22 AM', date: todayStr, status: 'Present', mode: 'LRN' },
-            { id: 3, name: 'Shine Sellar', lrn: '11951680077', section: '10-Rizal', grade_level: 'Grade 9', time: '07:38 AM', date: todayStr, status: 'Late', mode: 'QR' },
-          ]);
-        }
-      } catch (err) {
-        console.warn('Initial attendance load note:', err);
+      const stMap = new Map<string, any>();
+      if (stData) {
+        stData.forEach((st: any) => {
+          if (st.id) stMap.set(String(st.id), st);
+          if (st.lrn) stMap.set(String(st.lrn), st);
+        });
       }
-    }
 
-    initData();
+      if (attRecords && attRecords.length > 0) {
+        const mapped: ScannedEntry[] = attRecords.map((a: any) => {
+          const st =
+            (a.student_id ? stMap.get(String(a.student_id)) : null) ||
+            (a.qr_code ? stMap.get(String(a.qr_code)) : null);
+          const secName =
+            (st?.section_id && secMap.get(String(st.section_id))) ||
+            (a.section_id && secMap.get(String(a.section_id))) ||
+            'Unassigned';
+          const rawStatus = String(a.status || 'present').toLowerCase();
+          const hasTimeOut = Boolean(a.time_out);
+          return {
+            id: a.id,
+            student_id: a.student_id,
+            name: st ? `${st.first_name} ${st.last_name}` : a.student_name || 'Enrolled Student',
+            lrn: st?.lrn || a.lrn || a.qr_code?.match(/\d{10,12}/)?.[0] || '—',
+            section: secName,
+            grade_level: st?.grade_level || '',
+            time: a.time_in
+              ? a.time_in.slice(0, 5)
+              : a.time_out
+              ? a.time_out.slice(0, 5)
+              : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time_out: a.time_out ? a.time_out.slice(0, 5) : undefined,
+            date: a.date || todayStr,
+            status: rawStatus === 'late' ? 'Late' : 'Present',
+            mode: a.mode === 'LRN' ? 'LRN' : 'QR',
+            scanPeriod: hasTimeOut && !a.time_in ? 'time_out' : 'time_in',
+            avatar_url: st?.avatar_url,
+          };
+        });
+        setScannedLogs(mapped);
+      } else {
+        setScannedLogs([]);
+      }
+    } catch (err) {
+      console.warn('Initial attendance load note:', err);
+    }
   }, []);
 
+  // Load sections and initial recent attendance from Supabase + subscribe to live changes
+  useEffect(() => {
+    loadTodayAttendance();
+
+    const handleSync = () => {
+      loadTodayAttendance();
+    };
+    window.addEventListener('plsnhs_attendance_updated', handleSync);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('plsnhs_attendance_channel');
+        bc.onmessage = () => loadTodayAttendance();
+      }
+    } catch {}
+
+    const channel = supabase
+      .channel('teacher_qr_kiosk_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        loadTodayAttendance();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+        loadTodayAttendance();
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('plsnhs_attendance_updated', handleSync);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
+      supabase.removeChannel(channel);
+    };
+  }, [loadTodayAttendance]);
+
   // Compute status (Present vs Late) based on current time and cutoff
-  const determineStatus = (): 'Present' | 'Late' => {
+  const determineStatus = useCallback((): 'Present' | 'Late' => {
+    if (scanMode === 'time-out') return 'Present';
     const now = new Date();
     const [cutoffHours, cutoffMinutes] = lateCutoff.split(':').map(Number);
     const cutoffDate = new Date();
     cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0);
 
     return now > cutoffDate ? 'Late' : 'Present';
-  };
+  }, [lateCutoff, scanMode]);
 
   // Process a Scanned LRN or QR String
   const processLrnOrQr = useCallback(async (rawScannedText: string, scanType: 'QR' | 'LRN' = 'QR') => {
     const cleanLrn = parseLrnFromInput(rawScannedText);
     if (!cleanLrn) {
       if (soundEnabled) playAttendanceSound('error');
-      setNotice({ type: 'error', message: 'Invalid scan. No valid 10-12 digit LRN could be detected.' });
+      setNotice({ type: 'error', message: 'Invalid scan. No valid 10–12 digit LRN could be detected.' });
       return;
     }
 
@@ -194,29 +242,31 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       }
       const { data: student } = await studentQuery.maybeSingle();
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const computedStatus = determineStatus();
-
-      let studentName = 'Learner';
-      let sectionName = 'General';
-      let studentId: string | number = cleanLrn;
-      let avatarUrl: string | undefined = undefined;
-      let gradeLevel = '';
-
-      if (student) {
-        studentName = `${student.first_name} ${student.last_name}`;
-        const matchedSec = sections.find((s) => String(s.id) === String(student.section_id));
-        sectionName = matchedSec?.name || 'Unassigned';
-        studentId = student.id;
-        avatarUrl = student.avatar_url;
-        gradeLevel = matchedSec?.grade_level || student.grade_level || '';
-      } else {
-        // Fallback for simulated or freshly added LRN
-        studentName = `Student (${cleanLrn})`;
+      if (!student) {
+        if (soundEnabled) playAttendanceSound('error');
+        setNotice({
+          type: 'error',
+          message: `Learner with LRN "${cleanLrn}" was not found in the official student registry.`,
+        });
+        setIsProcessing(false);
+        return;
       }
 
-      // 2. Section and Year Level Validation Notice (non-blocking)
+      const todayStr = getLocalTodayStr();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const time24 = new Date().toLocaleTimeString('en-GB', { hour12: false }); // HH:MM:SS
+      const computedStatus = determineStatus();
+      const currentPeriod: 'time_in' | 'time_out' = scanMode === 'time-out' ? 'time_out' : 'time_in';
+
+      const studentName = `${student.first_name} ${student.last_name}`.trim();
+      const matchedSec = sections.find((s) => String(s.id) === String(student.section_id));
+      const sectionName = matchedSec?.name || 'Unassigned';
+      const studentId = student.id;
+      const resolvedLrn = String(student.lrn || cleanLrn);
+      const avatarUrl = student.avatar_url;
+      const gradeLevel = matchedSec?.grade_level || student.grade_level || '';
+
+      // 2. Section and Year Level Validation when Active Class filter is selected
       if (activeSectionTarget !== 'All' || activeGradeTarget !== 'All') {
         const validation = validateStudentSectionAndGrade(
           sectionName,
@@ -226,85 +276,108 @@ export const TeacherAttendanceQrPage: React.FC = () => {
         );
 
         if (!validation.isValid) {
-          // If a specific section filter is active, notify teacher of actual section
-          console.info('Section mismatch note:', validation.errorMessage);
+          if (soundEnabled) playAttendanceSound('warning');
+          setNotice({
+            type: 'warning',
+            message:
+              validation.errorMessage ||
+              `Student ${studentName} belongs to ${gradeLevel} · Section ${sectionName}.`,
+          });
+          setIsProcessing(false);
+          return;
         }
       }
 
-      // Check for duplicate scan today
-      const alreadyLogged = scannedLogs.find(
-        (log) => log.lrn === cleanLrn && log.date === todayStr
+      // 3. Check for duplicate scan in the SAME period (time_in vs time_out) today
+      const existingEntry = scannedLogs.find(
+        (log) => (log.lrn === resolvedLrn || String(log.student_id) === String(studentId)) && log.date === todayStr
       );
 
-      if (alreadyLogged) {
+      if (
+        existingEntry &&
+        ((currentPeriod === 'time_in' && existingEntry.scanPeriod !== 'time_out') ||
+          (currentPeriod === 'time_out' && Boolean(existingEntry.time_out)))
+      ) {
         if (soundEnabled) playAttendanceSound('warning');
+        const label = currentPeriod === 'time_out' ? 'checked out' : 'checked in';
+        const loggedAt = currentPeriod === 'time_out' ? existingEntry.time_out : existingEntry.time;
         setNotice({
           type: 'warning',
-          message: `${studentName} (LRN: ${cleanLrn}) was already checked in today at ${alreadyLogged.time}.`,
+          message: `${studentName} (LRN: ${resolvedLrn}) was already ${label} today at ${loggedAt}.`,
         });
-        setLatestStudent(alreadyLogged);
+        setLatestStudent(existingEntry);
         setIsProcessing(false);
         return;
       }
 
-      // 2. Insert into Supabase attendance tables
-      try {
-        if (student?.id) {
-          const lowerStatus = computedStatus.toLowerCase(); // 'present' or 'late'
-          await logAttendanceRecord({
-            student_id: student.id,
-            section_id: student.section_id || null,
-            date: todayStr,
-            mode: scanMode === 'time-out' ? 'time_out' : 'time_in',
-            status: lowerStatus,
-            time_in: new Date().toTimeString().split(' ')[0],
-            qr_code: cleanLrn,
-            raw_payload: rawScannedText,
-          });
+      // 4. Insert / Upsert into Supabase attendance_records & attendance tables
+      const lowerStatus = computedStatus.toLowerCase(); // 'present' or 'late'
+      await logAttendanceRecord({
+        student_id: String(student.id),
+        section_id: student.section_id || null,
+        teacher_id: user?.id ? String(user.id) : null,
+        date: todayStr,
+        mode: currentPeriod,
+        status: lowerStatus,
+        time_in: currentPeriod === 'time_in' ? time24 : undefined,
+        time_out: currentPeriod === 'time_out' ? time24 : undefined,
+        remarks:
+          currentPeriod === 'time_out'
+            ? `Dismissal Time-Out logged via ${scanType} Scanner`
+            : `Morning Time-In (${computedStatus}) logged via ${scanType} Scanner`,
+        qr_code: resolvedLrn,
+        raw_payload: rawScannedText,
+      });
 
-          // Activity audit log
-          await supabase.from('activity_logs').insert([
-            {
-              role: 'student',
-              action: `Attendance ${computedStatus}`,
-              details: `${studentName} (LRN: ${cleanLrn}) logged ${computedStatus} via ${scanType} scan (${scanMode === 'time-out' ? 'Time-Out' : 'Time-In'}).`,
-              timestamp: new Date().toISOString(),
-            },
-          ]);
+      // Activity audit log (non-blocking)
+      supabase
+        .from('activity_logs')
+        .insert([
+          {
+            role: 'student',
+            action: `Attendance ${currentPeriod === 'time_out' ? 'Time-Out' : computedStatus}`,
+            details: `${studentName} (LRN: ${resolvedLrn}) logged ${
+              currentPeriod === 'time_out' ? 'Dismissal Time-Out' : computedStatus
+            } via ${scanType} scan.`,
+            timestamp: new Date().toISOString(),
+          },
+        ])
+        .then(() => {});
 
-          // Broadcast real-time update event so student attendance syncs immediately
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('plsnhs_attendance_updated'));
-          }
-        }
-      } catch (insertErr) {
-        console.warn('Attendance DB sync note:', insertErr);
-      }
-
-      // 3. Audio & UI Feedback
+      // 5. Audio & UI Feedback
       if (soundEnabled) {
-        playAttendanceSound(computedStatus === 'Late' ? 'warning' : 'success');
+        playAttendanceSound(computedStatus === 'Late' && currentPeriod === 'time_in' ? 'warning' : 'success');
       }
 
       const newEntry: ScannedEntry = {
-        id: Date.now(),
+        id: existingEntry?.id || Date.now(),
         student_id: studentId,
         name: studentName,
-        lrn: cleanLrn,
+        lrn: resolvedLrn,
         section: sectionName,
         grade_level: gradeLevel,
-        time: timeStr,
+        time: currentPeriod === 'time_out' && existingEntry ? existingEntry.time : timeStr,
+        time_out: currentPeriod === 'time_out' ? timeStr : existingEntry?.time_out,
         date: todayStr,
-        status: computedStatus,
+        status: currentPeriod === 'time_out' && existingEntry ? existingEntry.status : computedStatus,
         mode: scanType,
+        scanPeriod: currentPeriod,
         avatar_url: avatarUrl,
       };
 
-      setScannedLogs((prev) => [newEntry, ...prev]);
+      setScannedLogs((prev) => {
+        const filtered = prev.filter(
+          (item) => !(item.lrn === resolvedLrn && item.date === todayStr)
+        );
+        return [newEntry, ...filtered];
+      });
       setLatestStudent(newEntry);
       setNotice({
         type: 'success',
-        message: `✓ ${studentName} checked in as ${computedStatus} (${timeStr}) via ${scanType}!`,
+        message:
+          currentPeriod === 'time_out'
+            ? `✓ ${studentName} (${gradeLevel} · Section ${sectionName}) checked out for Dismissal at ${timeStr} via ${scanType}!`
+            : `✓ ${studentName} (${gradeLevel} · Section ${sectionName}) checked in as ${computedStatus} (${timeStr}) via ${scanType}!`,
       });
 
       setInputLrn('');
@@ -320,7 +393,6 @@ export const TeacherAttendanceQrPage: React.FC = () => {
       }
     }
   }, [
-    lateCutoff,
     scannedLogs,
     soundEnabled,
     activeGradeTarget,
@@ -328,31 +400,76 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     sections,
     determineStatus,
     scanMode,
+    user?.id,
   ]);
 
   // Handle Manual LRN Submit
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputLrn.trim()) return;
-    processLrnOrQr(inputLrn.trim(), 'LRN');
+    const raw = inputLrn.trim();
+    const isQrPayload = raw.includes('http') || raw.includes('verify-id') || raw.length > 16;
+    processLrnOrQr(raw, isQrPayload ? 'QR' : 'LRN');
+  };
+
+  // Handle QR Image Upload (for teachers scanning a saved QR Pass or Student ID image)
+  const handleQrImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imgData.data, imgData.width, imgData.height, {
+          inversionAttempts: 'attemptBoth',
+        });
+        if (code && code.data) {
+          processLrnOrQr(code.data, 'QR');
+        } else {
+          if (soundEnabled) playAttendanceSound('error');
+          setNotice({
+            type: 'error',
+            message: 'No valid Student QR Code could be detected in the uploaded image.',
+          });
+        }
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Camera Streaming & QR Detector Loop
-  const startCamera = async () => {
+  const startCamera = async (overrideFacing?: 'environment' | 'user') => {
     setCameraError(null);
+    const targetFacing = overrideFacing || facingMode;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: targetFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+      } catch {
+        // Fallback to any available video device
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play().catch(() => {});
       }
       setCameraActive(true);
     } catch (err: any) {
       console.error('Camera access error:', err);
-      setCameraError('Unable to access camera. Please allow camera permissions in your browser or use the LRN entry field below.');
+      setCameraError('Unable to access camera. Please allow camera permissions in your browser, upload a QR image, or use the LRN entry field below.');
       setCameraActive(false);
     }
   };
@@ -377,8 +494,9 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   // Flip Camera Front / Back
   const flipCamera = () => {
     stopCamera();
-    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
-    setTimeout(() => startCamera(), 300);
+    const nextFacing = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextFacing);
+    setTimeout(() => startCamera(nextFacing), 250);
   };
 
   // Real-time Barcode / QR Detection loop with universal jsQR fallback for all desktop & mobile browsers
@@ -674,6 +792,22 @@ export const TeacherAttendanceQrPage: React.FC = () => {
                 <h3 className="text-sm font-bold text-white font-display">Live QR Camera Scanner</h3>
               </div>
               <div className="flex items-center gap-1.5">
+                <input
+                  ref={qrImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleQrImageUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => qrImageInputRef.current?.click()}
+                  className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Scan a saved Student ID or QR Pass image file"
+                >
+                  <Upload className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>Upload QR</span>
+                </button>
                 {cameraActive && (
                   <button
                     onClick={flipCamera}
@@ -921,13 +1055,16 @@ export const TeacherAttendanceQrPage: React.FC = () => {
 
                       <div className="text-right shrink-0">
                         <div className="flex items-center justify-end gap-2">
-                          <span className="font-mono text-xs font-bold text-slate-700">{log.time}</span>
+                          <span className="font-mono text-xs font-bold text-slate-700">
+                            In: {log.time}
+                            {log.time_out ? ` · Out: ${log.time_out}` : ''}
+                          </span>
                           <Badge variant={log.status === 'Present' ? 'success' : 'warning'} size="sm">
                             {log.status}
                           </Badge>
                         </div>
                         <span className="text-[10px] text-slate-400 mt-0.5 block">
-                          Mode: {log.mode}
+                          Mode: {log.mode} {log.time_out ? '(In & Out)' : ''}
                         </span>
                       </div>
                     </div>

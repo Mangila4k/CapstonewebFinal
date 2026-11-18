@@ -17,7 +17,14 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { logAttendanceRecord, fetchAttendanceRecords } from '../../lib/attendanceService';
+import {
+  logAttendanceRecord,
+  fetchAttendanceRecords,
+  getLocalTodayStr,
+  resolveTeacherRecordId,
+  broadcastAttendanceUpdate,
+} from '../../lib/attendanceService';
+import { ensureAuthenticatedSession } from '../../lib/studentDocumentsService';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from '../../components/common/Alert';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
@@ -158,7 +165,15 @@ export const TeacherAttendancePage: React.FC = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const lastScannedRef = useRef<{ code: string; timestamp: number } | null>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalTodayStr();
+
+  const normalizeDisplayStatus = (raw?: string): 'Present' | 'Late' | 'Absent' | 'Excused' => {
+    const s = String(raw || 'present').toLowerCase();
+    if (s === 'late') return 'Late';
+    if (s === 'absent') return 'Absent';
+    if (s === 'excused') return 'Excused';
+    return 'Present';
+  };
 
   // Load sections, students, and today's attendance
   useEffect(() => {
@@ -295,10 +310,19 @@ export const TeacherAttendancePage: React.FC = () => {
         const initialModes: Record<string | number, 'QR' | 'LRN' | 'Manual'> = {};
 
         enrichedStudents.forEach((s) => {
-          const match = (attData || []).find((att: any) => att.student_id === s.id);
+          const match = (attData || []).find(
+            (att: any) =>
+              String(att.student_id) === String(s.id) ||
+              (s.lrn && att.qr_code && String(att.qr_code).includes(String(s.lrn)))
+          );
           if (match) {
-            initialMap[s.id] = (match.status as any) || 'Present';
-            initialModes[s.id] = match.qr_code ? 'QR' : 'Manual';
+            initialMap[s.id] = normalizeDisplayStatus(match.status);
+            initialModes[s.id] =
+              match.mode === 'LRN'
+                ? 'LRN'
+                : match.qr_code || match.mode === 'qr' || match.mode === 'time_in'
+                ? 'QR'
+                : 'Manual';
           } else {
             initialMap[s.id] = 'Present';
             initialModes[s.id] = 'Manual';
@@ -315,6 +339,50 @@ export const TeacherAttendancePage: React.FC = () => {
     }
 
     loadSectionsAndStudents();
+
+    const syncLiveScans = async () => {
+      try {
+        const latestRecords = await fetchAttendanceRecords({ date: todayStr });
+        if (!latestRecords || latestRecords.length === 0) return;
+        setAttendanceMap((prev) => {
+          const next = { ...prev };
+          latestRecords.forEach((r) => {
+            if (r.student_id) {
+              next[r.student_id] = normalizeDisplayStatus(r.status);
+            }
+          });
+          return next;
+        });
+        setAttendanceModes((prev) => {
+          const next = { ...prev };
+          latestRecords.forEach((r) => {
+            if (r.student_id) {
+              next[r.student_id] =
+                r.mode === 'LRN' ? 'LRN' : r.qr_code || r.mode === 'qr' ? 'QR' : 'Manual';
+            }
+          });
+          return next;
+        });
+      } catch {}
+    };
+
+    window.addEventListener('plsnhs_attendance_updated', syncLiveScans);
+    let bc: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('plsnhs_attendance_channel');
+        bc.onmessage = () => syncLiveScans();
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener('plsnhs_attendance_updated', syncLiveScans);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
+    };
   }, [requestedSection, todayStr, user?.full_name]);
 
   // Filtered students for the selected Year Level & Section
@@ -685,15 +753,19 @@ export const TeacherAttendancePage: React.FC = () => {
     setNotice(null);
 
     try {
+      await ensureAuthenticatedSession();
+      const resolvedTeacherId = await resolveTeacherRecordId(user?.id);
       const matchedSection = sections.find((s) => s.name === selectedSection);
-      const currentTime = new Date().toTimeString().split(' ')[0];
+      const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
       const recordsToInsert = displayedStudents.map((s) => ({
         student_id: s.id,
-        section_id: matchedSection?.id || null,
+        section_id: (s as any).section_id || matchedSection?.id || null,
+        teacher_id: resolvedTeacherId,
         date: todayStr,
         status: (attendanceMap[s.id] || 'present').toLowerCase(),
         time_in: currentTime,
+        qr_code: s.lrn ? `${s.lrn}_${todayStr}` : null,
         remarks: attendanceModes[s.id] || 'Manual',
       }));
 
@@ -705,7 +777,7 @@ export const TeacherAttendancePage: React.FC = () => {
         // ignore cache write error
       }
 
-      // Try database sync
+      // Try database sync on legacy attendance table
       const studentIds = displayedStudents.map((s) => s.id);
       await supabase
         .from('attendance')
@@ -715,27 +787,29 @@ export const TeacherAttendancePage: React.FC = () => {
 
       const { error } = await supabase.from('attendance').insert(recordsToInsert);
 
-      // Also persist to attendance_records table
+      // Also persist to attendance_records table with valid mode ('time_in') & resolved teacher_id
       try {
         const recordsForAttendanceRecords = displayedStudents.map((s) => ({
           student_id: s.id,
-          section_id: matchedSection?.id || null,
-          teacher_id: user?.id || null,
+          section_id: (s as any).section_id || matchedSection?.id || null,
+          teacher_id: resolvedTeacherId,
           date: todayStr,
           status: (attendanceMap[s.id] || 'present').toLowerCase(),
-          mode: (attendanceModes[s.id] === 'QR' ? 'time_in' : 'manual'),
+          mode: 'time_in',
           time_in: currentTime,
+          qr_code: s.lrn || null,
           remarks: attendanceModes[s.id] || 'Manual',
+          scanned_at: new Date().toISOString(),
         }));
-        await supabase.from('attendance_records').insert(recordsForAttendanceRecords);
+        await supabase
+          .from('attendance_records')
+          .upsert(recordsForAttendanceRecords, { onConflict: 'student_id,date,mode' });
       } catch (attRecErr) {
         console.warn('attendance_records table sync note:', attRecErr);
       }
 
       // Broadcast real-time update event so student attendance syncs immediately
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('plsnhs_attendance_updated'));
-      }
+      broadcastAttendanceUpdate();
 
       if (error) {
         console.warn('Attendance database notice:', error);

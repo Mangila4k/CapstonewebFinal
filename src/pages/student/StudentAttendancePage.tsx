@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import QRCode from 'qrcode';
 import {
   Calendar,
   UserCheck,
@@ -227,6 +228,8 @@ export const StudentAttendancePage: React.FC = () => {
   const [parentChild, setParentChild] = useState<any>(null);
   const [studentRecord, setStudentRecord] = useState<any>(null);
   const [resolvedSectionName, setResolvedSectionName] = useState<string>('');
+  const [showQrPassModal, setShowQrPassModal] = useState<boolean>(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   // 1. Resolve parent's child if logged in as parent
   useEffect(() => {
@@ -295,27 +298,58 @@ export const StudentAttendancePage: React.FC = () => {
     return timeStr;
   };
 
-  // 2. Fetch live attendance records directly from Supabase attendance table
+  // 2. Fetch live attendance records directly from Supabase attendance_records & attendance tables
   const fetchLiveAttendance = async () => {
     setIsRefreshing(true);
     try {
       // Resolve student row
       let student = parentChild;
       if (!student) {
-        let q = supabase.from('students').select('*');
+        let matched: any = null;
         if (user?.student_id) {
-          q = q.eq('id', user.student_id);
-        } else if (user?.student_lrn) {
-          q = q.eq('lrn', user.student_lrn);
-        } else if (user?.email) {
-          q = q.ilike('email', user.email);
-        } else if (user?.id) {
-          q = q.eq('id', user.id);
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('id', user.student_id)
+            .maybeSingle();
+          if (data) matched = data;
         }
-        const { data: stRows } = await q.limit(1);
-        if (stRows && stRows.length > 0) {
-          student = stRows[0];
-          setStudentRecord(stRows[0]);
+        if (!matched && user?.student_lrn) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('lrn', user.student_lrn)
+            .maybeSingle();
+          if (data) matched = data;
+        }
+        if (!matched && user?.email) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .ilike('email', user.email)
+            .maybeSingle();
+          if (data) matched = data;
+        }
+        if (!matched && user?.first_name && user?.last_name) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .ilike('first_name', user.first_name)
+            .ilike('last_name', user.last_name)
+            .limit(1);
+          if (data && data.length > 0) matched = data[0];
+        }
+        if (!matched && user?.id) {
+          const { data } = await supabase
+            .from('students')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+          if (data) matched = data;
+        }
+        if (matched) {
+          student = matched;
+          setStudentRecord(matched);
         }
       }
 
@@ -339,7 +373,7 @@ export const StudentAttendancePage: React.FC = () => {
         return;
       }
 
-      // Query the official Supabase attendance_records table
+      // Query the official Supabase attendance_records & attendance tables
       const attRows = await fetchAttendanceRecords({
         student_id: resolvedStudentId || '',
         lrn: resolvedLrn,
@@ -354,7 +388,12 @@ export const StudentAttendancePage: React.FC = () => {
           else if (rawStatus === 'excused') capStatus = 'Excused';
           else if (rawStatus === 'absent') capStatus = 'Absent';
 
-          const dateObj = d.date ? new Date(d.date) : new Date();
+          // Parse YYYY-MM-DD in local timezone to avoid UTC date shifts
+          const dateObj = d.date
+            ? /^\d{4}-\d{2}-\d{2}$/.test(String(d.date))
+              ? new Date(`${d.date}T00:00:00`)
+              : new Date(d.date)
+            : new Date();
           const formattedDate = dateObj.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -364,18 +403,35 @@ export const StudentAttendancePage: React.FC = () => {
 
           const timeInFormatted = formatAttendanceTime(d.time_in);
           const timeOutFormatted = formatAttendanceTime(d.time_out);
-          const isQr = Boolean((d.qr_code && d.qr_code.length > 0) || d.mode === 'qr');
+          const isQr = Boolean(
+            (d.qr_code && d.qr_code.length > 0) ||
+              d.mode === 'qr' ||
+              d.mode === 'time_in' ||
+              d.mode === 'time_out'
+          );
 
           return {
             id: d.id || `live-${idx}`,
             date: formattedDate,
             day: dayOfWeek,
-            timeIn: timeInFormatted !== '—' ? timeInFormatted : (capStatus === 'Absent' || capStatus === 'Excused' ? '—' : '07:15 AM'),
-            timeOut: timeOutFormatted !== '—' ? timeOutFormatted : (capStatus === 'Absent' || capStatus === 'Excused' ? '—' : '04:30 PM'),
-            gate: d.remarks && d.remarks.toLowerCase().includes('gate 2') ? 'Gate 2 – Main Academic Gate' : 'Gate 1 – SHS Turnstile A',
-            mode: isQr ? 'QR Gate Pass' : 'RFID Tap',
+            timeIn:
+              timeInFormatted !== '—'
+                ? timeInFormatted
+                : capStatus === 'Absent' || capStatus === 'Excused'
+                ? '—'
+                : '07:15 AM',
+            timeOut: timeOutFormatted,
+            gate:
+              d.remarks && d.remarks.toLowerCase().includes('gate 2')
+                ? 'Gate 2 – Main Academic Gate'
+                : 'Gate 1 – QR Scanner Terminal',
+            mode: isQr ? 'QR Gate Pass' : d.mode === 'Manual' ? 'Manual Log' : 'RFID Tap',
             status: capStatus,
-            remarks: d.remarks || (capStatus === 'Late' ? 'Late check-in recorded via campus scanner' : 'Official attendance logged via campus turnstile'),
+            remarks:
+              d.remarks ||
+              (capStatus === 'Late'
+                ? 'Late check-in recorded via teacher QR scanner'
+                : 'Official attendance verified via QR code scan'),
           };
         });
 
@@ -401,7 +457,15 @@ export const StudentAttendancePage: React.FC = () => {
     };
     window.addEventListener('plsnhs_attendance_updated', handleUpdate);
 
-    // Supabase Realtime channel subscription for attendance_records table
+    let bc: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('plsnhs_attendance_channel');
+        bc.onmessage = () => fetchLiveAttendance();
+      }
+    } catch {}
+
+    // Supabase Realtime channel subscription for attendance_records & attendance tables
     const channel = supabase
       .channel('public_attendance_student_sync')
       .on(
@@ -422,6 +486,11 @@ export const StudentAttendancePage: React.FC = () => {
 
     return () => {
       window.removeEventListener('plsnhs_attendance_updated', handleUpdate);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
       supabase.removeChannel(channel);
     };
   }, [user, parentChild]);
@@ -446,6 +515,36 @@ export const StudentAttendancePage: React.FC = () => {
     ? parentChild?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School')
     : studentRecord?.strand || user?.student_strand || (learnerGrade.includes('11') || learnerGrade.includes('12') ? 'TVL - ICT' : 'Junior High School');
   const schoolYear = '2026–2027';
+
+  // Generate scannable QR code for the student's LRN so teachers can scan it directly
+  useEffect(() => {
+    const cleanLrn = learnerLrn && learnerLrn !== '—' ? String(learnerLrn).trim() : '';
+    if (!cleanLrn) {
+      setQrDataUrl('');
+      return;
+    }
+    const payload = `${window.location.origin}/verify-id?lrn=${encodeURIComponent(
+      cleanLrn
+    )}&name=${encodeURIComponent(learnerName)}`;
+    QRCode.toDataURL(payload, {
+      width: 320,
+      margin: 2,
+      color: { dark: '#0f172a', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    })
+      .then((url) => setQrDataUrl(url))
+      .catch(() => {});
+  }, [learnerLrn, learnerName]);
+
+  const handleDownloadQrPass = () => {
+    if (!qrDataUrl) return;
+    const link = document.createElement('a');
+    link.href = qrDataUrl;
+    link.download = `PLSNHS_QR_Pass_${learnerLrn}_${learnerName.replace(/\s+/g, '_')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Quick counts for filter pills (dynamically calculated from logs)
   const countAll = logs.length;
@@ -603,6 +702,15 @@ export const StudentAttendancePage: React.FC = () => {
           <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
             <button
               type="button"
+              onClick={() => setShowQrPassModal(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] px-3.5 py-1.5 text-xs font-bold text-white transition-all shadow-xs cursor-pointer"
+              title="Open your scannable Student QR Code Pass for teacher attendance scanning"
+            >
+              <QrCode className="h-3.5 w-3.5 text-[#F5C518]" />
+              <span>Show My QR Pass</span>
+            </button>
+            <button
+              type="button"
               onClick={fetchLiveAttendance}
               disabled={isRefreshing}
               className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
@@ -616,7 +724,15 @@ export const StudentAttendancePage: React.FC = () => {
         </div>
 
         {/* Mobile Action Controls Row */}
-        <div className="sm:hidden mt-3 flex items-center">
+        <div className="sm:hidden mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowQrPassModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#152e69] px-3 py-1.5 text-xs font-bold text-white transition-all shadow-xs cursor-pointer"
+          >
+            <QrCode className="h-3.5 w-3.5 text-[#F5C518]" />
+            <span>Show My QR Pass</span>
+          </button>
           <button
             type="button"
             onClick={fetchLiveAttendance}
@@ -735,23 +851,27 @@ export const StudentAttendancePage: React.FC = () => {
         </div>
 
         {/* Card 4: Gate Pass Status */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-slate-300">
+        <div
+          onClick={() => setShowQrPassModal(true)}
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md hover:border-[#152e69]/40 cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Digital Gate Pass
+              Digital QR Gate Pass
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#152e69]/10 text-[#152e69]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#152e69]/10 text-[#152e69] group-hover:bg-[#152e69] group-hover:text-white transition-colors">
               <QrCode className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-2 flex items-baseline justify-between gap-2">
             <p className="text-lg font-black text-emerald-700 font-display">Active &amp; Linked</p>
+            <span className="text-[11px] font-bold text-[#152e69] underline">Open QR →</span>
           </div>
           <div className="mt-2.5 flex items-center gap-1.5">
             <span className="inline-flex items-center rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10.5px] font-bold text-emerald-800">
               Verified
             </span>
-            <span className="text-[11px] text-slate-500">Main gate &amp; turnstiles</span>
+            <span className="text-[11px] text-slate-500">Click to display scannable QR</span>
           </div>
         </div>
       </div>
@@ -1152,6 +1272,87 @@ export const StudentAttendancePage: React.FC = () => {
           <span>Print Sheet</span>
         </button>
       </div>
+
+      {/* Scannable Student QR Attendance Pass Modal */}
+      {showQrPassModal && (
+        <div
+          className="no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+          onClick={() => setShowQrPassModal(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#152e69] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-white/15 text-[#F5C518]">
+                  <QrCode className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-extrabold tracking-tight">
+                    Official Student QR Attendance Pass
+                  </h3>
+                  <p className="text-[11px] text-slate-300">
+                    Present to Teacher QR Scanner Kiosk or Class Attendance
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQrPassModal(false)}
+                className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 text-center space-y-4">
+              <div className="inline-flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-slate-200 bg-white shadow-sm">
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt={`QR Pass for ${learnerName}`}
+                    className="w-56 h-56 object-contain"
+                  />
+                ) : (
+                  <div className="w-56 h-56 flex items-center justify-center text-xs text-slate-400">
+                    Generating QR Pass...
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-base font-black text-slate-900">{learnerName}</h4>
+                <p className="text-xs font-mono font-bold text-[#152e69] mt-0.5">
+                  LRN: {learnerLrn}
+                </p>
+                <p className="text-xs text-slate-600 mt-1">
+                  {learnerGrade} · Section {learnerSection} ({learnerStrand})
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadQrPass}
+                  disabled={!qrDataUrl}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#152e69] hover:bg-[#0f1f4b] disabled:opacity-50 text-white font-bold text-xs py-2.5 cursor-pointer transition-colors"
+                >
+                  <Download className="h-4 w-4 text-[#F5C518]" />
+                  <span>Download QR Pass</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowQrPassModal(false)}
+                  className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs px-4 py-2.5 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
