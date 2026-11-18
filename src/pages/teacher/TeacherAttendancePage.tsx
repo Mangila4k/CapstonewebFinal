@@ -15,6 +15,10 @@ import {
   BookOpen,
   MapPin,
   Maximize2,
+  Clock,
+  Upload,
+  RefreshCw,
+  XCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import {
@@ -145,6 +149,8 @@ export const TeacherAttendancePage: React.FC = () => {
   const [attendanceModes, setAttendanceModes] = useState<
     Record<string | number, 'QR' | 'LRN' | 'Manual'>
   >({});
+  const [scanTimes, setScanTimes] = useState<Record<string | number, string>>({});
+  const [lateCutoff, setLateCutoff] = useState<string>('07:30');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{
@@ -156,11 +162,12 @@ export const TeacherAttendancePage: React.FC = () => {
   const [quickScanInput, setQuickScanInput] = useState('');
   const [recentlyScannedId, setRecentlyScannedId] = useState<string | number | null>(null);
   const quickInputRef = useRef<HTMLInputElement | null>(null);
+  const qrImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Inline Camera Scanner State
   const [showCamera, setShowCamera] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
-  const [facingMode] = useState<'environment' | 'user'>('environment');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lastScannedRef = useRef<{ code: string; timestamp: number } | null>(null);
@@ -173,6 +180,22 @@ export const TeacherAttendancePage: React.FC = () => {
     if (s === 'absent') return 'Absent';
     if (s === 'excused') return 'Excused';
     return 'Present';
+  };
+
+  const formatTime12h = (rawTime?: string | null): string => {
+    if (!rawTime) return '';
+    if (rawTime.includes('AM') || rawTime.includes('PM')) return rawTime;
+    const parts = String(rawTime).split(':');
+    if (parts.length >= 2) {
+      let h = parseInt(parts[0], 10);
+      const m = parts[1];
+      if (!isNaN(h)) {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+      }
+    }
+    return String(rawTime);
   };
 
   // Load sections, students, and today's attendance
@@ -302,12 +325,13 @@ export const TeacherAttendancePage: React.FC = () => {
           }
         }
 
-        // Initialize attendance statuses
+        // Initialize attendance statuses ONLY for students who have actually scanned or been recorded today
         const initialMap: Record<
           string | number,
           'Present' | 'Late' | 'Absent' | 'Excused'
         > = {};
         const initialModes: Record<string | number, 'QR' | 'LRN' | 'Manual'> = {};
+        const initialTimes: Record<string | number, string> = {};
 
         enrichedStudents.forEach((s) => {
           const match = (attData || []).find(
@@ -318,19 +342,20 @@ export const TeacherAttendancePage: React.FC = () => {
           if (match) {
             initialMap[s.id] = normalizeDisplayStatus(match.status);
             initialModes[s.id] =
-              match.mode === 'LRN'
+              match.mode === 'LRN' || (match.remarks && String(match.remarks).toLowerCase().includes('lrn'))
                 ? 'LRN'
-                : match.qr_code || match.mode === 'qr' || match.mode === 'time_in'
-                ? 'QR'
-                : 'Manual';
-          } else {
-            initialMap[s.id] = 'Present';
-            initialModes[s.id] = 'Manual';
+                : match.mode === 'Manual' || (match.remarks && String(match.remarks).toLowerCase().includes('manual'))
+                ? 'Manual'
+                : 'QR';
+            if (match.time_in) {
+              initialTimes[s.id] = formatTime12h(match.time_in);
+            }
           }
         });
 
         setAttendanceMap(initialMap);
         setAttendanceModes(initialModes);
+        setScanTimes(initialTimes);
       } catch (err) {
         console.warn('Error loading attendance roster:', err);
       } finally {
@@ -358,7 +383,20 @@ export const TeacherAttendancePage: React.FC = () => {
           latestRecords.forEach((r) => {
             if (r.student_id) {
               next[r.student_id] =
-                r.mode === 'LRN' ? 'LRN' : r.qr_code || r.mode === 'qr' ? 'QR' : 'Manual';
+                r.mode === 'LRN'
+                  ? 'LRN'
+                  : r.mode === 'Manual' || (r.remarks && String(r.remarks).toLowerCase().includes('manual'))
+                  ? 'Manual'
+                  : 'QR';
+            }
+          });
+          return next;
+        });
+        setScanTimes((prev) => {
+          const next = { ...prev };
+          latestRecords.forEach((r) => {
+            if (r.student_id && r.time_in) {
+              next[r.student_id] = formatTime12h(r.time_in);
             }
           });
           return next;
@@ -375,6 +413,16 @@ export const TeacherAttendancePage: React.FC = () => {
       }
     } catch {}
 
+    const channel = supabase
+      .channel('teacher_class_attendance_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+        syncLiveScans();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+        syncLiveScans();
+      })
+      .subscribe();
+
     return () => {
       window.removeEventListener('plsnhs_attendance_updated', syncLiveScans);
       if (bc) {
@@ -382,6 +430,7 @@ export const TeacherAttendancePage: React.FC = () => {
           bc.close();
         } catch {}
       }
+      supabase.removeChannel(channel);
     };
   }, [requestedSection, todayStr, user?.full_name]);
 
@@ -455,22 +504,28 @@ export const TeacherAttendancePage: React.FC = () => {
   }, [classCards, sections, gradeFilter]);
 
   // Camera Management
-  const startCamera = async () => {
+  const startCamera = async (overrideFacing?: 'environment' | 'user') => {
+    const targetFacing = overrideFacing || facingMode;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: targetFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play().catch(() => {});
       }
       setCameraActive(true);
     } catch (err) {
       console.warn('Camera error:', err);
       setNotice({
         type: 'warning',
-        message: 'Camera permission denied or camera not available. Use the LRN input field.',
+        message: 'Camera permission denied or camera not available. You can upload a QR image or use the LRN input field.',
       });
       setCameraActive(false);
     }
@@ -494,6 +549,13 @@ export const TeacherAttendancePage: React.FC = () => {
     }
   };
 
+  const flipCamera = () => {
+    stopCamera();
+    const nextFacing = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextFacing);
+    setTimeout(() => startCamera(nextFacing), 250);
+  };
+
   // If page loaded with ?scan=1, automatically trigger camera scanner
   useEffect(() => {
     if (autoScan === '1' || autoScan === 'camera') {
@@ -503,6 +565,14 @@ export const TeacherAttendancePage: React.FC = () => {
       setTimeout(() => quickInputRef.current?.focus(), 300);
     }
   }, [autoScan]);
+
+  const determineStatus = (): 'Present' | 'Late' => {
+    const now = new Date();
+    const [cutoffH, cutoffM] = lateCutoff.split(':').map(Number);
+    const cutoffDate = new Date();
+    cutoffDate.setHours(isNaN(cutoffH) ? 7 : cutoffH, isNaN(cutoffM) ? 30 : cutoffM, 0, 0);
+    return now > cutoffDate ? 'Late' : 'Present';
+  };
 
   // Centralized function to validate and record attendance for a scanned LRN / QR
   const recordAttendanceForLrn = async (rawInput: string, scanMode: 'QR' | 'LRN') => {
@@ -525,11 +595,10 @@ export const TeacherAttendancePage: React.FC = () => {
 
     if (!student) {
       try {
-        const { data: dbSt } = await supabase
-          .from('students')
-          .select('*')
-          .or(`lrn.eq.${lrn},id.eq.${lrn}`)
-          .maybeSingle();
+        const isCleanUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(lrn);
+        let q = supabase.from('students').select('*');
+        q = isCleanUuid ? q.or(`lrn.eq.${lrn},id.eq.${lrn}`) : q.eq('lrn', lrn);
+        const { data: dbSt } = await q.maybeSingle();
 
         if (dbSt) {
           const matchedSec = sections.find((sec) => String(sec.id) === String(dbSt.section_id));
@@ -546,94 +615,108 @@ export const TeacherAttendancePage: React.FC = () => {
     }
 
     if (!student) {
-      playAttendanceSound('warning');
+      playAttendanceSound('error');
       setNotice({
-        type: 'warning',
-        message: `Student with identifier "${lrn}" was not found in the student registry.`,
+        type: 'error',
+        message: `Student with LRN "${lrn}" was not found in the official student registry.`,
       });
       return false;
     }
 
-    // 2. Section validation:
-    // If student is in a different section or year level than currently filtered, switch to their section so row is visible
-    const studentSecNorm = normalizeSectionName(student.section);
-    const selectedSecNorm = selectedSection !== 'All' ? normalizeSectionName(selectedSection) : '';
+    // 2. Strict Section & Year Level Validation when a specific section is selected
+    if (selectedSection !== 'All' || gradeFilter !== 'All') {
+      const validation = validateStudentSectionAndGrade(
+        student.section,
+        student.grade_level,
+        selectedSection !== 'All' ? selectedSection : undefined,
+        gradeFilter !== 'All' ? gradeFilter : undefined
+      );
 
-    if (selectedSecNorm && studentSecNorm && studentSecNorm.toLowerCase() !== selectedSecNorm.toLowerCase()) {
-      if (student.section) {
-        setSelectedSection(student.section);
+      if (!validation.isValid) {
+        playAttendanceSound('warning');
+        setNotice({
+          type: 'warning',
+          message:
+            validation.errorMessage ||
+            `${student.first_name} ${student.last_name} belongs to ${student.grade_level} · Section ${student.section}, not Section ${selectedSection}.`,
+        });
+        return false;
       }
-      if (gradeFilter !== 'All') {
-        setGradeFilter('All');
-      }
-      setNotice({
-        type: 'success',
-        message: `✓ Attendance Verified: ${student.first_name} ${student.last_name} (${student.grade_level} · Section ${student.section}) recorded Present via ${scanMode}! Switched view to Section ${student.section}.`,
-      });
-    } else {
-      setNotice({
-        type: 'success',
-        message: `✓ Attendance Verified: ${student.first_name} ${student.last_name} (${student.grade_level} · Section ${student.section}) recorded Present via ${scanMode}!`,
-      });
     }
 
-    // 3. Mark student as Present in state
-    setAttendanceMap((prev) => ({ ...prev, [student.id]: 'Present' as const }));
-    setAttendanceModes((prev) => ({ ...prev, [student.id]: scanMode }));
-    setRecentlyScannedId(student.id);
-    playAttendanceSound('success');
+    // 3. Check duplicate QR/LRN scan today
+    const existingStatus = attendanceMap[student.id];
+    const existingTime = scanTimes[student.id];
+    if ((existingStatus === 'Present' || existingStatus === 'Late') && existingTime) {
+      playAttendanceSound('warning');
+      setRecentlyScannedId(student.id);
+      setNotice({
+        type: 'warning',
+        message: `${student.first_name} ${student.last_name} (LRN: ${student.lrn || lrn}) was already scanned in today as ${existingStatus} at ${existingTime}.`,
+      });
+      setTimeout(() => setRecentlyScannedId(null), 3000);
+      return true;
+    }
 
-    // 4. Live sync to Supabase database & local cache
+    const computedStatus = determineStatus();
+    const currentTime24 = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const currentTime12 = formatTime12h(currentTime24);
+
+    // 4. Mark student as Present or Late in state with live timestamp
+    setAttendanceMap((prev) => ({ ...prev, [student!.id]: computedStatus }));
+    setAttendanceModes((prev) => ({ ...prev, [student!.id]: scanMode }));
+    setScanTimes((prev) => ({ ...prev, [student!.id]: currentTime12 }));
+    setRecentlyScannedId(student.id);
+    playAttendanceSound(computedStatus === 'Late' ? 'warning' : 'success');
+
+    setNotice({
+      type: 'success',
+      message: `✓ ${student.first_name} ${student.last_name} (${student.grade_level} · Section ${student.section}) scanned ${computedStatus} at ${currentTime12} via ${scanMode}!`,
+    });
+
+    // 5. Live sync to Supabase database & local cache
     try {
-      const currentTime = new Date().toTimeString().split(' ')[0];
       const matchedSection = sections.find(
-        (s) => s.name.toLowerCase() === (student.section || '').toLowerCase()
+        (s) => s.name.toLowerCase() === (student!.section || '').toLowerCase()
       );
 
       await logAttendanceRecord({
         student_id: String(student.id),
-        section_id: (student as any).section_id ? String((student as any).section_id) : (matchedSection?.id ? String(matchedSection.id) : null),
+        section_id: (student as any).section_id
+          ? String((student as any).section_id)
+          : matchedSection?.id
+          ? String(matchedSection.id)
+          : null,
         teacher_id: user?.id ? String(user.id) : null,
         date: todayStr,
-        mode: scanMode === 'QR' ? 'time_in' : 'manual',
-        status: 'present',
-        time_in: currentTime,
-        qr_code: lrn,
+        mode: 'time_in',
+        status: computedStatus.toLowerCase(),
+        time_in: currentTime24,
+        remarks:
+          scanMode === 'QR'
+            ? `Class Attendance (${computedStatus}) logged via QR Scan`
+            : `Class Attendance (${computedStatus}) logged via LRN Entry`,
+        qr_code: String(student.lrn || lrn),
         raw_payload: rawInput,
       });
-
-      // Update local storage cache
-      try {
-        const cacheKey = `plsnhs_attendance_${todayStr}_${selectedSection}`;
-        const existing = localStorage.getItem(cacheKey);
-        const list = existing ? JSON.parse(existing) : [];
-        const filtered = list.filter((item: any) => item.student_id !== student.id);
-        filtered.push({
-          student_id: student.id,
-          date: todayStr,
-          status: 'present',
-          time_in: currentTime,
-          mode: scanMode,
-        });
-        localStorage.setItem(cacheKey, JSON.stringify(filtered));
-      } catch {}
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('plsnhs_attendance_updated'));
-      }
     } catch (dbErr) {
       console.warn('Realtime QR attendance sync notice:', dbErr);
     }
 
     setTimeout(() => {
       setRecentlyScannedId(null);
-    }, 3000);
+    }, 3500);
 
     return true;
   };
 
+  const recordAttendanceRef = useRef(recordAttendanceForLrn);
+  recordAttendanceRef.current = recordAttendanceForLrn;
+
   // Real-time Barcode / QR detector loop with universal jsQR fallback for all desktop & mobile browsers
   useEffect(() => {
+    if (!cameraActive) return;
+
     let animId: number;
     let detector: any = null;
 
@@ -651,7 +734,7 @@ export const TeacherAttendancePage: React.FC = () => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     const checkFrame = async () => {
-      if (cameraActive && videoRef.current) {
+      if (videoRef.current) {
         const video = videoRef.current;
         if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
           let detectedRaw: string | null = null;
@@ -668,7 +751,7 @@ export const TeacherAttendancePage: React.FC = () => {
             }
           }
 
-          // 2. Universal jsQR fallback (works on desktop Chrome, Safari, Firefox, Edge, iPhone)
+          // 2. Universal jsQR fallback
           if (!detectedRaw && ctx) {
             try {
               if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
@@ -696,28 +779,24 @@ export const TeacherAttendancePage: React.FC = () => {
                 lastScannedRef.current?.code === lrn &&
                 now - lastScannedRef.current.timestamp < 3500
               ) {
-                // In cooldown debounce window, avoid re-triggering
+                // In cooldown debounce window
               } else {
                 lastScannedRef.current = { code: lrn, timestamp: now };
-                await recordAttendanceForLrn(detectedRaw, 'QR');
+                await recordAttendanceRef.current(detectedRaw, 'QR');
               }
             }
           }
         }
       }
-      if (cameraActive) {
-        animId = requestAnimationFrame(checkFrame);
-      }
+      animId = requestAnimationFrame(checkFrame);
     };
 
-    if (cameraActive) {
-      animId = requestAnimationFrame(checkFrame);
-    }
+    animId = requestAnimationFrame(checkFrame);
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [cameraActive, allStudents, selectedSection, gradeFilter]);
+  }, [cameraActive]);
 
   useEffect(() => {
     return () => {
@@ -725,12 +804,84 @@ export const TeacherAttendancePage: React.FC = () => {
     };
   }, []);
 
+  const handleQrImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imgData.data, imgData.width, imgData.height, {
+          inversionAttempts: 'attemptBoth',
+        });
+        if (code && code.data) {
+          recordAttendanceForLrn(code.data, 'QR');
+        } else {
+          playAttendanceSound('error');
+          setNotice({
+            type: 'error',
+            message: 'No valid Student QR Code could be detected in the uploaded image.',
+          });
+        }
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const setStatus = (
     id: string | number,
     status: 'Present' | 'Late' | 'Absent' | 'Excused'
   ) => {
+    const now12 = formatTime12h(new Date().toLocaleTimeString('en-GB', { hour12: false }));
     setAttendanceMap((prev) => ({ ...prev, [id]: status }));
     setAttendanceModes((prev) => ({ ...prev, [id]: 'Manual' as const }));
+    if (status === 'Present' || status === 'Late') {
+      setScanTimes((prev) => ({ ...prev, [id]: prev[id] || now12 }));
+    }
+  };
+
+  const handleMarkUnscannedAbsent = () => {
+    let marked = 0;
+    setAttendanceMap((prev) => {
+      const next = { ...prev };
+      displayedStudents.forEach((s) => {
+        if (!next[s.id]) {
+          next[s.id] = 'Absent';
+          marked++;
+        }
+      });
+      return next;
+    });
+    setAttendanceModes((prev) => {
+      const next = { ...prev };
+      displayedStudents.forEach((s) => {
+        if (!next[s.id]) {
+          next[s.id] = 'Manual';
+        }
+      });
+      return next;
+    });
+    if (marked > 0) {
+      setNotice({
+        type: 'warning',
+        message: `Marked ${marked} unscanned learner(s) as Absent. Click "Save Attendance" to finalize in the database.`,
+      });
+    } else {
+      setNotice({
+        type: 'success',
+        message: 'All learners in this view have already been scanned or marked.',
+      });
+    }
   };
 
   const handleQuickScan = (e: React.FormEvent) => {
@@ -758,15 +909,31 @@ export const TeacherAttendancePage: React.FC = () => {
       const matchedSection = sections.find((s) => s.name === selectedSection);
       const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
+      // Any student not yet scanned when finalizing is marked 'absent'
+      const nextMap: Record<string | number, 'Present' | 'Late' | 'Absent' | 'Excused'> = {
+        ...attendanceMap,
+      };
+      const nextModes: Record<string | number, 'QR' | 'LRN' | 'Manual'> = {
+        ...attendanceModes,
+      };
+      displayedStudents.forEach((s) => {
+        if (!nextMap[s.id]) {
+          nextMap[s.id] = 'Absent';
+          nextModes[s.id] = 'Manual';
+        }
+      });
+      setAttendanceMap(nextMap);
+      setAttendanceModes(nextModes);
+
       const recordsToInsert = displayedStudents.map((s) => ({
         student_id: s.id,
         section_id: (s as any).section_id || matchedSection?.id || null,
         teacher_id: resolvedTeacherId,
         date: todayStr,
-        status: (attendanceMap[s.id] || 'present').toLowerCase(),
-        time_in: currentTime,
+        status: (nextMap[s.id] || 'absent').toLowerCase(),
+        time_in: nextMap[s.id] === 'Absent' || nextMap[s.id] === 'Excused' ? null : currentTime,
         qr_code: s.lrn ? `${s.lrn}_${todayStr}` : null,
-        remarks: attendanceModes[s.id] || 'Manual',
+        remarks: nextModes[s.id] || 'Manual',
       }));
 
       // Cache locally to ensure zero data loss
@@ -794,11 +961,11 @@ export const TeacherAttendancePage: React.FC = () => {
           section_id: (s as any).section_id || matchedSection?.id || null,
           teacher_id: resolvedTeacherId,
           date: todayStr,
-          status: (attendanceMap[s.id] || 'present').toLowerCase(),
+          status: (nextMap[s.id] || 'absent').toLowerCase(),
           mode: 'time_in',
-          time_in: currentTime,
+          time_in: nextMap[s.id] === 'Absent' || nextMap[s.id] === 'Excused' ? null : currentTime,
           qr_code: s.lrn || null,
-          remarks: attendanceModes[s.id] || 'Manual',
+          remarks: nextModes[s.id] || 'Manual',
           scanned_at: new Date().toISOString(),
         }));
         await supabase
@@ -835,13 +1002,16 @@ export const TeacherAttendancePage: React.FC = () => {
   };
 
   const presentCount = displayedStudents.filter(
-    (s) => (attendanceMap[s.id] || 'Present') === 'Present'
+    (s) => attendanceMap[s.id] === 'Present'
   ).length;
   const lateCount = displayedStudents.filter(
     (s) => attendanceMap[s.id] === 'Late'
   ).length;
   const absentCount = displayedStudents.filter(
     (s) => attendanceMap[s.id] === 'Absent'
+  ).length;
+  const unscannedCount = displayedStudents.filter(
+    (s) => !attendanceMap[s.id]
   ).length;
 
   return (
@@ -949,13 +1119,20 @@ export const TeacherAttendancePage: React.FC = () => {
 
       {/* QUICK QR / LRN SCANNER & FILTER CONTROLS BAR */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-4">
+        <input
+          ref={qrImageInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleQrImageUpload}
+          className="hidden"
+        />
         {/* Scanner Row */}
-        <form onSubmit={handleQuickScan} className="flex flex-col sm:flex-row items-center gap-3">
+        <form onSubmit={handleQuickScan} className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 shrink-0">
             <span className="p-1.5 rounded-lg bg-[#1B2A4A] text-white">
               <QrCode className="h-4 w-4" />
             </span>
-            <span>Instant Scanner:</span>
+            <span>Instant QR Scanner:</span>
           </div>
 
           <div className="relative flex-1 w-full">
@@ -971,11 +1148,11 @@ export const TeacherAttendancePage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
             <button
               type="submit"
               disabled={!quickScanInput.trim()}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-[#1B2A4A] hover:bg-[#0f1c3f] disabled:opacity-50 text-white font-bold text-xs transition-colors cursor-pointer shrink-0"
+              className="px-4 py-2 rounded-xl bg-[#1B2A4A] hover:bg-[#0f1c3f] disabled:opacity-50 text-white font-bold text-xs transition-colors cursor-pointer shrink-0"
             >
               Check In
             </button>
@@ -999,6 +1176,27 @@ export const TeacherAttendancePage: React.FC = () => {
 
             <button
               type="button"
+              onClick={() => qrImageInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800"
+              title="Upload a Student ID QR Code screenshot or photo to scan"
+            >
+              <Upload className="h-4 w-4 text-blue-700" />
+              <span>Upload QR</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
+              <Clock className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-[11px] font-bold text-slate-600">Late After:</span>
+              <input
+                type="time"
+                value={lateCutoff}
+                onChange={(e) => setLateCutoff(e.target.value)}
+                className="bg-transparent text-xs font-extrabold text-slate-900 focus:outline-hidden cursor-pointer"
+              />
+            </div>
+
+            <button
+              type="button"
               onClick={() => navigate('/teacher/attendance-qr')}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800"
               title="Launch dedicated Fullscreen QR / Turnstile Kiosk"
@@ -1017,7 +1215,16 @@ export const TeacherAttendancePage: React.FC = () => {
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 Camera Active
               </span>
-              <span>Point Student ID QR in front of lens</span>
+              <div className="flex items-center gap-2">
+                <span>Point Student ID QR at lens</span>
+                <button
+                  type="button"
+                  onClick={flipCamera}
+                  className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2 py-1 text-[11px] font-bold text-white border border-slate-700 cursor-pointer"
+                >
+                  <RefreshCw className="h-3 w-3" /> Flip
+                </button>
+              </div>
             </div>
 
             <div className="relative w-full max-w-sm aspect-4/3 rounded-xl overflow-hidden bg-black border border-slate-700">
@@ -1034,7 +1241,7 @@ export const TeacherAttendancePage: React.FC = () => {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div className="relative w-40 h-40 border-2 border-emerald-400 rounded-xl">
+                <div className="relative w-44 h-44 border-2 border-emerald-400 rounded-xl">
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]"></div>
                 </div>
               </div>
@@ -1080,7 +1287,7 @@ export const TeacherAttendancePage: React.FC = () => {
             </div>
 
             {/* Search Student */}
-            <div className="relative w-full sm:w-56">
+            <div className="relative w-full sm:w-52">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
@@ -1092,8 +1299,11 @@ export const TeacherAttendancePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5">
-            <div className="flex items-center gap-2 text-xs font-bold">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-slate-700 border border-slate-200">
+                Awaiting Scan: {unscannedCount}
+              </span>
               <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-emerald-700 border border-emerald-200">
                 Present: {presentCount}
               </span>
@@ -1104,6 +1314,18 @@ export const TeacherAttendancePage: React.FC = () => {
                 Absent: {absentCount}
               </span>
             </div>
+
+            {unscannedCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkUnscannedAbsent}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700 transition-all cursor-pointer whitespace-nowrap"
+                title="Mark all remaining unscanned students in this view as Absent"
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                <span>Mark Unscanned Absent</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -1127,6 +1349,7 @@ export const TeacherAttendancePage: React.FC = () => {
                 <th className="px-5 py-3.5">Learner Name</th>
                 <th className="px-5 py-3.5">LRN</th>
                 <th className="px-5 py-3.5">Year Level</th>
+                <th className="px-5 py-3.5">Time-In</th>
                 <th className="px-5 py-3.5">Log Mode</th>
                 <th className="px-5 py-3.5 text-right">Attendance Status</th>
               </tr>
@@ -1134,7 +1357,7 @@ export const TeacherAttendancePage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
                     <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent mb-2"></div>
                     <p>Loading class roster...</p>
                   </td>
@@ -1149,7 +1372,7 @@ export const TeacherAttendancePage: React.FC = () => {
                     <React.Fragment key={group.key}>
                       {/* Year Level & Section Banner Row */}
                       <tr className="bg-slate-100/90 border-y border-slate-200">
-                        <td colSpan={5} className="px-5 py-2.5">
+                        <td colSpan={6} className="px-5 py-2.5">
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5 flex-wrap">
                               <span className="inline-flex items-center gap-1 rounded-lg bg-[#1B2A4A] px-2.5 py-1 text-[11px] font-extrabold text-white">
@@ -1176,8 +1399,9 @@ export const TeacherAttendancePage: React.FC = () => {
                       </tr>
 
                       {group.items.map((s) => {
-                        const currentStatus = attendanceMap[s.id] || 'Present';
-                        const currentMode = attendanceModes[s.id] || 'Manual';
+                        const currentStatus = attendanceMap[s.id];
+                        const currentMode = attendanceModes[s.id];
+                        const timeIn = scanTimes[s.id];
                         const isHighlighted = recentlyScannedId === s.id;
 
                         return (
@@ -1186,6 +1410,10 @@ export const TeacherAttendancePage: React.FC = () => {
                             className={`transition-colors duration-500 ${
                               isHighlighted
                                 ? 'bg-emerald-100/90 font-bold'
+                                : currentStatus === 'Present'
+                                ? 'bg-emerald-50/25 hover:bg-emerald-50/50'
+                                : currentStatus === 'Late'
+                                ? 'bg-amber-50/25 hover:bg-amber-50/50'
                                 : 'hover:bg-slate-50/70'
                             }`}
                           >
@@ -1195,8 +1423,8 @@ export const TeacherAttendancePage: React.FC = () => {
                                   {s.last_name}, {s.first_name}
                                 </span>
                                 {isHighlighted && (
-                                  <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black uppercase animate-bounce">
-                                    Scanned!
+                                  <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-black uppercase animate-bounce">
+                                    ✓ QR Verified!
                                   </span>
                                 )}
                               </div>
@@ -1208,17 +1436,35 @@ export const TeacherAttendancePage: React.FC = () => {
                               {s.grade_level || group.grade}
                             </td>
                             <td className="px-5 py-3.5">
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                  currentMode === 'QR'
-                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                    : currentMode === 'LRN'
-                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                    : 'bg-slate-100 text-slate-600'
-                                }`}
-                              >
-                                {currentMode}
-                              </span>
+                              {timeIn ? (
+                                <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                  <Clock className="h-3 w-3 text-emerald-600" />
+                                  {timeIn}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 font-mono text-xs">—</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5">
+                              {currentStatus && currentMode ? (
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-md ${
+                                    currentMode === 'QR'
+                                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                      : currentMode === 'LRN'
+                                      ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                      : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                  }`}
+                                >
+                                  {currentMode === 'QR' && <QrCode className="h-3 w-3" />}
+                                  {currentMode}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-amber-50/80 text-amber-700 border border-amber-200/80">
+                                  <QrCode className="h-3 w-3" />
+                                  Awaiting QR Scan
+                                </span>
+                              )}
                             </td>
                             <td className="px-5 py-3.5 text-right">
                               <div className="inline-flex rounded-xl border border-slate-200 p-0.5 bg-slate-50 gap-1">
@@ -1254,7 +1500,7 @@ export const TeacherAttendancePage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
                     No students found in this section.
                   </td>
                 </tr>

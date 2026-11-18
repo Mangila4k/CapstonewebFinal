@@ -499,6 +499,16 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     setTimeout(() => startCamera(nextFacing), 250);
   };
 
+  const processLrnOrQrRef = useRef(processLrnOrQr);
+  useEffect(() => {
+    processLrnOrQrRef.current = processLrnOrQr;
+  }, [processLrnOrQr]);
+
+  const isProcessingRef = useRef(isProcessing);
+  useEffect(() => {
+    isProcessingRef.current = isProcessing;
+  }, [isProcessing]);
+
   // Real-time Barcode / QR Detection loop with universal jsQR fallback for all desktop & mobile browsers
   useEffect(() => {
     let animationFrameId: number;
@@ -518,7 +528,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     const scanFrame = async () => {
-      if (cameraActive && videoRef.current && !isProcessing) {
+      if (cameraActive && videoRef.current && !isProcessingRef.current) {
         const video = videoRef.current;
         if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
           let detectedRaw: string | null = null;
@@ -564,7 +574,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
               if (clean) {
                 lastScannedRef.current = { code: clean, timestamp: now };
               }
-              processLrnOrQr(detectedRaw, 'QR');
+              processLrnOrQrRef.current(detectedRaw, 'QR');
             }
           }
         }
@@ -581,7 +591,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
-  }, [cameraActive, isProcessing, processLrnOrQr]);
+  }, [cameraActive]);
 
   // Clean up camera on unmount
   useEffect(() => {

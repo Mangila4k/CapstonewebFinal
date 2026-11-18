@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, ShieldCheck, CheckCircle2, XCircle, User, Award, School, Calendar, RotateCw } from 'lucide-react';
+import { Search, ShieldCheck, CheckCircle2, XCircle, RotateCw, QrCode, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Badge } from '../../components/common/Badge';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
+import { logAttendanceRecord, getLocalTodayStr } from '../../lib/attendanceService';
 
 export const VerifyIdPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -12,6 +13,38 @@ export const VerifyIdPage: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false);
+  const [attendanceLogged, setAttendanceLogged] = useState<{
+    status: string;
+    time: string;
+    date: string;
+  } | null>(null);
+
+  const recordQrScanAttendance = async (studentRecord: any) => {
+    if (!studentRecord?.id) return;
+    const todayStr = getLocalTodayStr();
+    const nowTime = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    const res = await logAttendanceRecord({
+      student_id: String(studentRecord.id),
+      status: 'present',
+      mode: 'time_in',
+      date: todayStr,
+      qr_code: studentRecord.lrn || String(studentRecord.id),
+      remarks: `[Time-In: ${nowTime}] QR ID Scan via Verify Page`,
+    });
+
+    if (res.success) {
+      setAttendanceLogged({
+        status: 'Present',
+        time: nowTime,
+        date: todayStr,
+      });
+    }
+  };
 
   useEffect(() => {
     const lrnParam = searchParams.get('lrn');
@@ -29,14 +62,21 @@ export const VerifyIdPage: React.FC = () => {
 
       async function verifyParamRecord() {
         try {
-          const { data } = await supabase
-            .from('students')
-            .select('*')
-            .or(`lrn.eq.${q},id.eq.${idParam || q}`)
-            .maybeSingle();
+          let queryBuilder = supabase.from('students').select('*');
+          if (lrnParam && idParam) {
+            queryBuilder = queryBuilder.or(`lrn.eq.${lrnParam},id.eq.${idParam}`);
+          } else if (lrnParam) {
+            queryBuilder = queryBuilder.eq('lrn', lrnParam);
+          } else if (idParam) {
+            queryBuilder = queryBuilder.eq('id', idParam);
+          } else {
+            queryBuilder = queryBuilder.ilike('last_name', `%${q}%`);
+          }
+          const { data } = await queryBuilder.maybeSingle();
 
           if (data) {
             setResult(data);
+            await recordQrScanAttendance(data);
           } else {
             setResult({
               first_name: nameParam?.split(' ')[0] || 'Learner',
@@ -180,6 +220,33 @@ export const VerifyIdPage: React.FC = () => {
                   }}
                 />
               </div>
+
+              {attendanceLogged ? (
+                <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-emerald-800 text-xs font-extrabold">
+                    <QrCode className="h-4 w-4 text-emerald-700" />
+                    <span>✓ Official QR Attendance Recorded for Today ({attendanceLogged.date})</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 text-white px-2.5 py-1 text-[11px] font-bold">
+                    <Clock className="h-3 w-3" />
+                    Time-In: {attendanceLogged.time} · {attendanceLogged.status}
+                  </span>
+                </div>
+              ) : result?.id ? (
+                <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-600">
+                    Scan verified. Click to log today&apos;s official QR attendance:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => recordQrScanAttendance(result)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-1.5 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <QrCode className="h-3.5 w-3.5" />
+                    Record QR Attendance
+                  </button>
+                </div>
+              ) : null}
 
               <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-4">
