@@ -100,7 +100,7 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
         }
         html, body {
           margin: 0 !important;
-          padding: 12mm 10mm !important;
+          padding: 15mm 10mm !important;
           background: #ffffff !important;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
           width: 100%;
@@ -113,6 +113,28 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
           width: 100%;
           padding: 0;
           margin: 0 auto;
+        }
+        .print-official-header {
+          text-align: center;
+          margin-bottom: 8mm;
+          padding-bottom: 3mm;
+          border-bottom: 1px dashed #cbd5e1;
+          width: 100%;
+          max-width: 540px;
+        }
+        .print-official-header h2 {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #0d1e4a;
+        }
+        .print-official-header p {
+          margin: 2px 0 0;
+          font-size: 10px;
+          color: #64748b;
+          font-weight: 600;
         }
         .print-cards-stage {
           display: flex !important;
@@ -154,12 +176,31 @@ export function printOfficialStudentId(targetElementIdOrSelector?: string | HTML
         .card-face-tag, .no-print, button, input, select {
           display: none !important;
         }
+        .print-official-footer {
+          margin-top: 10mm;
+          text-align: center;
+          font-size: 9px;
+          color: #94a3b8;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          border-top: 1px dashed #e2e8f0;
+          padding-top: 3mm;
+          width: 100%;
+          max-width: 540px;
+        }
       </style>
     </head>
     <body>
       <div class="print-layout-container">
+        <div class="print-official-header">
+          <h2>Placido L. Señor National High School</h2>
+          <p>Official CR80 DepEd Student Identification Card (Front & Back)</p>
+        </div>
         <div class="print-cards-stage">
           ${printWrapper.innerHTML}
+        </div>
+        <div class="print-official-footer">
+          Cut along the dashed guide line • CR80 Landscape Standard (85.6mm × 54mm)
         </div>
       </div>
     </body>
