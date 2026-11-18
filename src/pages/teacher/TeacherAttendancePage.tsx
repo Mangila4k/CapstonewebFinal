@@ -120,6 +120,7 @@ export const TeacherAttendancePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedSection = searchParams.get('section');
+  const autoScan = searchParams.get('scan');
 
   const [sections, setSections] = useState<Section[]>([]);
   const [classCards, setClassCards] = useState<AttendanceClassCard[]>(DEFAULT_ATTENDANCE_CLASSES);
@@ -421,9 +422,19 @@ export const TeacherAttendancePage: React.FC = () => {
       setShowCamera(false);
     } else {
       setShowCamera(true);
-      setTimeout(() => startCamera(), 100);
+      startCamera();
     }
   };
+
+  // If page loaded with ?scan=1, automatically trigger camera scanner
+  useEffect(() => {
+    if (autoScan === '1' || autoScan === 'camera') {
+      setShowCamera(true);
+      startCamera();
+    } else if (autoScan === 'input') {
+      setTimeout(() => quickInputRef.current?.focus(), 300);
+    }
+  }, [autoScan]);
 
   // Centralized function to validate and record attendance for a scanned LRN / QR
   const recordAttendanceForLrn = async (rawInput: string, scanMode: 'QR' | 'LRN') => {
@@ -476,16 +487,20 @@ export const TeacherAttendancePage: React.FC = () => {
     }
 
     // 2. Section validation:
-    // When "All" is selected, attendance is accepted for any section.
-    // If a specific section is selected and student belongs to another section, we still record attendance
-    // and provide clear, positive confirmation with their actual section.
+    // If student is in a different section or year level than currently filtered, switch to their section so row is visible
     const studentSecNorm = normalizeSectionName(student.section);
     const selectedSecNorm = selectedSection !== 'All' ? normalizeSectionName(selectedSection) : '';
 
     if (selectedSecNorm && studentSecNorm && studentSecNorm.toLowerCase() !== selectedSecNorm.toLowerCase()) {
+      if (student.section) {
+        setSelectedSection(student.section);
+      }
+      if (gradeFilter !== 'All') {
+        setGradeFilter('All');
+      }
       setNotice({
         type: 'success',
-        message: `✓ Attendance Verified: ${student.first_name} ${student.last_name} (${student.grade_level} · Section ${student.section}) recorded Present via ${scanMode}!`,
+        message: `✓ Attendance Verified: ${student.first_name} ${student.last_name} (${student.grade_level} · Section ${student.section}) recorded Present via ${scanMode}! Switched view to Section ${student.section}.`,
       });
     } else {
       setNotice({
@@ -932,7 +947,18 @@ export const TeacherAttendancePage: React.FC = () => {
             </div>
 
             <div className="relative w-full max-w-sm aspect-4/3 rounded-xl overflow-hidden bg-black border border-slate-700">
-              <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
+              <video
+                ref={(el) => {
+                  videoRef.current = el;
+                  if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                    el.srcObject = streamRef.current;
+                    el.play().catch(() => {});
+                  }
+                }}
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="relative w-40 h-40 border-2 border-emerald-400 rounded-xl">
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]"></div>

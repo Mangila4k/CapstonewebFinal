@@ -68,6 +68,7 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastScannedRef = useRef<{ code: string; timestamp: number } | null>(null);
 
   // Scanned logs for today
   const [scannedLogs, setScannedLogs] = useState<ScannedEntry[]>([]);
@@ -437,7 +438,16 @@ export const TeacherAttendanceQrPage: React.FC = () => {
           }
 
           if (detectedRaw) {
-            processLrnOrQr(detectedRaw, 'QR');
+            const clean = parseLrnFromInput(detectedRaw);
+            const now = Date.now();
+            if (clean && lastScannedRef.current?.code === clean && now - lastScannedRef.current.timestamp < 3500) {
+              // Within 3.5s cooldown window for the same card, avoid re-triggering duplicate warning
+            } else {
+              if (clean) {
+                lastScannedRef.current = { code: clean, timestamp: now };
+              }
+              processLrnOrQr(detectedRaw, 'QR');
+            }
           }
         }
       }
@@ -689,7 +699,13 @@ export const TeacherAttendanceQrPage: React.FC = () => {
             {/* Video or Placeholder Viewfinder */}
             <div className="relative aspect-4/3 rounded-2xl bg-black overflow-hidden flex flex-col items-center justify-center border border-slate-800">
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  videoRef.current = el;
+                  if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                    el.srcObject = streamRef.current;
+                    el.play().catch(() => {});
+                  }
+                }}
                 playsInline
                 muted
                 className={`w-full h-full object-cover ${cameraActive ? 'block' : 'hidden'}`}

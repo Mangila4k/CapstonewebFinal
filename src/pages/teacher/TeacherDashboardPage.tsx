@@ -18,6 +18,7 @@ import {
   MapPin,
   Camera,
   Scan,
+  QrCode,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -221,6 +222,14 @@ export const TeacherDashboardPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+          <Link
+            to="/teacher/attendance-qr"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors"
+            title="Launch QR Attendance Scanner Kiosk"
+          >
+            <QrCode className="h-4 w-4 text-[#F5C518]" />
+            <span>QR Scanner Kiosk</span>
+          </Link>
           <PageHeaderNotificationSlot />
         </div>
       </div>
@@ -336,11 +345,20 @@ export const TeacherDashboardPage: React.FC = () => {
                         <td className="px-5 py-3.5 text-right whitespace-nowrap">
                           <div className="inline-flex items-center justify-end gap-1.5">
                             <Link
-                              to={`/teacher/attendance?section=${encodeURIComponent(cls.section)}`}
+                              to={`/teacher/attendance?section=${encodeURIComponent(cls.section)}&scan=1`}
                               className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 px-2.5 py-1.5 text-[11px] font-bold text-white shadow-2xs transition-colors"
+                              title="Scan QR codes for this section"
                             >
-                              <UserCheck className="h-3.5 w-3.5" />
-                              Attendance
+                              <QrCode className="h-3.5 w-3.5 text-[#F5C518]" />
+                              Scan QR
+                            </Link>
+                            <Link
+                              to={`/teacher/attendance?section=${encodeURIComponent(cls.section)}`}
+                              className="inline-flex items-center gap-1 rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors"
+                              title="View and manage class attendance roster"
+                            >
+                              <UserCheck className="h-3.5 w-3.5 text-emerald-700" />
+                              Roster
                             </Link>
                             <Link
                               to={`/teacher/grades?section=${encodeURIComponent(cls.section)}&subject=${encodeURIComponent(cls.subject)}`}
@@ -422,6 +440,16 @@ export const TeacherDashboardPage: React.FC = () => {
               Faculty Quick Shortcuts
             </h3>
             <div className="grid grid-cols-2 gap-2.5 text-xs font-semibold">
+              <Link
+                to="/teacher/attendance-qr"
+                className="col-span-2 rounded-xl bg-emerald-700 p-3 border border-emerald-800 text-white font-extrabold hover:bg-emerald-800 transition-all shadow-2xs flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <QrCode className="h-4 w-4 text-[#F5C518] shrink-0" />
+                  <span>Student QR Scanner Kiosk</span>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 opacity-80" />
+              </Link>
               <Link
                 to="/teacher/face-attendance"
                 className="rounded-xl bg-purple-50 p-3 border border-purple-200 text-purple-950 hover:bg-purple-700 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"

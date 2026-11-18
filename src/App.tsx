@@ -380,6 +380,8 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/teacher/attendance/qr" element={<Navigate to="/teacher/attendance-qr" replace />} />
+          <Route path="/teacher/qr-attendance" element={<Navigate to="/teacher/attendance-qr" replace />} />
           <Route
             path="/teacher/attendance"
             element={
