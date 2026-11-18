@@ -383,24 +383,24 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#1B2A4A] text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col bg-[#1B2A4A] text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Sidebar Header */}
-        <div className="px-3.5 pt-4 pb-3.5 border-b border-white/10 shrink-0">
+        <div className="px-4 pt-4 pb-3.5 border-b border-white/10 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 select-none cursor-default">
               <img
                 src="/pictures/logo sa skwelahan.png"
                 alt="School Logo"
-                className="h-10 w-10 rounded-full object-cover border border-white/30 shrink-0 shadow-sm"
+                className="h-11 w-11 rounded-full object-cover border border-white/30 shrink-0 shadow-sm"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
               <div className="min-w-0">
-                <h1 className="text-xl font-black tracking-tight text-white leading-none">
+                <h1 className="text-2xl font-black tracking-tight text-white leading-none">
                   PLS<span className="text-[#FBBF24]">NHS</span>
                 </h1>
               </div>
@@ -412,19 +412,19 @@ export const DashboardLayout: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="mt-2 text-[11px] font-normal text-slate-300/90 leading-tight">
+          <div className="mt-2 text-xs sm:text-[13px] font-medium text-slate-200/90 leading-snug">
             Placido L. Señor National High School
           </div>
         </div>
 
         {/* Scrollable Nav Menu */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-3.5 sidebar-nav-scroll">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-4 sidebar-nav-scroll">
           {navSections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              <div className="px-2.5 text-[10px] font-bold uppercase tracking-[0.4px] text-[#8A99AD] mb-1 select-none whitespace-nowrap">
+            <div key={section.title} className="space-y-1.5">
+              <div className="px-3 text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5 select-none whitespace-nowrap">
                 {section.title}
               </div>
-              <ul className="space-y-0.5">
+              <ul className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path;
@@ -434,10 +434,10 @@ export const DashboardLayout: React.FC = () => {
                       <li key={item.name}>
                         <button
                           onClick={handleLogout}
-                          className="flex w-full items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium text-slate-300 hover:text-white hover:bg-white/8 transition-colors cursor-pointer text-left"
+                          className="flex w-full items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[15px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer text-left"
                         >
                           <span className="w-5 h-5 flex items-center justify-center shrink-0">
-                            <Icon className="h-[18px] w-[18px] shrink-0 text-slate-300" />
+                            <Icon className="h-5 w-5 shrink-0 text-slate-300" />
                           </span>
                           <span className="truncate">{item.name}</span>
                         </button>
@@ -450,15 +450,15 @@ export const DashboardLayout: React.FC = () => {
                       <Link
                         to={item.path}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] transition-colors ${
+                        className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[15px] transition-colors ${
                           isActive
-                            ? 'bg-white/16 text-white font-semibold'
-                            : 'text-slate-300 hover:text-white hover:bg-white/8 font-medium'
+                            ? 'bg-white/20 text-white font-extrabold shadow-xs ring-1 ring-white/15'
+                            : 'text-slate-200 hover:text-white hover:bg-white/10 font-bold'
                         }`}
                       >
                         <span className="w-5 h-5 flex items-center justify-center shrink-0">
                           <Icon
-                            className={`h-[18px] w-[18px] shrink-0 ${
+                            className={`h-5 w-5 shrink-0 ${
                               isActive ? 'text-white' : 'text-slate-300'
                             }`}
                           />
@@ -475,34 +475,34 @@ export const DashboardLayout: React.FC = () => {
 
         {/* Pinned User Profile Card at Bottom */}
         <div className="mt-auto shrink-0 p-3.5 border-t border-white/10 bg-[#142238]/60">
-          <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-2.5 flex items-center gap-3">
+          <div className="rounded-2xl border border-white/15 bg-white/6 px-3.5 py-3 flex items-center gap-3">
             {/* Avatar Circle with Initials and Online Dot */}
             <div className="relative shrink-0">
               {sidebarAvatar ? (
                 <img
                   src={sidebarAvatar}
                   alt={displayName}
-                  className="h-10 w-10 rounded-full object-cover border-2 border-[#FACC15] shadow-xs"
+                  className="h-11 w-11 rounded-full object-cover border-2 border-[#FACC15] shadow-xs"
                   onError={() => setSidebarAvatar(null)}
                 />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-[#FACC15] flex items-center justify-center text-[#0b2b4a] font-extrabold text-sm tracking-tight select-none shadow-xs">
+                <div className="h-11 w-11 rounded-full bg-[#FACC15] flex items-center justify-center text-[#0b2b4a] font-black text-base tracking-tight select-none shadow-xs">
                   {getInitials()}
                 </div>
               )}
               <span
-                className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#10b981] border-2 border-[#152238]"
+                className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[#10b981] border-2 border-[#152238]"
                 title="Online"
               />
             </div>
 
             {/* User Info */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-white leading-tight">
+              <p className="truncate text-[15px] font-black text-white leading-tight">
                 {displayName}
               </p>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1 truncate">
-                <Shield className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <div className="flex items-center gap-1.5 text-xs sm:text-[13px] font-medium text-slate-300 mt-1 truncate">
+                <Shield className="h-4 w-4 shrink-0 text-slate-300" />
                 <span className="truncate">{roleTitle}</span>
               </div>
             </div>
