@@ -611,16 +611,48 @@ export const TeacherDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Campus Announcements & Advisories */}
+          {/* Official Notifications & Campus Advisories */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Megaphone className="h-4 w-4 text-[#1B2A4A]" />
-                Campus Circulars & Advisories
+                <Bell className="h-4 w-4 text-emerald-700" />
+                Notifications &amp; Campus Advisories
               </h2>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+              {/* Always surface the Class Schedule Notification sent by Admin or Registrar */}
+              {latestScheduleNotif && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">
+                      <Calendar className="h-3 w-3 text-emerald-700" />
+                      Class Schedule Sent
+                    </span>
+                    <Badge variant="emerald" size="sm">
+                      {String(latestScheduleNotif.sentBy || '').toLowerCase().includes('registrar')
+                        ? 'Registrar'
+                        : 'Admin'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs font-extrabold text-slate-900 leading-snug">
+                    {latestScheduleNotif.title}
+                  </p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    File: <span className="font-bold text-emerald-900">{latestScheduleNotif.fileName}</span> ({latestScheduleNotif.targetGradeLevel || 'All Year Levels'})
+                  </p>
+                  <div className="pt-1">
+                    <Link
+                      to="/teacher/class-program"
+                      className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 hover:text-emerald-900"
+                    >
+                      <span>Open Class Program</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               {announcements.length > 0 ? (
                 announcements.map((ann) => (
                   <div

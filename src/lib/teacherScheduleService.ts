@@ -82,6 +82,22 @@ export async function notifyTeachersOfScheduleFile(
     list.unshift(newLocalNotif);
     localStorage.setItem(LOCAL_BROADCAST_KEY, JSON.stringify(list.slice(0, 80)));
 
+    // Reset read state for this schedule notification across all teacher sessions in localStorage so it shows as unread
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('plsnhs_read_notifs_')) {
+        try {
+          const readArr = JSON.parse(localStorage.getItem(k) || '[]');
+          if (Array.isArray(readArr)) {
+            const filtered = readArr.filter((id: string) => id !== `sched_file_${file.id}`);
+            localStorage.setItem(k, JSON.stringify(filtered));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     window.dispatchEvent(new CustomEvent('plsnhs:notification-sent', { detail: newLocalNotif }));
     window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
     window.dispatchEvent(new Event('storage'));
@@ -89,19 +105,44 @@ export async function notifyTeachersOfScheduleFile(
     // ignore storage errors
   }
 
-  // 2. Supabase `notifications` table (compatible with actual schema: title, message, type, role, user_id)
+  // 2. Supabase `notifications` table: insert broadcast row AND individual rows for every teacher in `users`
   try {
-    const isUuid =
-      targetUserId &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetUserId);
+    const { data: teacherUsers } = await supabase
+      .from('users')
+      .select('id, first_name, last_name')
+      .eq('role', 'teacher');
 
-    await supabase.from('notifications').insert({
-      title: notifTitle,
-      message: notifMessage,
-      type: 'schedule',
-      role: 'teacher',
-      ...(isUuid ? { user_id: targetUserId } : {}),
-    });
+    const rowsToInsert: any[] = [
+      {
+        title: notifTitle,
+        message: notifMessage,
+        type: 'schedule',
+        role: 'teacher',
+        priority: 'high',
+        read: false,
+        is_read: false,
+        user_id: null,
+      },
+    ];
+
+    if (Array.isArray(teacherUsers) && teacherUsers.length > 0) {
+      teacherUsers.forEach((tu: any) => {
+        if (tu?.id) {
+          rowsToInsert.push({
+            title: notifTitle,
+            message: notifMessage,
+            type: 'schedule',
+            role: 'teacher',
+            priority: 'high',
+            read: false,
+            is_read: false,
+            user_id: tu.id,
+          });
+        }
+      });
+    }
+
+    await supabase.from('notifications').insert(rowsToInsert);
   } catch (err) {
     console.warn('Supabase schedule notification notice:', err);
   }

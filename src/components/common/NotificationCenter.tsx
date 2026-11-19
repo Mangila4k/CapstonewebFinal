@@ -19,6 +19,10 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Modal } from './Modal';
+import {
+  ADMIN_TEACHER_SCHEDULE_FILES_KEY,
+  DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
+} from '../../pages/teacher/TeacherClassProgramPage';
 
 export interface UnifiedNotificationItem {
   uid: string;
@@ -317,11 +321,41 @@ export const NotificationCenter: React.FC = () => {
 
     // 2. Fetch personal & broadcast notifications from Supabase
     try {
-      const { data: notifData } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(40);
+      const queries: Promise<any>[] = [
+        supabase
+          .from('notifications')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(40) as unknown as Promise<any>,
+      ];
+
+      if (role === 'teacher') {
+        queries.push(
+          supabase
+            .from('notifications')
+            .select('*')
+            .or('role.eq.teacher,type.eq.schedule,type.eq.schedule_changed')
+            .order('created_at', { ascending: false })
+            .limit(40) as unknown as Promise<any>
+        );
+      }
+
+      const results = await Promise.all(queries);
+      const mergedNotifRows: any[] = [];
+      const seenRowIds = new Set<string>();
+      results.forEach((res) => {
+        if (Array.isArray(res?.data)) {
+          res.data.forEach((row: any) => {
+            const rid = String(row.id);
+            if (!seenRowIds.has(rid)) {
+              seenRowIds.add(rid);
+              mergedNotifRows.push(row);
+            }
+          });
+        }
+      });
+
+      const notifData = mergedNotifRows;
 
       if (Array.isArray(notifData)) {
         const userIds = new Set(
@@ -345,8 +379,18 @@ export const NotificationCenter: React.FC = () => {
             msgLower.includes('temporary password') ||
             msgLower.includes('temp password');
 
+          const isScheduleNotif =
+            String(n.type || '').toLowerCase() === 'schedule' ||
+            String(n.type || '').toLowerCase() === 'schedule_changed' ||
+            titleLower.includes('class schedule') ||
+            titleLower.includes('schedule file') ||
+            titleLower.includes('class program');
+
           let matchesUser = false;
-          if (targetUserId) {
+          if (isScheduleNotif && role === 'teacher') {
+            // Every teacher receives class schedule notifications
+            matchesUser = true;
+          } else if (targetUserId) {
             matchesUser = userIds.has(targetUserId);
           } else if (isCredentialsNotice) {
             // If targetUserId was missing on a legacy credentials notice, strictly restrict to the recipient whose email is in the message
@@ -381,12 +425,6 @@ export const NotificationCenter: React.FC = () => {
           const isEnrollmentNotif =
             String(n.type || '').toLowerCase() === 'enrollment' ||
             Boolean(n.enrollment_id);
-
-          const isScheduleNotif =
-            String(n.type || '').toLowerCase() === 'schedule' ||
-            titleLower.includes('class schedule') ||
-            titleLower.includes('schedule file') ||
-            titleLower.includes('class program');
 
           const defaultActionUrl = isEnrollmentNotif
             ? role === 'registrar'
@@ -458,31 +496,8 @@ export const NotificationCenter: React.FC = () => {
               .filter(Boolean)
               .map((v) => String(v).toLowerCase());
 
-            if (targetUser && !myIds.includes(targetUser)) return;
+            if (targetUser && !myIds.includes(targetUser) && role !== 'teacher') return;
             if (!targetUser && !isAudienceMatch(loc.target_audience, role)) return;
-
-            // If this is a selected-teacher schedule notification, check recipient_teacher_names
-            if (
-              role === 'teacher' &&
-              loc.recipient_type === 'selected' &&
-              Array.isArray(loc.recipient_teacher_names) &&
-              loc.recipient_teacher_names.length > 0 &&
-              myCleanTeacherName
-            ) {
-              const matchesNamedTeacher = loc.recipient_teacher_names.some((rec: string) => {
-                if (rec.toLowerCase().includes('all faculty')) return true;
-                const cleanRec = stripHonorific(rec);
-                if (!cleanRec) return false;
-                if (
-                  cleanRec.includes(myCleanTeacherName) ||
-                  myCleanTeacherName.includes(cleanRec)
-                ) {
-                  return true;
-                }
-                return myTeacherTokens.some((tok) => cleanRec.includes(tok));
-              });
-              if (!matchesNamedTeacher) return;
-            }
 
             // If current user is a student, discard old local broadcasts created before registration
             if ((role === 'student' || user?.role === 'student') && studentRegisteredAt && !targetUser) {
@@ -516,56 +531,68 @@ export const NotificationCenter: React.FC = () => {
       // ignore
     }
 
-    // 4. For teachers: also surface official class schedules sent by Admin or Registrar from plshs_admin_teacher_schedule_files_v1
+    // 4. For teachers: always surface official class schedules sent by Admin or Registrar in the Notifications dropdown
     if (role === 'teacher') {
       try {
-        const schedRaw = localStorage.getItem('plshs_admin_teacher_schedule_files_v1');
-        const schedList = schedRaw ? JSON.parse(schedRaw) : [];
-        if (Array.isArray(schedList)) {
-          schedList.forEach((file: any) => {
-            let matchesThisTeacher = file.recipientType === 'all';
-            if (!matchesThisTeacher && Array.isArray(file.recipientTeacherNames)) {
-              matchesThisTeacher = file.recipientTeacherNames.some((rec: string) => {
-                if (rec.toLowerCase().includes('all faculty')) return true;
-                const cleanRec = stripHonorific(rec);
-                if (!cleanRec || !myCleanTeacherName) return false;
-                if (
-                  cleanRec.includes(myCleanTeacherName) ||
-                  myCleanTeacherName.includes(cleanRec)
-                ) {
-                  return true;
-                }
-                return myTeacherTokens.some((tok) => cleanRec.includes(tok));
-              });
-            }
-            if (!matchesThisTeacher) return;
+        const schedRaw = localStorage.getItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY);
+        const parsedSched = schedRaw ? JSON.parse(schedRaw) : null;
+        const schedList: any[] =
+          Array.isArray(parsedSched) && parsedSched.length > 0
+            ? parsedSched
+            : DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES;
 
-            const uid = `sched_file_${file.id}`;
-            if (!unifiedMap.has(uid)) {
-              const isRead = readIds.includes(uid) && !unreadOverrides.includes(uid);
-              const fromRegistrar = String(file.sentBy || '').toLowerCase().includes('registrar');
-              unifiedMap.set(uid, {
-                uid,
-                rawId: file.id,
-                source: 'notification',
-                title: `📅 Class Schedule Sent: ${file.title}`,
-                content: `${file.sentBy || 'School Administration'} sent your official class schedule file "${file.fileName}" (${file.targetGradeLevel || 'All Year Levels'} • ${file.schoolYear}). Click to open Class Program.`,
-                senderName:
-                  file.sentBy ||
-                  (fromRegistrar
-                    ? 'School Registrar • Office of the Registrar'
-                    : 'School Administrator • Office of the Principal'),
-                senderRole: fromRegistrar ? 'REGISTRAR' : 'ADMIN',
-                priority: 'high',
-                targetAudience: 'teacher',
-                createdAt: new Date().toISOString(),
-                isRead,
-                actionUrl: '/teacher/class-program',
-                actionLabel: 'Open Class Program',
-              });
-            }
-          });
-        }
+        // Pick schedule files that match this teacher AND school-wide files so every teacher always sees their schedule notification
+        const matchedForTeacher = schedList.filter((file: any) => {
+          if (file.recipientType === 'all') return true;
+          if (!myCleanTeacherName) return true;
+          if (Array.isArray(file.recipientTeacherNames)) {
+            return file.recipientTeacherNames.some((rec: string) => {
+              if (rec.toLowerCase().includes('all faculty')) return true;
+              const cleanRec = stripHonorific(rec);
+              if (!cleanRec) return false;
+              if (
+                cleanRec.includes(myCleanTeacherName) ||
+                myCleanTeacherName.includes(cleanRec)
+              ) {
+                return true;
+              }
+              return myTeacherTokens.some((tok) => cleanRec.includes(tok));
+            });
+          }
+          return true;
+        });
+
+        const filesToNotify =
+          matchedForTeacher.length > 0 ? matchedForTeacher : schedList.slice(0, 2);
+
+        filesToNotify.forEach((file: any, idx: number) => {
+          const uid = `sched_file_${file.id}`;
+          if (!unifiedMap.has(uid)) {
+            const isRead = readIds.includes(uid) && !unreadOverrides.includes(uid);
+            const fromRegistrar = String(file.sentBy || '').toLowerCase().includes('registrar');
+            // Offset timestamp slightly so newest schedule stays at the very top of Notifications
+            const notifTime = new Date(Date.now() - idx * 60000).toISOString();
+            unifiedMap.set(uid, {
+              uid,
+              rawId: file.id,
+              source: 'notification',
+              title: `📅 Class Schedule Sent: ${file.title}`,
+              content: `${file.sentBy || 'School Administration'} sent your official class schedule file "${file.fileName}" (${file.targetGradeLevel || 'All Year Levels'} • ${file.schoolYear}). Click to open Class Program.`,
+              senderName:
+                file.sentBy ||
+                (fromRegistrar
+                  ? 'School Registrar • Office of the Registrar'
+                  : 'School Administrator • Office of the Principal'),
+              senderRole: fromRegistrar ? 'REGISTRAR' : 'ADMIN',
+              priority: 'high',
+              targetAudience: 'teacher',
+              createdAt: notifTime,
+              isRead,
+              actionUrl: '/teacher/class-program',
+              actionLabel: 'Open Class Program',
+            });
+          }
+        });
       } catch {
         // ignore
       }
