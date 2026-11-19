@@ -22,6 +22,7 @@ import { Modal } from './Modal';
 import {
   ADMIN_TEACHER_SCHEDULE_FILES_KEY,
   DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
+  isLegacyMockSchedule,
 } from '../../pages/teacher/TeacherClassProgramPage';
 
 export interface UnifiedNotificationItem {
@@ -559,8 +560,8 @@ export const NotificationCenter: React.FC = () => {
         const parsedSched = schedRaw ? JSON.parse(schedRaw) : null;
         const schedList: any[] =
           Array.isArray(parsedSched) && parsedSched.length > 0
-            ? parsedSched
-            : DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES;
+            ? parsedSched.filter((f: any) => !isLegacyMockSchedule(f))
+            : [];
 
         // Pick schedule files that match this teacher AND school-wide files so every teacher always sees their schedule notification
         const matchedForTeacher = schedList.filter((file: any) => {
@@ -583,8 +584,7 @@ export const NotificationCenter: React.FC = () => {
           return true;
         });
 
-        const filesToNotify =
-          matchedForTeacher.length > 0 ? matchedForTeacher : schedList.slice(0, 2);
+        const filesToNotify = matchedForTeacher;
 
         filesToNotify.forEach((file: any, idx: number) => {
           const uid = `sched_file_${file.id}`;

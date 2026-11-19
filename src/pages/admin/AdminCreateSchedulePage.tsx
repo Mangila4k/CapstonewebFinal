@@ -26,6 +26,7 @@ import { Badge } from '../../components/common/Badge';
 import {
   ADMIN_TEACHER_SCHEDULE_FILES_KEY,
   DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
+  isLegacyMockSchedule,
   type AdminSentTeacherScheduleFile,
 } from '../teacher/TeacherClassProgramPage';
 import {
@@ -80,12 +81,14 @@ export const AdminCreateSchedulePage: React.FC = () => {
       const saved = localStorage.getItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((f) => !isLegacyMockSchedule(f));
+        }
       }
     } catch {
       // ignore
     }
-    return DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES;
+    return [];
   });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -106,10 +109,10 @@ export const AdminCreateSchedulePage: React.FC = () => {
     rawFile: null as File | null,
   });
 
-  // Load saved schedule files from Supabase database (public.teacher_workloads) so attached files are never lost
+  // Load saved schedule files from Supabase database (public.teacher_workloads and public.teachers) so attached files are strictly live data
   const loadSchedulesFromDb = async () => {
-    const merged = await fetchSavedScheduleFilesFromDatabase(DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES);
-    setSentScheduleFiles(merged);
+    const files = await fetchSavedScheduleFilesFromDatabase([]);
+    setSentScheduleFiles(files);
   };
 
   useEffect(() => {
@@ -797,125 +800,157 @@ export const AdminCreateSchedulePage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredScheduleFiles.map((file) => (
-            <div
-              key={file.id}
-              className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between gap-3 shadow-2xs hover:border-emerald-300 transition-all"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Badge variant="emerald" size="sm">
-                      {file.fileType} SCHEDULE FILE
-                    </Badge>
-                    {file.targetGradeLevel && (
-                      <span className="inline-flex items-center rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">
-                        {file.targetGradeLevel}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-medium">{file.sentAt}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleViewFile(file)}
-                  className="text-left group cursor-pointer w-full"
-                  title="Click to view schedule document"
-                >
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center justify-between gap-1.5">
-                    <span>{file.title}</span>
-                    <Eye className="h-3.5 w-3.5 text-emerald-600 shrink-0 opacity-80 group-hover:opacity-100" />
-                  </h3>
-                </button>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => handleViewFile(file)}
-                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 hover:underline flex items-center gap-1.5 cursor-pointer text-left"
-                    title="Click to preview file"
-                  >
-                    <FileText className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
-                    <span>{file.fileName} ({file.fileSize})</span>
-                  </button>
-                </div>
-                <div className="text-[11px] text-slate-600 space-y-0.5">
-                  <p>
-                    <span className="font-bold text-slate-700">Target Year Level:</span>{' '}
-                    <span className="font-bold text-emerald-800">
-                      {file.targetGradeLevel || 'All Year Levels'}
-                    </span>
-                  </p>
-                  <p className="line-clamp-2">
-                    <span className="font-bold text-slate-700">Recipients:</span>{' '}
-                    {file.recipientType === 'all'
-                      ? 'All Faculty Teachers'
-                      : file.recipientTeacherNames.join(', ')}
-                  </p>
-                </div>
+          {filteredScheduleFiles.length === 0 ? (
+            <div className="col-span-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-8 text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 shadow-2xs">
+                <FileText className="h-6 w-6 text-slate-400" />
               </div>
-
-              <div className="flex flex-wrap items-center justify-between border-t border-slate-200/70 pt-2.5 text-[11px] gap-2">
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to Teacher Class Program
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => openSendModalForYearLevel(file.targetGradeLevel)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 text-blue-800 font-bold transition-colors cursor-pointer shadow-2xs"
-                    title="Attach or replace schedule file for this year level"
-                  >
-                    <Upload className="h-3.5 w-3.5 text-blue-700" />
-                    Attach File
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleNotifyTeachersForFile(file)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-400 px-2.5 py-1 text-slate-950 font-extrabold transition-colors cursor-pointer shadow-2xs"
-                    title="Send notification to teachers' dashboard notification bell"
-                  >
-                    <Bell className="h-3.5 w-3.5" />
-                    Notify Teachers
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleViewFile(file)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors cursor-pointer shadow-2xs"
-                    title="View & Preview schedule document"
-                  >
-                    <Eye className="h-3.5 w-3.5 text-emerald-700" />
-                    View
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadFile(file)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
-                    title="Download schedule file"
-                  >
-                    <Download className="h-3.5 w-3.5 text-emerald-700" />
-                    Download
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePrintFile(file)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
-                    title="Print schedule document"
-                  >
-                    <Printer className="h-3.5 w-3.5 text-slate-600" />
-                    Print
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteSentFile(file.id)}
-                    className="text-slate-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
-                    title="Remove distributed file"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-slate-800">
+                  {selectedYearLevelFilter === 'all'
+                    ? 'No Official Schedule Files Attached Yet'
+                    : `No Schedule File Attached for ${selectedYearLevelFilter} Yet`}
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Only official teaching schedules attached and distributed via this interface are displayed. Use the button below to upload and send a schedule file to teachers.
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() =>
+                  openSendModalForYearLevel(
+                    selectedYearLevelFilter === 'all' ? undefined : selectedYearLevelFilter
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-xs font-extrabold text-slate-950 transition-colors cursor-pointer shadow-xs"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {selectedYearLevelFilter === 'all'
+                  ? 'Attach & Send Schedule File'
+                  : `Attach Schedule for ${selectedYearLevelFilter}`}
+              </button>
             </div>
-          ))}
+          ) : (
+            filteredScheduleFiles.map((file) => (
+              <div
+                key={file.id}
+                className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between gap-3 shadow-2xs hover:border-emerald-300 transition-all"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="emerald" size="sm">
+                        {file.fileType} SCHEDULE FILE
+                      </Badge>
+                      {file.targetGradeLevel && (
+                        <span className="inline-flex items-center rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">
+                          {file.targetGradeLevel}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium">{file.sentAt}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleViewFile(file)}
+                    className="text-left group cursor-pointer w-full"
+                    title="Click to view schedule document"
+                  >
+                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center justify-between gap-1.5">
+                      <span>{file.title}</span>
+                      <Eye className="h-3.5 w-3.5 text-emerald-600 shrink-0 opacity-80 group-hover:opacity-100" />
+                    </h3>
+                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => handleViewFile(file)}
+                      className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 hover:underline flex items-center gap-1.5 cursor-pointer text-left"
+                      title="Click to preview file"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                      <span>{file.fileName} ({file.fileSize})</span>
+                    </button>
+                  </div>
+                  <div className="text-[11px] text-slate-600 space-y-0.5">
+                    <p>
+                      <span className="font-bold text-slate-700">Target Year Level:</span>{' '}
+                      <span className="font-bold text-emerald-800">
+                        {file.targetGradeLevel || 'All Year Levels'}
+                      </span>
+                    </p>
+                    <p className="line-clamp-2">
+                      <span className="font-bold text-slate-700">Recipients:</span>{' '}
+                      {file.recipientType === 'all'
+                        ? 'All Faculty Teachers'
+                        : file.recipientTeacherNames.join(', ')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between border-t border-slate-200/70 pt-2.5 text-[11px] gap-2">
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to Teacher Class Program
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openSendModalForYearLevel(file.targetGradeLevel)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 text-blue-800 font-bold transition-colors cursor-pointer shadow-2xs"
+                      title="Attach or replace schedule file for this year level"
+                    >
+                      <Upload className="h-3.5 w-3.5 text-blue-700" />
+                      Attach File
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNotifyTeachersForFile(file)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-400 px-2.5 py-1 text-slate-950 font-extrabold transition-colors cursor-pointer shadow-2xs"
+                      title="Send notification to teachers' dashboard notification bell"
+                    >
+                      <Bell className="h-3.5 w-3.5" />
+                      Notify Teachers
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleViewFile(file)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors cursor-pointer shadow-2xs"
+                      title="View & Preview schedule document"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-emerald-700" />
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadFile(file)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                      title="Download schedule file"
+                    >
+                      <Download className="h-3.5 w-3.5 text-emerald-700" />
+                      Download
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintFile(file)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                      title="Print schedule document"
+                    >
+                      <Printer className="h-3.5 w-3.5 text-slate-600" />
+                      Print
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSentFile(file.id)}
+                      className="text-slate-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                      title="Remove distributed file"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

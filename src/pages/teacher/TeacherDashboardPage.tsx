@@ -27,7 +27,6 @@ import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/common/StatCard';
 import { Badge } from '../../components/common/Badge';
 import {
-   DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
   type AdminSentTeacherScheduleFile,
 } from './TeacherClassProgramPage';
 import { fetchSavedScheduleFilesFromDatabase } from '../../lib/teacherScheduleService';
@@ -118,7 +117,7 @@ export const TeacherDashboardPage: React.FC = () => {
     const cleanTeacher = stripHonorific(teacherName);
     const teacherTokens = cleanTeacher.split(/\s+/).filter((t) => t.length >= 3);
 
-    const files = await fetchSavedScheduleFilesFromDatabase(DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES);
+    const files = await fetchSavedScheduleFilesFromDatabase([]);
 
     const matched = files.filter((file) => {
       if (user?.id && String(file.id).includes(String(user.id))) return true;

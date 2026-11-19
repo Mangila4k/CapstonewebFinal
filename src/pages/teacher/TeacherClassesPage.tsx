@@ -72,69 +72,7 @@ interface TeachingClassItem {
   isAdvisory?: boolean;
 }
 
-const DEFAULT_CLASSES: TeachingClassItem[] = [
-  {
-    id: 'sec-1',
-    grade_level: 'Grade 10',
-    name: 'Generosity',
-    subject: 'General Mathematics',
-    strand: null,
-    count: 42,
-    room: 'Rm 201 • Bldg A',
-    time: '07:30 AM – 08:30 AM',
-    isAdvisory: true,
-  },
-  {
-    id: 'sec-2',
-    grade_level: 'Grade 10',
-    name: 'Wisdom',
-    subject: 'Pre-Calculus (Specialized)',
-    strand: null,
-    count: 45,
-    room: 'Math Lab • Bldg A',
-    time: '08:30 AM – 09:30 AM',
-  },
-  {
-    id: 'sec-3',
-    grade_level: 'Grade 10',
-    name: 'Perseverance',
-    subject: 'Mathematics 10',
-    strand: null,
-    count: 39,
-    room: 'Rm 105 • JHS Bldg',
-    time: '10:00 AM – 11:00 AM',
-  },
-  {
-    id: 'sec-4',
-    grade_level: 'Grade 10',
-    name: 'Kindness',
-    subject: 'Statistics & Probability',
-    strand: null,
-    count: 40,
-    room: 'Rm 304 • SHS Bldg',
-    time: '01:00 PM – 02:00 PM',
-  },
-  {
-    id: 'sec-5',
-    grade_level: 'Grade 10',
-    name: 'Honesty',
-    subject: 'Practical Research 1',
-    strand: null,
-    count: 38,
-    room: 'Rm 204 • Bldg B',
-    time: '02:00 PM – 03:00 PM',
-  },
-  {
-    id: 'sec-6',
-    grade_level: 'Grade 11',
-    name: 'Baltazar',
-    subject: 'General Mathematics',
-    strand: 'STEM',
-    count: 41,
-    room: 'Rm 108 • JHS Bldg',
-    time: '03:00 PM – 04:00 PM',
-  },
-];
+const DEFAULT_CLASSES: TeachingClassItem[] = [];
 
 export function buildSectionScheduleSlots(
   gradeLevel: string,
@@ -348,30 +286,18 @@ export const TeacherClassesPage: React.FC = () => {
       const saved = localStorage.getItem(SENT_SCHEDULES_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter(
+            (s: any) =>
+              s.id !== 'sched-default-1' &&
+              !String(s.file_name || '').toLowerCase().includes('generosity_class_schedule')
+          );
+        }
       }
     } catch {
       // ignore
     }
-    return [
-      {
-        id: 'sched-default-1',
-        grade_level: 'Grade 10',
-        section: 'Generosity',
-        strand: null,
-        teacher_name: 'Ryan Quiroga',
-        title: 'Official Class Schedule — Grade 10 Section Generosity (S.Y. 2026–2027)',
-        note: 'Please print or download a copy of your official class timetable for S.Y. 2026–2027.',
-        file_name: 'PLSNHS_Grade10_Generosity_Class_Schedule.csv',
-        file_size: '24 KB',
-        recipient_mode: 'all',
-        recipient_count: 42,
-        recipient_names: ['All Grade 10 - Generosity Students'],
-        recipient_ids: [],
-        sent_at: new Date().toISOString(),
-        slots: buildSectionScheduleSlots('Grade 10', 'Generosity', 'Rm 201 • Bldg A', 'Ryan Quiroga'),
-      },
-    ];
+    return [];
   });
 
   // Send Schedule Modal State

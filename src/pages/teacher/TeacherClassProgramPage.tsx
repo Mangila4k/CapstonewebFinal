@@ -41,153 +41,48 @@ export interface AdminSentTeacherScheduleFile {
 
 export const ADMIN_TEACHER_SCHEDULE_FILES_KEY = 'plshs_admin_teacher_schedule_files_v1';
 
-export const DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES: AdminSentTeacherScheduleFile[] = [
-  {
-    id: 'adm-sched-101',
-    title: 'Official Faculty Teaching Load & Class Program (S.Y. 2026–2027)',
-    fileName: 'PLSNHS_Official_Faculty_Class_Program_SY2026-2027.pdf',
-    fileSize: '465 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: '1st & 2nd Semester',
-    targetGradeLevel: 'All Year Levels',
-    recipientType: 'all',
-    recipientTeacherNames: ['All Faculty Teachers'],
-    sentBy: 'School Administrator • Office of the Principal',
-    sentAt: 'Oct 28, 2026 • 08:30 AM',
-    notes:
-      'Approved individual teaching loads, room assignments, and advisory class designations pursuant to DepEd Order No. 31, s. 2012 and Civil Service Magna Carta for Public School Teachers.',
-  },
-  {
-    id: 'adm-sched-102',
-    title: 'DepEd School Form 7 (SF7) — School Personnel Assignment List & Basic Profile',
-    fileName: 'DepEd_SF7_Faculty_Schedule_Matrix_2026.pdf',
-    fileSize: '612 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: 'Full Academic Year',
-    targetGradeLevel: 'All Year Levels',
-    recipientType: 'all',
-    recipientTeacherNames: ['All Faculty Teachers'],
-    sentBy: 'School Registrar & Admin Office',
-    sentAt: 'Oct 25, 2026 • 02:15 PM',
-    notes:
-      'Master timetable of Junior High School (Grades 7–10) and Senior High School (Grades 11–12) teaching periods and room allocations.',
-  },
-  {
-    id: 'adm-sched-g7',
-    title: 'Grade 7 Faculty Teaching Load & Class Program',
-    fileName: 'PLSNHS_Grade7_Faculty_Schedule_Matrix_2026.pdf',
-    fileSize: '410 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: '1st & 2nd Semester',
-    targetGradeLevel: 'Grade 7',
-    recipientType: 'selected',
-    recipientTeacherNames: [
-      'Mrs. Generale',
-      'Mrs. Tapasao',
-      'Mr. Selim',
-      'Mrs. Baclayon',
-      'Mrs. Manabat',
-      'Mrs. Codelan',
-      'Mrs. Llanda',
-    ],
-    sentBy: 'Office of the Principal • JHS Department',
-    sentAt: 'Oct 28, 2026 • 09:00 AM',
-    notes:
-      'Certified Grade 7 teaching assignments, class advisory programs, and academic rooms (Bldg A).',
-  },
-  {
-    id: 'adm-sched-g8',
-    title: 'Grade 8 Faculty Teaching Load & Class Program',
-    fileName: 'PLSNHS_Grade8_Faculty_Schedule_Matrix_2026.pdf',
-    fileSize: '435 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: '1st & 2nd Semester',
-    targetGradeLevel: 'Grade 8',
-    recipientType: 'selected',
-    recipientTeacherNames: [
-      'Twengcle Deguma',
-      'Ms. Alinsonorin',
-      'Ms. Omambac',
-      'Mr. Padillo',
-      'Mr. Gonzaga',
-      'Mrs. Rabanes',
-      'Mrs. Montoya',
-      'Mrs. Balwit',
-    ],
-    sentBy: 'Office of the Principal • JHS Department',
-    sentAt: 'Oct 28, 2026 • 09:15 AM',
-    notes:
-      'Certified Grade 8 teaching programs, Science Lab schedules, and advisory room assignments (Bldg B).',
-  },
-  {
-    id: 'adm-sched-g9',
-    title: 'Grade 9 Faculty Teaching Load & Class Program',
-    fileName: 'PLSNHS_Grade9_Faculty_Schedule_Matrix_2026.pdf',
-    fileSize: '420 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: '1st & 2nd Semester',
-    targetGradeLevel: 'Grade 9',
-    recipientType: 'selected',
-    recipientTeacherNames: [
-      'Mrs. Francisco',
-      'Mrs. Taruc',
-      'Mr. Albores',
-      'Mrs. Ogaob',
-      'Mrs. Ramas',
-      'Mrs. Rivera',
-      'Ms. Bo-ok',
-    ],
-    sentBy: 'Office of the Principal • JHS Department',
-    sentAt: 'Oct 28, 2026 • 09:30 AM',
-    notes:
-      'Certified Grade 9 teaching load, spiral science allocations, and advisory designations (Bldg C).',
-  },
-  {
-    id: 'adm-sched-g10',
-    title: 'Grade 10 Faculty Teaching Load & Class Program',
-    fileName: 'PLSNHS_Grade10_Faculty_Schedule_Matrix_2026.pdf',
-    fileSize: '450 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: '1st & 2nd Semester',
-    targetGradeLevel: 'Grade 10',
-    recipientType: 'selected',
-    recipientTeacherNames: [
-      'Ryan Quiroga',
-      'Jherico Maurin',
-      'Mrs. Paunel',
-      'Mrs. Dela Torre',
-      'Mr. Gentica',
-      'Mrs. Rimas',
-      'Mrs. Diaz',
-    ],
-    sentBy: 'Office of the Principal • JHS Department',
-    sentAt: 'Oct 28, 2026 • 09:45 AM',
-    notes:
-      'Certified Grade 10 teaching schedule, Computer Lab hours, and JHS completion year advisory programs.',
-  },
-  {
-    id: 'adm-sched-shs',
-    title: 'Senior High School (Grades 11 & 12) Faculty Class Program & Strand Load',
-    fileName: 'PLSNHS_SHS_Faculty_Schedule_Matrix_2026.pdf',
-    fileSize: '490 KB',
-    fileType: 'PDF',
-    schoolYear: 'S.Y. 2026–2027',
-    semester: '1st & 2nd Semester',
-    targetGradeLevel: 'Grades 11 & 12 (SHS)',
-    recipientType: 'selected',
-    recipientTeacherNames: ['Teacher Santos', 'SHS Faculty'],
-    sentBy: 'Office of the Principal • SHS Department',
-    sentAt: 'Oct 28, 2026 • 10:00 AM',
-    notes:
-      'Official Senior High School teaching assignments across Academic (GAS, HUMSS, STEM) and TVL tracks.',
-  },
-];
+export function isLegacyMockSchedule(f: any): boolean {
+  if (!f) return false;
+  const id = String(f.id || '');
+  const fileName = String(f.fileName || '').toLowerCase();
+  const title = String(f.title || '').toLowerCase();
+  if (
+    [
+      'adm-sched-101',
+      'adm-sched-102',
+      'adm-sched-g7',
+      'adm-sched-g8',
+      'adm-sched-g9',
+      'adm-sched-g10',
+      'adm-sched-shs',
+      'sched-default-1',
+    ].includes(id)
+  ) {
+    return true;
+  }
+  if (
+    fileName.includes('plsnhs_official_faculty_class_program') ||
+    fileName.includes('deped_sf7_faculty_schedule_matrix') ||
+    fileName.includes('plsnhs_grade7_faculty_schedule_matrix') ||
+    fileName.includes('plsnhs_grade8_faculty_schedule_matrix') ||
+    fileName.includes('plsnhs_grade9_faculty_schedule_matrix') ||
+    fileName.includes('plsnhs_grade10_faculty_schedule_matrix') ||
+    fileName.includes('plsnhs_shs_faculty_schedule_matrix') ||
+    fileName.includes('plsnhs_grade10_generosity_class_schedule')
+  ) {
+    return true;
+  }
+  if (
+    title.includes('sf7') ||
+    title.includes('school personnel assignment')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+// Strictly empty by default: only schedules officially attached & published by Admin or Registrar in Supabase are visible
+export const DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES: AdminSentTeacherScheduleFile[] = [];
 
 export interface TeachingLoadSlot {
   period: string;
@@ -1105,9 +1000,7 @@ export const TeacherClassProgramPage: React.FC = () => {
   useEffect(() => {
     const syncScheduleFiles = async () => {
       try {
-        const merged = await fetchSavedScheduleFilesFromDatabase(
-          DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES
-        );
+        const merged = await fetchSavedScheduleFilesFromDatabase([]);
 
         // Also query teachers table for direct teacher_load_url if attached specifically to this teacher
         if (user?.id) {
@@ -1433,86 +1326,102 @@ export const TeacherClassProgramPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {myReceivedScheduleFiles.map((file) => (
-              <div
-                key={file.id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between gap-4"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#0f172a] px-3 py-1 text-xs font-bold text-white">
-                        <Calendar className="h-3.5 w-3.5 text-amber-400" />
-                        {file.schoolYear} • {file.semester}
-                      </span>
-                      {file.targetGradeLevel && (
-                        <span className="inline-flex items-center rounded-lg bg-emerald-100 border border-emerald-300 px-2.5 py-1 text-xs font-extrabold text-emerald-800">
-                          {file.targetGradeLevel}
-                        </span>
-                      )}
-                    </div>
-                    <Badge variant="emerald" size="md">
-                      {file.fileType || 'PDF'} FILE
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-display leading-snug">
-                      {file.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm font-semibold text-emerald-800 mt-1">
-                      Issued by: {file.sentBy} • {file.sentAt}
-                    </p>
-                  </div>
-
-                  {/* Attached File Pill */}
-                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-800" title={file.fileName}>
-                        {file.fileName}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {file.fileSize} • Official Admin Schedule Attachment
-                      </p>
-                    </div>
-                  </div>
-
-                  {file.notes && (
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{file.notes}</p>
-                  )}
+            {myReceivedScheduleFiles.length === 0 ? (
+              <div className="col-span-full rounded-2xl border-2 border-dashed border-emerald-200/80 bg-white/80 p-8 text-center space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                  <FileText className="h-6 w-6" />
                 </div>
-
-                <div className="flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3.5">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewFile(file)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
-                  >
-                    <Eye className="h-4 w-4 text-emerald-700" />
-                    Preview File
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePrintBondPaper(paperSize)}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
-                  >
-                    <Printer className="h-4 w-4 text-slate-500" />
-                    Print
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadScheduleFile(file)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-2xs hover:bg-emerald-800 transition-all cursor-pointer"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download File
-                  </button>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    No Official Schedule Attached Yet
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                    Under PLSNHS school policy, only official teaching schedules attached and published by the School Administrator or Registrar in Supabase are displayed here. Once sent, your schedule file will appear immediately.
+                  </p>
                 </div>
               </div>
-            ))}
+            ) : (
+              myReceivedScheduleFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#0f172a] px-3 py-1 text-xs font-bold text-white">
+                          <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                          {file.schoolYear} • {file.semester}
+                        </span>
+                        {file.targetGradeLevel && (
+                          <span className="inline-flex items-center rounded-lg bg-emerald-100 border border-emerald-300 px-2.5 py-1 text-xs font-extrabold text-emerald-800">
+                            {file.targetGradeLevel}
+                          </span>
+                        )}
+                      </div>
+                      <Badge variant="emerald" size="md">
+                        {file.fileType || 'PDF'} FILE
+                      </Badge>
+                    </div>
+
+                    <div>
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-display leading-snug">
+                        {file.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm font-semibold text-emerald-800 mt-1">
+                        Issued by: {file.sentBy} • {file.sentAt}
+                      </p>
+                    </div>
+
+                    {/* Attached File Pill */}
+                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-800" title={file.fileName}>
+                          {file.fileName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {file.fileSize} • Official Admin Schedule Attachment
+                        </p>
+                      </div>
+                    </div>
+
+                    {file.notes && (
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{file.notes}</p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3.5">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFile(file)}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                    >
+                      <Eye className="h-4 w-4 text-emerald-700" />
+                      Preview File
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintBondPaper(paperSize)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+                    >
+                      <Printer className="h-4 w-4 text-slate-500" />
+                      Print
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadScheduleFile(file)}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-2xs hover:bg-emerald-800 transition-all cursor-pointer"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download File
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -1546,7 +1455,9 @@ export const TeacherClassProgramPage: React.FC = () => {
               </h2>
             </div>
             <span className="text-xs sm:text-sm font-semibold text-slate-500">
-              Synced from Admin Schedule File ({myReceivedScheduleFiles[0]?.fileName})
+              {myReceivedScheduleFiles[0]?.fileName
+                ? `Synced from Admin Schedule File (${myReceivedScheduleFiles[0].fileName})`
+                : 'Awaiting official schedule document distribution'}
             </span>
           </div>
 
