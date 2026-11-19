@@ -43,6 +43,121 @@ export interface UnifiedAttendanceRecord {
 
 const teacherIdCache = new Map<string, string | null>();
 
+export interface TeacherRegistrationCheckResult {
+  isRegistered: boolean;
+  teacherId?: string | null;
+  employeeId?: string | null;
+  specialization?: string | null;
+  message?: string;
+}
+
+/**
+ * Validates whether a faculty teacher is officially registered by the School Administrator.
+ * A teacher who has not been registered in public.teachers cannot take, edit, or submit attendance.
+ */
+export async function checkTeacherRegistration(
+  user?: { id?: string | number; email?: string; role?: string; full_name?: string } | null
+): Promise<TeacherRegistrationCheckResult> {
+  if (!user) {
+    return {
+      isRegistered: false,
+      message: 'No active session found. Please sign in as a registered teacher.',
+    };
+  }
+
+  // Administrators and registrars have supervisory access
+  if (user.role === 'admin' || user.role === 'registrar') {
+    return { isRegistered: true, teacherId: null };
+  }
+
+  const userId = user.id ? String(user.id).trim() : '';
+
+  // 1. Direct Supabase query to public.teachers
+  try {
+    if (isUuid(userId)) {
+      const { data, error } = await supabase
+        .from('teachers')
+        .select('id, user_id, employee_id, specialization')
+        .or(`id.eq.${userId},user_id.eq.${userId}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data?.id) {
+        teacherIdCache.set(userId, data.id);
+        return {
+          isRegistered: true,
+          teacherId: data.id,
+          employeeId: data.employee_id,
+          specialization: data.specialization,
+        };
+      }
+    }
+
+    // 2. Lookup via user email in users joined with teachers
+    if (user.email) {
+      const cleanEmail = user.email.trim().toLowerCase();
+      const { data: uRow } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (uRow?.id) {
+        const { data: tRow } = await supabase
+          .from('teachers')
+          .select('id, user_id, employee_id, specialization')
+          .or(`id.eq.${uRow.id},user_id.eq.${uRow.id}`)
+          .maybeSingle();
+
+        if (tRow?.id) {
+          teacherIdCache.set(userId || uRow.id, tRow.id);
+          return {
+            isRegistered: true,
+            teacherId: tRow.id,
+            employeeId: tRow.employee_id,
+            specialization: tRow.specialization,
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Teacher registration verification notice:', err);
+  }
+
+  // 3. Fallback verification against local admin teachers cache (plsnhs_teachers_cache_v3)
+  try {
+    const raw = localStorage.getItem('plsnhs_teachers_cache_v3');
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        const match = list.find(
+          (t: any) =>
+            (userId && (t.id === userId || t.user_id === userId)) ||
+            (user.email && t.email?.toLowerCase() === user.email?.toLowerCase())
+        );
+        if (match) {
+          const tId = match.teacher_table_id || match.id;
+          if (userId && tId) teacherIdCache.set(userId, tId);
+          return {
+            isRegistered: true,
+            teacherId: tId,
+            employeeId: match.employee_id,
+            specialization: match.specialization,
+          };
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return {
+    isRegistered: false,
+    message:
+      'Access Denied: Your faculty account has not been registered by the School Administrator or Registrar in the Faculty Teachers Registry.',
+  };
+}
+
 /**
  * Resolves a user.id or teacher.id UUID into a valid public.teachers.id UUID
  * so foreign key constraints on attendance_records.teacher_id never fail.
@@ -194,6 +309,18 @@ export async function logAttendanceRecord(payload: {
     }
   } catch {
     // ignore student lookup error
+  }
+
+  // Strict Enforcement: If attendance is initiated by a teacher, verify they are registered by Admin
+  if (payload.teacher_id) {
+    const regCheck = await checkTeacherRegistration({ id: payload.teacher_id });
+    if (!regCheck.isRegistered) {
+      return {
+        success: false,
+        error:
+          'Attendance Denied: You cannot record attendance because your faculty account has not been registered by the School Administrator yet.',
+      };
+    }
   }
 
   const cleanTeacherId = await resolveTeacherRecordId(payload.teacher_id);

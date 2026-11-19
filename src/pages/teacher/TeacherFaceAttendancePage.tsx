@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Camera,
   CameraOff,
@@ -15,6 +16,8 @@ import {
   Award,
   Volume2,
   VolumeX,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
@@ -23,6 +26,7 @@ import {
   fetchAllTeacherAttendance,
   TeacherAttendanceRecord,
 } from '../../lib/teacherAttendanceStore';
+import { checkTeacherRegistration } from '../../lib/attendanceService';
 
 export const TeacherFaceAttendancePage: React.FC = () => {
   const { user } = useAuth();
@@ -53,6 +57,32 @@ export const TeacherFaceAttendancePage: React.FC = () => {
 
   // Attendance History
   const [attendanceLogs, setAttendanceLogs] = useState<TeacherAttendanceRecord[]>([]);
+
+  // Admin Registration Status (Strict Access Control)
+  const [registrationStatus, setRegistrationStatus] = useState<{
+    checked: boolean;
+    isRegistered: boolean;
+    message?: string;
+  }>({ checked: false, isRegistered: true });
+
+  useEffect(() => {
+    let active = true;
+    checkTeacherRegistration(user).then((res) => {
+      if (active) {
+        setRegistrationStatus({
+          checked: true,
+          isRegistered: res.isRegistered,
+          message: res.message,
+        });
+        if (!res.isRegistered) {
+          stopCamera();
+        }
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // Teacher Identity
   const teacherName =
@@ -162,6 +192,11 @@ export const TeacherFaceAttendancePage: React.FC = () => {
   };
 
   const startCamera = async () => {
+    if (registrationStatus.checked && !registrationStatus.isRegistered) {
+      setCameraError('Attendance access blocked: teacher registration required.');
+      setIsCameraActive(false);
+      return;
+    }
     try {
       setCameraError(null);
 
@@ -261,6 +296,10 @@ export const TeacherFaceAttendancePage: React.FC = () => {
 
   // Perform Face Scan Check-In
   const handlePerformFaceScan = async (type: 'in' | 'out') => {
+    if (registrationStatus.checked && !registrationStatus.isRegistered) {
+      alert('Attendance Access Denied: You cannot take or record attendance because your teacher account has not been registered by the School Administrator yet.');
+      return;
+    }
     if (isScanning) return;
 
     // If the camera is currently turned off, reactivate it first
@@ -378,7 +417,59 @@ export const TeacherFaceAttendancePage: React.FC = () => {
       </div>
 
       {/* Main 2-Column Responsive Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {registrationStatus.checked && !registrationStatus.isRegistered ? (
+        <div className="rounded-2xl border-2 border-rose-300 bg-gradient-to-br from-rose-50 via-white to-rose-50/70 p-6 sm:p-10 text-center shadow-xs space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-100 text-rose-700 shadow-inner">
+            <ShieldAlert className="h-9 w-9 text-rose-600" />
+          </div>
+          <div className="max-w-xl mx-auto space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-[11px] font-black text-rose-800 uppercase tracking-wider">
+              <Lock className="h-3 w-3" /> Biometric Attendance Blocked • Faculty Registration Required
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-display">
+              You Cannot Take Attendance Yet
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Biometric check-in and attendance logging are disabled because your teacher account has not been registered or assigned by the School Administrator in the Placido L. Señor National High School faculty registry. Under school policy, only officially registered faculty members are authorized to record attendance.
+            </p>
+            <div className="rounded-xl border border-rose-200 bg-white/80 p-3.5 text-xs text-rose-900 font-semibold space-y-1">
+              <p>
+                <strong>Faculty Account:</strong> {user?.full_name || 'Teacher'} ({user?.email || 'No email'})
+              </p>
+              <p className="text-slate-500 font-normal">
+                Please contact the <strong>Office of the Principal</strong> or <strong>Registrar</strong> to register your faculty profile.
+              </p>
+            </div>
+          </div>
+          <div className="pt-2 flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                checkTeacherRegistration(user).then((res) => {
+                  setRegistrationStatus({
+                    checked: true,
+                    isRegistered: res.isRegistered,
+                    message: res.message,
+                  });
+                  if (res.isRegistered) {
+                    startCamera();
+                  }
+                });
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Re-check Registration
+            </button>
+            <Link
+              to="/teacher/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 px-5 py-2.5 text-xs font-bold text-white transition-all cursor-pointer shadow-xs"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (7 cols): Camera Scanner HUD */}
         <div className="lg:col-span-7 space-y-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
@@ -769,6 +860,7 @@ export const TeacherFaceAttendancePage: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

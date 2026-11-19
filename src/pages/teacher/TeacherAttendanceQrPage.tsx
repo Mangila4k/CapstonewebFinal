@@ -21,6 +21,8 @@ import {
   Calendar,
   Layers,
   Upload,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +30,7 @@ import {
   logAttendanceRecord,
   fetchAttendanceRecords,
   getLocalTodayStr,
+  checkTeacherRegistration,
 } from '../../lib/attendanceService';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
@@ -84,6 +87,29 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   const [scannedLogs, setScannedLogs] = useState<ScannedEntry[]>([]);
   const [latestStudent, setLatestStudent] = useState<ScannedEntry | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
+
+  // Admin Registration Status (Strict Access Control)
+  const [registrationStatus, setRegistrationStatus] = useState<{
+    checked: boolean;
+    isRegistered: boolean;
+    message?: string;
+  }>({ checked: false, isRegistered: true });
+
+  useEffect(() => {
+    let active = true;
+    checkTeacherRegistration(user).then((res) => {
+      if (active) {
+        setRegistrationStatus({
+          checked: true,
+          isRegistered: res.isRegistered,
+          message: res.message,
+        });
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // Search filter for logs
   const [logSearch, setLogSearch] = useState('');
@@ -218,6 +244,16 @@ export const TeacherAttendanceQrPage: React.FC = () => {
 
   // Process a Scanned LRN or QR String
   const processLrnOrQr = useCallback(async (rawScannedText: string, scanType: 'QR' | 'LRN' = 'QR') => {
+    if (registrationStatus.checked && !registrationStatus.isRegistered) {
+      if (soundEnabled) playAttendanceSound('error');
+      setNotice({
+        type: 'error',
+        message:
+          'Attendance Access Denied: You cannot take attendance because your faculty account has not been registered by the School Administrator yet.',
+      });
+      return;
+    }
+
     const cleanLrn = parseLrnFromInput(rawScannedText);
     if (!cleanLrn) {
       if (soundEnabled) playAttendanceSound('error');
@@ -406,6 +442,15 @@ export const TeacherAttendanceQrPage: React.FC = () => {
   // Handle Manual LRN Submit
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (registrationStatus.checked && !registrationStatus.isRegistered) {
+      if (soundEnabled) playAttendanceSound('error');
+      setNotice({
+        type: 'error',
+        message:
+          'Attendance Access Denied: You cannot take attendance because your faculty account has not been registered by the School Administrator yet.',
+      });
+      return;
+    }
     if (!inputLrn.trim()) return;
     const raw = inputLrn.trim();
     const isQrPayload = raw.includes('http') || raw.includes('verify-id') || raw.length > 16;
@@ -449,6 +494,11 @@ export const TeacherAttendanceQrPage: React.FC = () => {
 
   // Camera Streaming & QR Detector Loop
   const startCamera = async (overrideFacing?: 'environment' | 'user') => {
+    if (registrationStatus.checked && !registrationStatus.isRegistered) {
+      setCameraError('Camera access blocked: Your faculty account is not registered by the School Administrator.');
+      setCameraActive(false);
+      return;
+    }
     setCameraError(null);
     const targetFacing = overrideFacing || facingMode;
     try {
@@ -661,7 +711,57 @@ export const TeacherAttendanceQrPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Control Bar: Mode, Cutoff Time & Sound */}
+      {registrationStatus.checked && !registrationStatus.isRegistered ? (
+        <div className="rounded-2xl border-2 border-rose-300 bg-gradient-to-br from-rose-50 via-white to-rose-50/70 p-6 sm:p-10 text-center shadow-xs space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-100 text-rose-700 shadow-inner">
+            <ShieldAlert className="h-9 w-9 text-rose-600" />
+          </div>
+          <div className="max-w-xl mx-auto space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-[11px] font-black text-rose-800 uppercase tracking-wider">
+              <Lock className="h-3 w-3" /> QR Attendance Scanner Blocked • Faculty Registration Required
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-display">
+              You Cannot Take Attendance Yet
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Attendance scanning is disabled because your teacher account has not been registered or assigned by the School Administrator in the Placido L. Señor National High School faculty registry. Under school policy, only officially registered faculty members are authorized to take student attendance.
+            </p>
+            <div className="rounded-xl border border-rose-200 bg-white/80 p-3.5 text-xs text-rose-900 font-semibold space-y-1">
+              <p>
+                <strong>Faculty Account:</strong> {user?.full_name || 'Teacher'} ({user?.email || 'No email'})
+              </p>
+              <p className="text-slate-500 font-normal">
+                Please contact the <strong>Office of the Principal</strong> or <strong>Registrar</strong> to register your faculty account and assign your teaching sections.
+              </p>
+            </div>
+          </div>
+          <div className="pt-2 flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                checkTeacherRegistration(user).then((res) => {
+                  setRegistrationStatus({
+                    checked: true,
+                    isRegistered: res.isRegistered,
+                    message: res.message,
+                  });
+                });
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-2xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Re-check Registration
+            </button>
+            <Link
+              to="/teacher/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 px-5 py-2.5 text-xs font-bold text-white transition-all cursor-pointer shadow-xs"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Control Bar: Mode, Cutoff Time & Sound */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
         <div className="flex flex-wrap items-center gap-3">
           {/* Mode Switcher */}
@@ -1089,6 +1189,8 @@ export const TeacherAttendanceQrPage: React.FC = () => {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

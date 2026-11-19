@@ -21,6 +21,8 @@ import {
   QrCode,
   Bell,
   ShieldCheck,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -30,6 +32,7 @@ import {
   type AdminSentTeacherScheduleFile,
 } from './TeacherClassProgramPage';
 import { fetchSavedScheduleFilesFromDatabase } from '../../lib/teacherScheduleService';
+import { checkTeacherRegistration } from '../../lib/attendanceService';
 
 interface TeacherClassLoad {
   id: string;
@@ -105,6 +108,29 @@ export const TeacherDashboardPage: React.FC = () => {
   const [attendanceLoggedToday, setAttendanceLoggedToday] = useState<number>(118);
   const [latestScheduleNotif, setLatestScheduleNotif] =
     useState<AdminSentTeacherScheduleFile | null>(null);
+
+  // Admin Registration Status (Strict Access Control)
+  const [registrationStatus, setRegistrationStatus] = useState<{
+    checked: boolean;
+    isRegistered: boolean;
+    message?: string;
+  }>({ checked: false, isRegistered: true });
+
+  useEffect(() => {
+    let active = true;
+    checkTeacherRegistration(user).then((res) => {
+      if (active) {
+        setRegistrationStatus({
+          checked: true,
+          isRegistered: res.isRegistered,
+          message: res.message,
+        });
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const loadTeacherScheduleNotification = useCallback(async () => {
     const teacherName = user?.full_name || 'Faculty Teacher';
@@ -281,16 +307,78 @@ export const TeacherDashboardPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
           <Link
-            to="/teacher/attendance-qr"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors"
-            title="Launch QR Attendance Scanner"
+            to={registrationStatus.checked && !registrationStatus.isRegistered ? '#' : '/teacher/attendance-qr'}
+            onClick={(e) => {
+              if (registrationStatus.checked && !registrationStatus.isRegistered) {
+                e.preventDefault();
+                alert('Attendance Access Denied: You cannot take attendance because your teacher account has not been registered by the School Administrator yet.');
+              }
+            }}
+            className={`hidden sm:inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-2xs transition-colors ${
+              registrationStatus.checked && !registrationStatus.isRegistered
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
+                : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+            }`}
+            title={
+              registrationStatus.checked && !registrationStatus.isRegistered
+                ? 'Attendance locked — Faculty registration required'
+                : 'Launch QR Attendance Scanner'
+            }
           >
             <QrCode className="h-4 w-4 text-[#F5C518]" />
             <span>QR Scanner</span>
+            {registrationStatus.checked && !registrationStatus.isRegistered && (
+              <Lock className="h-3 w-3 text-rose-600" />
+            )}
           </Link>
           <PageHeaderNotificationSlot />
         </div>
       </div>
+
+      {/* Faculty Registration Required Warning Banner */}
+      {registrationStatus.checked && !registrationStatus.isRegistered && (
+        <div className="rounded-2xl border-2 border-rose-300 bg-gradient-to-r from-rose-50 via-white to-rose-50/70 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-xs">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-700 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                  <Lock className="h-3 w-3" />
+                  Faculty Registration Required
+                </span>
+                <span className="inline-flex items-center rounded-full bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-[10px] font-extrabold text-rose-900">
+                  Attendance Actions Locked
+                </span>
+              </div>
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                Teacher Account Not Yet Registered by Administrator
+              </h3>
+              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                Your account is currently pending faculty registration in the official PLSNHS teacher registry. Under DepEd and school policy, attendance taking (QR scanning, roster check, and facial attendance) is locked until registered. Please contact the <strong>Office of the Principal</strong> or <strong>Registrar</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                checkTeacherRegistration(user).then((res) => {
+                  setRegistrationStatus({
+                    checked: true,
+                    isRegistered: res.isRegistered,
+                    message: res.message,
+                  });
+                });
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white hover:bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-800 transition-colors shadow-2xs cursor-pointer"
+            >
+              Check Status
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Live Class Schedule Notification Alert from Admin / Registrar */}
       {latestScheduleNotif && (
@@ -529,11 +617,29 @@ export const TeacherDashboardPage: React.FC = () => {
               </p>
             </div>
             <Link
-              to="/teacher/face-attendance"
-              className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-purple-700 hover:bg-purple-800 text-white py-2.5 text-xs font-bold shadow-xs transition-all active:scale-98"
+              to={registrationStatus.checked && !registrationStatus.isRegistered ? '#' : '/teacher/face-attendance'}
+              onClick={(e) => {
+                if (registrationStatus.checked && !registrationStatus.isRegistered) {
+                  e.preventDefault();
+                  alert('Attendance Access Denied: You cannot take attendance because your teacher account has not been registered by the School Administrator yet.');
+                }
+              }}
+              className={`inline-flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-xs font-bold shadow-xs transition-all ${
+                registrationStatus.checked && !registrationStatus.isRegistered
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  : 'bg-purple-700 hover:bg-purple-800 text-white active:scale-98'
+              }`}
             >
-              <Camera className="h-4 w-4" />
-              <span>Launch Face Attendance</span>
+              {registrationStatus.checked && !registrationStatus.isRegistered ? (
+                <Lock className="h-4 w-4" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
+              <span>
+                {registrationStatus.checked && !registrationStatus.isRegistered
+                  ? 'Locked • Registration Required'
+                  : 'Launch Face Attendance'}
+              </span>
               <ArrowRight className="h-3.5 w-3.5 opacity-80" />
             </Link>
           </div>
@@ -545,27 +651,60 @@ export const TeacherDashboardPage: React.FC = () => {
             </h3>
             <div className="grid grid-cols-2 gap-2.5 text-xs font-semibold">
               <Link
-                to="/teacher/attendance-qr"
-                className="col-span-2 rounded-xl bg-emerald-700 p-3 border border-emerald-800 text-white font-extrabold hover:bg-emerald-800 transition-all shadow-2xs flex items-center justify-between"
+                to={registrationStatus.checked && !registrationStatus.isRegistered ? '#' : '/teacher/attendance-qr'}
+                onClick={(e) => {
+                  if (registrationStatus.checked && !registrationStatus.isRegistered) {
+                    e.preventDefault();
+                    alert('Attendance Access Denied: You cannot take attendance because your teacher account has not been registered by the School Administrator yet.');
+                  }
+                }}
+                className={`col-span-2 rounded-xl p-3 border font-extrabold transition-all shadow-2xs flex items-center justify-between ${
+                  registrationStatus.checked && !registrationStatus.isRegistered
+                    ? 'bg-slate-200 border-slate-300 text-slate-500 cursor-not-allowed'
+                    : 'bg-emerald-700 border-emerald-800 text-white hover:bg-emerald-800'
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <QrCode className="h-4 w-4 text-[#F5C518] shrink-0" />
+                  <QrCode className={`h-4 w-4 shrink-0 ${registrationStatus.checked && !registrationStatus.isRegistered ? 'text-slate-400' : 'text-[#F5C518]'}`} />
                   <span>Student QR Scanner</span>
+                  {registrationStatus.checked && !registrationStatus.isRegistered && (
+                    <span className="text-[10px] text-rose-700 font-bold ml-1">(Locked)</span>
+                  )}
                 </div>
                 <ArrowRight className="h-3.5 w-3.5 opacity-80" />
               </Link>
               <Link
-                to="/teacher/face-attendance"
-                className="rounded-xl bg-purple-50 p-3 border border-purple-200 text-purple-950 hover:bg-purple-700 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"
+                to={registrationStatus.checked && !registrationStatus.isRegistered ? '#' : '/teacher/face-attendance'}
+                onClick={(e) => {
+                  if (registrationStatus.checked && !registrationStatus.isRegistered) {
+                    e.preventDefault();
+                    alert('Attendance Access Denied: You cannot take attendance because your teacher account has not been registered by the School Administrator yet.');
+                  }
+                }}
+                className={`rounded-xl p-3 border transition-all shadow-2xs flex items-center gap-1.5 ${
+                  registrationStatus.checked && !registrationStatus.isRegistered
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-purple-50 border-purple-200 text-purple-950 hover:bg-purple-700 hover:text-white'
+                }`}
               >
-                <Camera className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                <Camera className="h-3.5 w-3.5 shrink-0" />
                 <span>Face Attendance</span>
               </Link>
               <Link
-                to="/teacher/attendance"
-                className="rounded-xl bg-white p-3 border border-emerald-200/80 text-emerald-950 hover:bg-emerald-600 hover:text-white transition-all shadow-2xs flex items-center gap-1.5"
+                to={registrationStatus.checked && !registrationStatus.isRegistered ? '#' : '/teacher/attendance'}
+                onClick={(e) => {
+                  if (registrationStatus.checked && !registrationStatus.isRegistered) {
+                    e.preventDefault();
+                    alert('Attendance Access Denied: You cannot take attendance because your teacher account has not been registered by the School Administrator yet.');
+                  }
+                }}
+                className={`rounded-xl p-3 border transition-all shadow-2xs flex items-center gap-1.5 ${
+                  registrationStatus.checked && !registrationStatus.isRegistered
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-white border-emerald-200/80 text-emerald-950 hover:bg-emerald-600 hover:text-white'
+                }`}
               >
-                <UserCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <UserCheck className="h-3.5 w-3.5 shrink-0" />
                 <span>Class Attendance</span>
               </Link>
               <Link
