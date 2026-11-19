@@ -30,6 +30,7 @@ import {
   Copy,
   Send,
   UserCheck,
+  UserPlus,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -40,6 +41,7 @@ import { Alert } from '../../components/common/Alert';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
 import { sendStudentApprovalEmail } from '../../lib/enrollmentEmailService';
+import { generateAutoLrn } from '../../lib/utils';
 import type { Student, Section } from '../../types';
 
 // Standard Grade Levels in PLSNHS
@@ -246,6 +248,281 @@ export const AdminStudentsPage: React.FC = () => {
   const [gmailCopied, setGmailCopied] = useState(false);
   const [gmailSending, setGmailSending] = useState(false);
   const [gmailSentStatus, setGmailSentStatus] = useState<string | null>(null);
+
+  // Add Student Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    suffix: '',
+    lrn: '',
+    grade_level: 'Grade 7',
+    section: 'Chiong',
+    strand: '',
+    gender: 'Male',
+    date_of_birth: '2012-05-15',
+    student_type: 'New Student',
+    email: '',
+    contact_number: '09123456789',
+    address: 'City of Naga, Cebu',
+    guardian_name: '',
+    guardian_contact: '',
+    guardian_relationship: 'Parent',
+  });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const handleAutoGenerateLrn = () => {
+    const auto = generateAutoLrn();
+    setAddFormData((prev) => {
+      const fn = (prev.first_name || 'student').toLowerCase().replace(/\s+/g, '');
+      const ln = (prev.last_name || 'learner').toLowerCase().replace(/\s+/g, '');
+      return {
+        ...prev,
+        lrn: auto,
+        email: prev.email || `${fn}.${ln}.${auto}@gmail.com`,
+      };
+    });
+  };
+
+  const handleCreateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddError(null);
+
+    const fName = addFormData.first_name.trim();
+    const lName = addFormData.last_name.trim();
+    const lrnClean = addFormData.lrn.trim();
+
+    if (!fName || !lName) {
+      setAddError('First Name and Last Name are required.');
+      return;
+    }
+
+    if (!lrnClean || !/^\d{12}$/.test(lrnClean)) {
+      setAddError('A valid 12-digit Learner Reference Number (LRN) is required.');
+      return;
+    }
+
+    setAddLoading(true);
+    try {
+      // 1. Resolve section
+      const targetSecName =
+        addFormData.section ||
+        DEFAULT_SECTIONS_BY_GRADE[addFormData.grade_level]?.[0] ||
+        'Unassigned';
+
+      const matchedSection =
+        sections.find(
+          (s) =>
+            s.name.toLowerCase() === targetSecName.toLowerCase() &&
+            s.grade_level === addFormData.grade_level
+        ) || sections.find((s) => s.name.toLowerCase() === targetSecName.toLowerCase());
+
+      const finalEmail =
+        addFormData.email.trim().toLowerCase() ||
+        `${fName.toLowerCase().replace(/\s+/g, '')}.${lName
+          .toLowerCase()
+          .replace(/\s+/g, '')}.${lrnClean}@gmail.com`;
+
+      const validDob =
+        addFormData.date_of_birth && !isNaN(Date.parse(addFormData.date_of_birth))
+          ? addFormData.date_of_birth
+          : '2010-01-01';
+
+      const isShs =
+        addFormData.grade_level === 'Grade 11' || addFormData.grade_level === 'Grade 12';
+      const finalStrand = isShs ? addFormData.strand || 'TVL - ICT' : null;
+
+      // 2. Insert into Supabase `students` table
+      const studentInsertPayload: Record<string, any> = {
+        lrn: lrnClean,
+        first_name: fName,
+        last_name: lName,
+        middle_name: addFormData.middle_name.trim() || null,
+        suffix: addFormData.suffix.trim() || null,
+        grade_level: addFormData.grade_level,
+        section_id: matchedSection?.id || null,
+        strand: finalStrand,
+        gender: addFormData.gender,
+        date_of_birth: validDob,
+        age: Math.max(12, new Date().getFullYear() - new Date(validDob).getFullYear()),
+        email: finalEmail,
+        contact_number: addFormData.contact_number.trim() || '09123456789',
+        address: addFormData.address.trim() || 'City of Naga, Cebu',
+        parent_name: addFormData.guardian_name.trim() || null,
+        parent_contact: addFormData.guardian_contact.trim() || null,
+        student_type: addFormData.student_type || 'New Student',
+        academic_status: 'Enrolled',
+        documents_status: 'Verified',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: insertedStudent, error: stErr } = await supabase
+        .from('students')
+        .upsert(studentInsertPayload, { onConflict: 'lrn' })
+        .select()
+        .single();
+
+      if (stErr) {
+        throw new Error(`Failed to save student to database: ${stErr.message}`);
+      }
+
+      const resolvedStudentId = insertedStudent?.id;
+
+      // 3. Insert approved enrollment record into Supabase `enrollments` table
+      const enrollmentPayload: Record<string, any> = {
+        student_id: resolvedStudentId,
+        first_name: fName,
+        last_name: lName,
+        middle_name: addFormData.middle_name.trim() || null,
+        email: finalEmail,
+        dob: validDob,
+        date_of_birth: validDob,
+        gender: addFormData.gender,
+        contact_number: addFormData.contact_number.trim() || null,
+        address: addFormData.address.trim() || null,
+        guardian_name: addFormData.guardian_name.trim() || null,
+        guardian_contact: addFormData.guardian_contact.trim() || null,
+        student_type: addFormData.student_type || 'New Student',
+        grade_level: addFormData.grade_level,
+        strand: finalStrand,
+        school_year: '2026-2027',
+        last_school_year: '2026-2027',
+        status: 'Approved',
+        enrolled_date: new Date().toISOString().split('T')[0],
+      };
+
+      const { data: insertedEnr } = await supabase
+        .from('enrollments')
+        .insert(enrollmentPayload)
+        .select('id')
+        .single();
+
+      if (insertedEnr?.id && resolvedStudentId) {
+        try {
+          await supabase
+            .from('students')
+            .update({ enrollment_id: insertedEnr.id })
+            .eq('id', resolvedStudentId);
+        } catch {
+          // ignore
+        }
+      }
+
+      // 4. Create or update user login account in Supabase `users` table so student can log in
+      try {
+        const userPayload: Record<string, any> = {
+          first_name: fName,
+          last_name: lName,
+          email: finalEmail,
+          password: lrnClean, // default login password is the 12-digit LRN
+          role: 'student',
+          student_id: resolvedStudentId,
+          contact_number: addFormData.contact_number.trim() || null,
+          address: addFormData.address.trim() || null,
+          created_at: new Date().toISOString(),
+        };
+        await supabase.from('users').upsert(userPayload, { onConflict: 'email' });
+      } catch (userErr) {
+        console.warn('User account creation notice:', userErr);
+      }
+
+      // 5. Send notification to Supabase
+      try {
+        await supabase.from('notifications').insert({
+          title: 'New Student Enrolled in Database',
+          message: `${fName} ${lName} (LRN: ${lrnClean}) was enrolled into ${addFormData.grade_level} - Section ${targetSecName}.`,
+          type: 'enrollment',
+          role: 'admin',
+        });
+      } catch {
+        // ignore
+      }
+
+      // 6. Log audit activity
+      try {
+        await supabase.from('activity_logs').insert([
+          {
+            role: 'admin',
+            action: 'Student Added & Enrolled',
+            details: `Admin added learner ${fName} ${lName} (LRN: ${lrnClean}) to ${addFormData.grade_level} - ${targetSecName}.`,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } catch {
+        // ignore
+      }
+
+      // 7. Update local state & clear caches
+      const newStudentItem: Student = {
+        id: resolvedStudentId || `temp-${Date.now()}`,
+        first_name: fName,
+        middle_name: addFormData.middle_name.trim() || undefined,
+        last_name: lName,
+        lrn: lrnClean,
+        email: finalEmail,
+        grade_level: addFormData.grade_level,
+        section: targetSecName,
+        strand: finalStrand || '',
+        status: 'Enrolled',
+        gender: addFormData.gender as 'Male' | 'Female',
+        contact_number: addFormData.contact_number.trim() || undefined,
+        address: addFormData.address.trim() || undefined,
+        guardian_name: addFormData.guardian_name.trim() || undefined,
+        guardian_contact: addFormData.guardian_contact.trim() || undefined,
+      };
+
+      setStudents((prev) => [newStudentItem, ...prev.filter((s) => s.lrn !== lrnClean)]);
+
+      try {
+        localStorage.removeItem(STUDENTS_CACHE_KEY);
+        localStorage.removeItem('plsnhs_students_cache_v2');
+        localStorage.removeItem('plsnhs_enrollments_cache_v2');
+      } catch {
+        // ignore
+      }
+
+      window.dispatchEvent(new Event('plsnhs-student-updated'));
+      window.dispatchEvent(new Event('plsnhs-enrollment-updated'));
+
+      setAlert({
+        type: 'success',
+        message: `Student "${fName} ${lName}" (LRN: ${lrnClean}) successfully saved to Supabase database and enrolled in ${addFormData.grade_level} - Section ${targetSecName}!`,
+      });
+
+      setShowAddModal(false);
+      // Reset form
+      setAddFormData({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        suffix: '',
+        lrn: '',
+        grade_level: 'Grade 7',
+        section: 'Chiong',
+        strand: '',
+        gender: 'Male',
+        date_of_birth: '2012-05-15',
+        student_type: 'New Student',
+        email: '',
+        contact_number: '09123456789',
+        address: 'City of Naga, Cebu',
+        guardian_name: '',
+        guardian_contact: '',
+        guardian_relationship: 'Parent',
+      });
+    } catch (err: any) {
+      console.error('Error creating student in Supabase:', err);
+      setAddError(
+        err?.message ||
+          'Failed to save student to database. Please check connection and try again.'
+      );
+    } finally {
+      setAddLoading(false);
+    }
+  };
 
   // Handlers for Manage actions
   const handleOpenEditModal = (student: Student) => {
@@ -543,6 +820,17 @@ export const AdminStudentsPage: React.FC = () => {
 
   useEffect(() => {
     fetchStudentsAndSections();
+
+    const handleUpdate = () => {
+      fetchStudentsAndSections();
+    };
+
+    window.addEventListener('plsnhs-student-updated', handleUpdate);
+    window.addEventListener('plsnhs-enrollment-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('plsnhs-student-updated', handleUpdate);
+      window.removeEventListener('plsnhs-enrollment-updated', handleUpdate);
+    };
   }, []);
 
   // Compute unique sections available (from DB + students + defaults)
@@ -807,6 +1095,17 @@ export const AdminStudentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              handleAutoGenerateLrn();
+              setShowAddModal(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#152e69] text-white text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Add Student</span>
+          </button>
           <PageHeaderNotificationSlot />
         </div>
       </div>
@@ -2466,6 +2765,300 @@ Please keep your credentials safe and log in to verify your enrollment status.`}
           </Modal>
         );
       })()}
+
+      {/* ADD NEW STUDENT MODAL */}
+      {showAddModal && (
+        <Modal
+          isOpen={showAddModal}
+          onClose={() => {
+            if (!addLoading) setShowAddModal(false);
+          }}
+          title="Add & Enroll New Student"
+          subtitle="Directly register a new learner into the official Supabase database and school masterlist."
+        >
+          <form onSubmit={handleCreateStudent} className="space-y-4 text-xs">
+            {addError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {addError}
+              </div>
+            )}
+
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  First Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addFormData.first_name}
+                  onChange={(e) => setAddFormData({ ...addFormData, first_name: e.target.value })}
+                  placeholder="e.g. Maria"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Middle Name
+                </label>
+                <input
+                  type="text"
+                  value={addFormData.middle_name}
+                  onChange={(e) => setAddFormData({ ...addFormData, middle_name: e.target.value })}
+                  placeholder="e.g. Santos"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Last Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addFormData.last_name}
+                  onChange={(e) => setAddFormData({ ...addFormData, last_name: e.target.value })}
+                  placeholder="e.g. Dela Cruz"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* LRN & Auto-Generate */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                    Learner Reference No. (LRN) <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateLrn}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    Auto-Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  maxLength={12}
+                  value={addFormData.lrn}
+                  onChange={(e) => setAddFormData({ ...addFormData, lrn: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+                  placeholder="12-digit DepEd LRN"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Student Type
+                </label>
+                <select
+                  value={addFormData.student_type}
+                  onChange={(e) => setAddFormData({ ...addFormData, student_type: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  <option value="New Student">New Student</option>
+                  <option value="Old Student">Old Student</option>
+                  <option value="Transferee">Transferee</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Grade Level, Section, & Strand */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Year Level <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={addFormData.grade_level}
+                  onChange={(e) => {
+                    const nextGrade = e.target.value;
+                    const defaultSec = DEFAULT_SECTIONS_BY_GRADE[nextGrade]?.[0] || 'Unassigned';
+                    setAddFormData({
+                      ...addFormData,
+                      grade_level: nextGrade,
+                      section: defaultSec,
+                      strand: nextGrade.includes('11') || nextGrade.includes('12') ? (addFormData.strand || 'TVL - ICT') : '',
+                    });
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  {ALL_GRADES.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Section <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={addFormData.section}
+                  onChange={(e) => setAddFormData({ ...addFormData, section: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  {(DEFAULT_SECTIONS_BY_GRADE[addFormData.grade_level] || []).map((sec) => {
+                    const adv = getSectionAdviser(addFormData.grade_level, sec);
+                    return (
+                      <option key={sec} value={sec}>
+                        Section {sec}{adv ? ` (${adv})` : ''}
+                      </option>
+                    );
+                  })}
+                  <option value="Unassigned">Unassigned</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Strand {addFormData.grade_level.includes('11') || addFormData.grade_level.includes('12') ? <span className="text-rose-500">*</span> : '(SHS only)'}
+                </label>
+                <select
+                  disabled={!addFormData.grade_level.includes('11') && !addFormData.grade_level.includes('12')}
+                  value={addFormData.strand}
+                  onChange={(e) => setAddFormData({ ...addFormData, strand: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">-- Select Strand --</option>
+                  <option value="TVL - ICT">TVL - ICT</option>
+                  <option value="TVL - HE">TVL - HE</option>
+                  <option value="STEM">STEM</option>
+                  <option value="HUMSS">HUMSS</option>
+                  <option value="ABM">ABM</option>
+                  <option value="GAS">GAS</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Demographics: Gender & Date of Birth */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Gender
+                </label>
+                <select
+                  value={addFormData.gender}
+                  onChange={(e) => setAddFormData({ ...addFormData, gender: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={addFormData.date_of_birth}
+                  onChange={(e) => setAddFormData({ ...addFormData, date_of_birth: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={addFormData.email}
+                  onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                  placeholder="learner@gmail.com (leave blank for auto)"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Contact Number
+                </label>
+                <input
+                  type="tel"
+                  value={addFormData.contact_number}
+                  onChange={(e) => setAddFormData({ ...addFormData, contact_number: e.target.value })}
+                  placeholder="09123456789"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                Complete Residential Address
+              </label>
+              <input
+                type="text"
+                value={addFormData.address}
+                onChange={(e) => setAddFormData({ ...addFormData, address: e.target.value })}
+                placeholder="Poblacion / Barangay, City of Naga, Cebu"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+              />
+            </div>
+
+            {/* Guardian Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Parent / Guardian Name
+                </label>
+                <input
+                  type="text"
+                  value={addFormData.guardian_name}
+                  onChange={(e) => setAddFormData({ ...addFormData, guardian_name: e.target.value })}
+                  placeholder="Full name of parent or guardian"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Parent / Guardian Contact
+                </label>
+                <input
+                  type="tel"
+                  value={addFormData.guardian_contact}
+                  onChange={(e) => setAddFormData({ ...addFormData, guardian_contact: e.target.value })}
+                  placeholder="09123456789"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Modal Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <button
+                type="button"
+                disabled={addLoading}
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={addLoading}
+                className="px-5 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#152e69] text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {addLoading ? 'Saving to Database...' : 'Save Student to Supabase'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

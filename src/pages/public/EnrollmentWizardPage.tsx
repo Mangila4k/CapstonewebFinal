@@ -515,15 +515,57 @@ export const EnrollmentWizardPage: React.FC = () => {
         }
       }
 
+      // 1.5. Ensure student profile is registered in Supabase `students` table
+      let resolvedStudentId: string | null = null;
+      const validDob = formData.dob && !isNaN(Date.parse(formData.dob)) ? formData.dob : '2009-01-01';
+      try {
+        const studentRecordPayload: Record<string, any> = {
+          lrn: cleanLrn,
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim(),
+          middle_name: formData.middleName.trim() || null,
+          suffix: (formData as any).suffix?.trim() || null,
+          date_of_birth: validDob,
+          age: formData.age ? parseInt(formData.age, 10) : 16,
+          gender: formData.gender || 'Male',
+          nationality: formData.nationality.trim() || 'Filipino',
+          religion: formData.religion.trim() || null,
+          address: formData.address.trim() || 'City of Naga, Cebu',
+          contact_number: formData.guardianContact.trim() || '09123456789',
+          email: formData.email.trim().toLowerCase(),
+          parent_name: formData.guardianName.trim() || null,
+          parent_contact: formData.guardianContact.trim() || null,
+          parent_email: formData.guardianEmail.trim() || null,
+          grade_level: formData.gradeLevel,
+          strand: finalStrand,
+          student_type: formData.studentType,
+          two_by_two_picture_url: uploadedDocUrls.two_by_two_picture_url,
+          academic_status: 'Pending',
+          documents_status: 'Pending',
+        };
+
+        const { data: stRow, error: stErr } = await supabase
+          .from('students')
+          .upsert(studentRecordPayload, { onConflict: 'lrn' })
+          .select('id')
+          .single();
+
+        if (!stErr && stRow?.id) {
+          resolvedStudentId = stRow.id;
+        }
+      } catch (stSyncErr) {
+        console.warn('Student profile Supabase upsert note:', stSyncErr);
+      }
+
       // 2. Insert into Supabase enrollments table
-      const payload: Record<string, any> = {
-        lrn: cleanLrn,
+      const safePayload: Record<string, any> = {
+        student_id: resolvedStudentId,
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
         middle_name: formData.middleName.trim() || null,
         email: formData.email.trim().toLowerCase(),
-        dob: formData.dob,
-        date_of_birth: formData.dob,
+        dob: formData.dob || null,
+        date_of_birth: validDob,
         age: formData.age ? parseInt(formData.age, 10) : null,
         birthplace: formData.birthplace.trim() || null,
         gender: formData.gender,
@@ -543,10 +585,10 @@ export const EnrollmentWizardPage: React.FC = () => {
         guardian_address: formData.guardianAddress.trim() || formData.address.trim(),
 
         student_type: formData.studentType,
-        grade_level: formData.gradeLevel,
+        grade_level: formData.gradeLevel || 'Grade 7',
         strand: finalStrand,
-        school_year: formData.schoolYear,
-        last_school_year: formData.schoolYear,
+        school_year: formData.schoolYear || '2026-2027',
+        last_school_year: formData.schoolYear || '2026-2027',
         status: 'Pending',
 
         two_by_two_picture_url: uploadedDocUrls.two_by_two_picture_url,
@@ -558,29 +600,30 @@ export const EnrollmentWizardPage: React.FC = () => {
       };
 
       let createdEnrollment: any = null;
+      // First attempt insertion without lrn column since enrollments table does not have an lrn column
       const { data, error: insertError } = await supabase
         .from('enrollments')
-        .insert(payload)
+        .insert(safePayload)
         .select()
         .single();
 
       if (insertError) {
-        // Graceful fallback if PostgreSQL 'enrollments' table doesn't have the 'lrn' column yet (Code 42703)
-        if (insertError.code === '42703' || String(insertError.message || '').toLowerCase().includes('lrn')) {
-          const { lrn: _omitLrn, ...safePayload } = payload;
-          const { data: retryData, error: retryErr } = await supabase
-            .from('enrollments')
-            .insert(safePayload)
-            .select()
-            .single();
+        console.error('Supabase enrollment insert error:', insertError);
+        throw insertError;
+      }
 
-          if (retryErr) throw retryErr;
-          createdEnrollment = retryData ? { ...retryData, lrn: cleanLrn } : { ...payload, lrn: cleanLrn };
-        } else {
-          throw insertError;
+      createdEnrollment = { ...data, lrn: cleanLrn };
+
+      // Link enrollment_id back to student record in Supabase
+      if (resolvedStudentId && data?.id) {
+        try {
+          await supabase
+            .from('students')
+            .update({ enrollment_id: data.id })
+            .eq('id', resolvedStudentId);
+        } catch {
+          // ignore
         }
-      } else {
-        createdEnrollment = data ? { ...data, lrn: cleanLrn } : { ...payload, lrn: cleanLrn };
       }
 
       // 3. Save all submitted documents to Supabase student_documents table
@@ -600,7 +643,7 @@ export const EnrollmentWizardPage: React.FC = () => {
         if (file && fileUrl) {
           try {
             await supabase.from('student_documents').insert({
-              student_id: data?.student_id || null,
+              student_id: resolvedStudentId || data?.student_id || null,
               document_type: docTypeLabels[key] || key,
               file_url: fileUrl,
               file_name: file.name,

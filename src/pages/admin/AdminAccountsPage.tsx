@@ -443,6 +443,55 @@ export const AdminAccountsPage: React.FC = () => {
           } catch {
             // ignore storage errors
           }
+
+          // Also save learner directly into public.students table in Supabase
+          try {
+            const validDob = enrollForm.dob && !isNaN(Date.parse(enrollForm.dob)) ? enrollForm.dob : '2009-01-01';
+            const studentPayload: Record<string, any> = {
+              lrn: cleanAdminLrn,
+              first_name: payload.first_name,
+              last_name: payload.last_name,
+              middle_name: enrollForm.middleName.trim() || null,
+              suffix: enrollForm.suffix.trim() || null,
+              date_of_birth: validDob,
+              age: computeAge(enrollForm.dob) || 16,
+              gender: enrollForm.gender || 'Male',
+              contact_number: enrollForm.contactNumber.trim() || '09123456789',
+              email: payload.email,
+              address: enrollForm.address.trim() || 'City of Naga, Cebu',
+              parent_name: enrollForm.guardianName.trim() || null,
+              parent_contact: enrollForm.guardianContact.trim() || null,
+              grade_level: enrollForm.gradeLevel,
+              strand: finalStrand,
+              student_type: enrollForm.studentType,
+              academic_status: 'Enrolled',
+              documents_status: 'Pending',
+              enrollment_id: enrDataResult?.id || null,
+            };
+
+            const { data: stRow } = await supabase
+              .from('students')
+              .upsert(studentPayload, { onConflict: 'lrn' })
+              .select('id')
+              .single();
+
+            if (stRow?.id) {
+              await supabase.from('users').update({ student_id: stRow.id }).eq('email', payload.email);
+              if (enrDataResult?.id) {
+                await supabase.from('enrollments').update({ student_id: stRow.id }).eq('id', enrDataResult.id);
+              }
+            }
+
+            try {
+              localStorage.removeItem('plsnhs_students_cache_v2');
+              localStorage.removeItem('plsnhs_students_cache_v1');
+            } catch {
+              // ignore
+            }
+            window.dispatchEvent(new Event('plsnhs-student-updated'));
+          } catch (stSyncErr) {
+            console.warn('Student profile sync error:', stSyncErr);
+          }
         }
       }
 

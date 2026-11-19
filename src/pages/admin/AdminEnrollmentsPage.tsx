@@ -25,6 +25,7 @@ import {
   Mail,
   Send,
   Copy,
+  UserPlus,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../../lib/supabase';
@@ -34,7 +35,7 @@ import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
 import { StudentIdCard } from '../../components/common/StudentIdCard';
 import { printOfficialStudentId } from '../../lib/printIdCard';
-import { formatDate } from '../../lib/utils';
+import { formatDate, generateAutoLrn } from '../../lib/utils';
 import { sendStudentApprovalEmail } from '../../lib/enrollmentEmailService';
 import { useAuth } from '../../context/AuthContext';
 import type { Enrollment, Section } from '../../types';
@@ -400,6 +401,255 @@ export const AdminEnrollmentsPage: React.FC = () => {
   const [approvalGmailCopied, setApprovalGmailCopied] = useState(false);
   const [approvalGmailSending, setApprovalGmailSending] = useState(false);
   const [approvalGmailStatus, setApprovalGmailStatus] = useState<string | null>(null);
+
+  // Direct Walk-In Enrollment Modal State
+  const [showDirectEnrollModal, setShowDirectEnrollModal] = useState(false);
+  const [directEnrollForm, setDirectEnrollForm] = useState({
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    suffix: '',
+    lrn: '',
+    grade_level: 'Grade 7',
+    section: 'Chiong',
+    strand: '',
+    gender: 'Male',
+    date_of_birth: '2012-05-15',
+    student_type: 'New Student',
+    email: '',
+    contact_number: '09123456789',
+    address: 'City of Naga, Cebu',
+    guardian_name: '',
+    guardian_contact: '',
+  });
+  const [directEnrollLoading, setDirectEnrollLoading] = useState(false);
+  const [directEnrollError, setDirectEnrollError] = useState<string | null>(null);
+
+  const handleAutoGenerateEnrollLrn = () => {
+    const auto = generateAutoLrn();
+    setDirectEnrollForm((prev) => {
+      const fn = (prev.first_name || 'student').toLowerCase().replace(/\s+/g, '');
+      const ln = (prev.last_name || 'learner').toLowerCase().replace(/\s+/g, '');
+      return {
+        ...prev,
+        lrn: auto,
+        email: prev.email || `${fn}.${ln}.${auto}@gmail.com`,
+      };
+    });
+  };
+
+  const handleCreateDirectEnroll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDirectEnrollError(null);
+
+    const fName = directEnrollForm.first_name.trim();
+    const lName = directEnrollForm.last_name.trim();
+    const lrnClean = directEnrollForm.lrn.trim();
+
+    if (!fName || !lName) {
+      setDirectEnrollError('First Name and Last Name are required.');
+      return;
+    }
+
+    if (!lrnClean || !/^\d{12}$/.test(lrnClean)) {
+      setDirectEnrollError('A valid 12-digit Learner Reference Number (LRN) is required.');
+      return;
+    }
+
+    setDirectEnrollLoading(true);
+    try {
+      const targetSecName =
+        directEnrollForm.section ||
+        DEFAULT_SECTIONS_BY_GRADE[directEnrollForm.grade_level]?.[0] ||
+        'Unassigned';
+
+      const matchedSec =
+        sections.find(
+          (s) =>
+            s.name.toLowerCase() === targetSecName.toLowerCase() &&
+            s.grade_level === directEnrollForm.grade_level
+        ) || sections.find((s) => s.name.toLowerCase() === targetSecName.toLowerCase());
+
+      const finalEmail =
+        directEnrollForm.email.trim().toLowerCase() ||
+        `${fName.toLowerCase().replace(/\s+/g, '')}.${lName
+          .toLowerCase()
+          .replace(/\s+/g, '')}.${lrnClean}@gmail.com`;
+
+      const validDob =
+        directEnrollForm.date_of_birth && !isNaN(Date.parse(directEnrollForm.date_of_birth))
+          ? directEnrollForm.date_of_birth
+          : '2010-01-01';
+
+      const isShs =
+        directEnrollForm.grade_level === 'Grade 11' || directEnrollForm.grade_level === 'Grade 12';
+      const finalStrand = isShs ? directEnrollForm.strand || 'TVL - ICT' : null;
+
+      // 1. Insert/upsert into Supabase `students` table
+      const studentPayload: Record<string, any> = {
+        lrn: lrnClean,
+        first_name: fName,
+        last_name: lName,
+        middle_name: directEnrollForm.middle_name.trim() || null,
+        suffix: directEnrollForm.suffix.trim() || null,
+        grade_level: directEnrollForm.grade_level,
+        section_id: matchedSec?.id || null,
+        strand: finalStrand,
+        gender: directEnrollForm.gender,
+        date_of_birth: validDob,
+        age: Math.max(12, new Date().getFullYear() - new Date(validDob).getFullYear()),
+        email: finalEmail,
+        contact_number: directEnrollForm.contact_number.trim() || '09123456789',
+        address: directEnrollForm.address.trim() || 'City of Naga, Cebu',
+        parent_name: directEnrollForm.guardian_name.trim() || null,
+        parent_contact: directEnrollForm.guardian_contact.trim() || null,
+        student_type: directEnrollForm.student_type || 'New Student',
+        academic_status: 'Enrolled',
+        documents_status: 'Verified',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: stRow, error: stErr } = await supabase
+        .from('students')
+        .upsert(studentPayload, { onConflict: 'lrn' })
+        .select('id')
+        .single();
+
+      if (stErr) throw new Error(`Database error saving student: ${stErr.message}`);
+      const resolvedStudentId = stRow?.id;
+
+      // 2. Insert into Supabase `enrollments` table
+      const enrollmentPayload: Record<string, any> = {
+        student_id: resolvedStudentId,
+        first_name: fName,
+        last_name: lName,
+        middle_name: directEnrollForm.middle_name.trim() || null,
+        email: finalEmail,
+        dob: validDob,
+        date_of_birth: validDob,
+        gender: directEnrollForm.gender,
+        contact_number: directEnrollForm.contact_number.trim() || null,
+        address: directEnrollForm.address.trim() || null,
+        guardian_name: directEnrollForm.guardian_name.trim() || null,
+        guardian_contact: directEnrollForm.guardian_contact.trim() || null,
+        student_type: directEnrollForm.student_type || 'New Student',
+        grade_level: directEnrollForm.grade_level,
+        strand: finalStrand,
+        school_year: '2026-2027',
+        last_school_year: '2026-2027',
+        status: 'Approved',
+        enrolled_date: new Date().toISOString().split('T')[0],
+      };
+
+      const { data: enrRow, error: enrErr } = await supabase
+        .from('enrollments')
+        .insert(enrollmentPayload)
+        .select()
+        .single();
+
+      if (enrErr) throw new Error(`Database error saving enrollment: ${enrErr.message}`);
+
+      if (enrRow?.id && resolvedStudentId) {
+        try {
+          await supabase
+            .from('students')
+            .update({ enrollment_id: enrRow.id })
+            .eq('id', resolvedStudentId);
+        } catch {
+          // ignore
+        }
+      }
+
+      // 3. Insert or upsert student login into `users` table
+      try {
+        await supabase.from('users').upsert(
+          {
+            first_name: fName,
+            last_name: lName,
+            email: finalEmail,
+            password: lrnClean,
+            role: 'student',
+            student_id: resolvedStudentId,
+            contact_number: directEnrollForm.contact_number.trim() || null,
+            address: directEnrollForm.address.trim() || null,
+          },
+          { onConflict: 'email' }
+        );
+      } catch (uErr) {
+        console.warn('User account notice:', uErr);
+      }
+
+      // 4. Notifications & logs
+      try {
+        await supabase.from('notifications').insert({
+          title: 'Walk-In Student Enrolled',
+          message: `${fName} ${lName} (LRN: ${lrnClean}) was directly enrolled to ${directEnrollForm.grade_level} - Section ${targetSecName}.`,
+          type: 'enrollment',
+          role: 'registrar',
+          enrollment_id: enrRow?.id || null,
+        });
+      } catch {
+        // ignore
+      }
+
+      try {
+        await supabase.from('activity_logs').insert([
+          {
+            role: 'registrar',
+            action: 'Walk-In Enrollment Recorded',
+            details: `Learner ${fName} ${lName} enrolled into ${directEnrollForm.grade_level} - Section ${targetSecName}.`,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } catch {
+        // ignore
+      }
+
+      // 5. Clear caches and refresh
+      try {
+        localStorage.removeItem('plsnhs_enrollments_cache_v2');
+        localStorage.removeItem('plsnhs_students_cache_v2');
+        localStorage.removeItem('plsnhs_students_cache_v1');
+      } catch {
+        // ignore
+      }
+
+      window.dispatchEvent(new Event('plsnhs-enrollment-updated'));
+      window.dispatchEvent(new Event('plsnhs-student-updated'));
+      fetchAllData();
+
+      setNotice({
+        type: 'success',
+        message: `Student "${fName} ${lName}" (LRN: ${lrnClean}) successfully enrolled to ${directEnrollForm.grade_level} - Section ${targetSecName} and saved to Supabase!`,
+      });
+
+      setShowDirectEnrollModal(false);
+      setDirectEnrollForm({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        suffix: '',
+        lrn: '',
+        grade_level: 'Grade 7',
+        section: 'Chiong',
+        strand: '',
+        gender: 'Male',
+        date_of_birth: '2012-05-15',
+        student_type: 'New Student',
+        email: '',
+        contact_number: '09123456789',
+        address: 'City of Naga, Cebu',
+        guardian_name: '',
+        guardian_contact: '',
+      });
+    } catch (err: any) {
+      console.error('Direct enrollment error:', err);
+      setDirectEnrollError(err?.message || 'Failed to enroll student. Please check connection and try again.');
+    } finally {
+      setDirectEnrollLoading(false);
+    }
+  };
 
   const exportQuickIdAsImage = async (elementId: string, filename: string) => {
     const el = document.getElementById(elementId);
@@ -1039,6 +1289,17 @@ export const AdminEnrollmentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0 ml-auto pt-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              handleAutoGenerateEnrollLrn();
+              setShowDirectEnrollModal(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E3A8A] hover:bg-[#152e69] text-white text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Enroll Walk-in Student</span>
+          </button>
           <PageHeaderNotificationSlot />
         </div>
       </div>
@@ -2058,6 +2319,297 @@ Registrar & Admissions Office`;
           </Modal>
         );
       })()}
+
+      {/* WALK-IN ENROLLMENT MODAL */}
+      {showDirectEnrollModal && (
+        <Modal
+          isOpen={showDirectEnrollModal}
+          onClose={() => {
+            if (!directEnrollLoading) setShowDirectEnrollModal(false);
+          }}
+          title="Enroll Walk-in Student"
+          subtitle="Directly register and officially enroll a student into Supabase and class sections."
+        >
+          <form onSubmit={handleCreateDirectEnroll} className="space-y-4 text-xs">
+            {directEnrollError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {directEnrollError}
+              </div>
+            )}
+
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  First Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={directEnrollForm.first_name}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, first_name: e.target.value })}
+                  placeholder="e.g. Juan"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Middle Name
+                </label>
+                <input
+                  type="text"
+                  value={directEnrollForm.middle_name}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, middle_name: e.target.value })}
+                  placeholder="e.g. Reyes"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Last Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={directEnrollForm.last_name}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, last_name: e.target.value })}
+                  placeholder="e.g. Dela Cruz"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* LRN & Auto-Generate */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                    Learner Reference No. (LRN) <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateEnrollLrn}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    Auto-Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  maxLength={12}
+                  value={directEnrollForm.lrn}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, lrn: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+                  placeholder="12-digit DepEd LRN"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Student Type
+                </label>
+                <select
+                  value={directEnrollForm.student_type}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, student_type: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  <option value="New Student">New Student</option>
+                  <option value="Old Student">Old Student</option>
+                  <option value="Transferee">Transferee</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Grade Level, Section, & Strand */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Year Level <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={directEnrollForm.grade_level}
+                  onChange={(e) => {
+                    const nextGrade = e.target.value;
+                    const defaultSec = DEFAULT_SECTIONS_BY_GRADE[nextGrade]?.[0] || 'Unassigned';
+                    setDirectEnrollForm({
+                      ...directEnrollForm,
+                      grade_level: nextGrade,
+                      section: defaultSec,
+                      strand: nextGrade.includes('11') || nextGrade.includes('12') ? (directEnrollForm.strand || 'TVL - ICT') : '',
+                    });
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  {ALL_GRADES.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Section <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={directEnrollForm.section}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, section: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  {(DEFAULT_SECTIONS_BY_GRADE[directEnrollForm.grade_level] || []).map((sec) => (
+                    <option key={sec} value={sec}>
+                      Section {sec}
+                    </option>
+                  ))}
+                  <option value="Unassigned">Unassigned</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Strand {directEnrollForm.grade_level.includes('11') || directEnrollForm.grade_level.includes('12') ? <span className="text-rose-500">*</span> : '(SHS only)'}
+                </label>
+                <select
+                  disabled={!directEnrollForm.grade_level.includes('11') && !directEnrollForm.grade_level.includes('12')}
+                  value={directEnrollForm.strand}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, strand: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">-- Select Strand --</option>
+                  <option value="TVL - ICT">TVL - ICT</option>
+                  <option value="TVL - HE">TVL - HE</option>
+                  <option value="STEM">STEM</option>
+                  <option value="HUMSS">HUMSS</option>
+                  <option value="ABM">ABM</option>
+                  <option value="GAS">GAS</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Demographics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Gender
+                </label>
+                <select
+                  value={directEnrollForm.gender}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, gender: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={directEnrollForm.date_of_birth}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, date_of_birth: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={directEnrollForm.email}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, email: e.target.value })}
+                  placeholder="learner@gmail.com (leave blank for auto)"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Contact Number
+                </label>
+                <input
+                  type="tel"
+                  value={directEnrollForm.contact_number}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, contact_number: e.target.value })}
+                  placeholder="09123456789"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                Complete Residential Address
+              </label>
+              <input
+                type="text"
+                value={directEnrollForm.address}
+                onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, address: e.target.value })}
+                placeholder="Poblacion / Barangay, City of Naga, Cebu"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+              />
+            </div>
+
+            {/* Guardian Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Parent / Guardian Name
+                </label>
+                <input
+                  type="text"
+                  value={directEnrollForm.guardian_name}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, guardian_name: e.target.value })}
+                  placeholder="Full name of parent or guardian"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Parent / Guardian Contact
+                </label>
+                <input
+                  type="tel"
+                  value={directEnrollForm.guardian_contact}
+                  onChange={(e) => setDirectEnrollForm({ ...directEnrollForm, guardian_contact: e.target.value })}
+                  placeholder="09123456789"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-[#1E3A8A] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            {/* Modal Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <button
+                type="button"
+                disabled={directEnrollLoading}
+                onClick={() => setShowDirectEnrollModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={directEnrollLoading}
+                className="px-5 py-2 rounded-xl bg-[#1E3A8A] hover:bg-[#152e69] text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {directEnrollLoading ? 'Saving to Database...' : 'Complete Walk-In Enrollment'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };
