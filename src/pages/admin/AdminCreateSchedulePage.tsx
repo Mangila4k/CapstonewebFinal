@@ -374,6 +374,48 @@ export const AdminCreateSchedulePage: React.FC = () => {
       // 3. Dispatch instant notification to every teacher's dashboard & Notification Bell
       await notifyTeachersOfScheduleFile(savedEntry, isRegistrar ? 'REGISTRAR' : 'ADMIN');
 
+      // 3.1 Also update `public.sections` in Supabase so students in this Grade Level can view, print, and download the official schedule
+      try {
+        const secUpdatePayload = {
+          schedule_doc_url: savedEntry.fileDataUrl,
+          schedule_doc_name: savedEntry.fileName,
+          schedule_doc_type: savedEntry.fileType || 'PDF',
+          schedule_doc_uploaded_by: senderLabel,
+          schedule_doc_updated_at: new Date().toISOString(),
+          shared_at: new Date().toISOString(),
+          shared_by: senderLabel,
+        };
+
+        if (savedEntry.targetGradeLevel && savedEntry.targetGradeLevel !== 'All Year Levels') {
+          await supabase
+            .from('sections')
+            .update(secUpdatePayload)
+            .eq('grade_level', savedEntry.targetGradeLevel);
+        } else {
+          await supabase
+            .from('sections')
+            .update(secUpdatePayload)
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+        }
+      } catch (secErr) {
+        console.warn('Sync sections table schedule error:', secErr);
+      }
+
+      // 3.2 Dispatch instant notification to students in Supabase notifications table
+      try {
+        await supabase.from('notifications').insert([
+          {
+            title: `📅 Official Class Schedule Released: ${savedEntry.targetGradeLevel || 'All Year Levels'}`,
+            message: `${senderLabel} released the official class schedule "${savedEntry.fileName}". You can now view, download, or print it from your Schedule page.`,
+            role: 'student',
+            type: 'schedule',
+            priority: 'high',
+          },
+        ]);
+      } catch {
+        // ignore
+      }
+
       // 4. Log to activity_logs
       try {
         const recipientStr =
