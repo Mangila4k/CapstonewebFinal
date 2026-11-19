@@ -383,6 +383,7 @@ export const TeacherClassesPage: React.FC = () => {
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedFileSize, setUploadedFileSize] = useState('');
   const [uploadedFileDataUrl, setUploadedFileDataUrl] = useState<string | null>(null);
+  const [uploadedFileRaw, setUploadedFileRaw] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -511,11 +512,13 @@ export const TeacherClassesPage: React.FC = () => {
     );
     setUploadedFileSize('24 KB (Official Timetable)');
     setUploadedFileDataUrl(null);
+    setUploadedFileRaw(null);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadedFileRaw(file);
     setUploadedFileName(file.name);
     setUploadedFileSize(`${Math.max(1, Math.round(file.size / 1024))} KB`);
 
@@ -575,6 +578,32 @@ export const TeacherClassesPage: React.FC = () => {
         `PLSNHS_${activeClassForSchedule.grade_level.replace(/\s+/g, '')}_Section_${activeClassForSchedule.name}_Schedule.csv`;
       const fileNameLower = targetFileName.toLowerCase();
 
+      // If an actual file was selected by the teacher, upload it directly to Supabase storage bucket `teacher-schedules`
+      if (uploadedFileRaw) {
+        try {
+          const fileExt = uploadedFileRaw.name.split('.').pop() || 'pdf';
+          const safeSec = activeClassForSchedule.name.replace(/[^a-zA-Z0-9]/g, '_');
+          const safeGrd = activeClassForSchedule.grade_level.replace(/[^a-zA-Z0-9]/g, '_');
+          const storagePath = `classes/${Date.now()}_${safeGrd}_${safeSec}.${fileExt}`;
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('teacher-schedules')
+            .upload(storagePath, uploadedFileRaw, {
+              upsert: true,
+              contentType: uploadedFileRaw.type || 'application/pdf',
+            });
+          if (!uploadErr && uploadData?.path) {
+            const { data: publicData } = supabase.storage
+              .from('teacher-schedules')
+              .getPublicUrl(uploadData.path);
+            if (publicData?.publicUrl) {
+              resolvedDocUrl = publicData.publicUrl;
+            }
+          }
+        } catch (uploadStorageErr) {
+          console.warn('Teacher schedule storage upload note:', uploadStorageErr);
+        }
+      }
+
       let resolvedDocType = 'csv';
       if (fileNameLower.endsWith('.pdf') || (resolvedDocUrl && resolvedDocUrl.startsWith('data:application/pdf'))) {
         resolvedDocType = 'application/pdf';
@@ -631,14 +660,14 @@ export const TeacherClassesPage: React.FC = () => {
         const existingBroadcast = rawBroadcast ? JSON.parse(rawBroadcast) : [];
         const notifEntry = {
           id: `sched_notif_${Date.now()}`,
-          title: `📅 Class Schedule Sent: ${activeClassForSchedule.grade_level} – Section ${activeClassForSchedule.name}`,
-          content: `${teacherName} sent your official class schedule file (${newRecord.file_name}). Open your Schedule page to print or download it.`,
+          title: `📅 Class Schedule Attached: ${activeClassForSchedule.grade_level} – Section ${activeClassForSchedule.name}`,
+          content: `${teacherName} attached your official class schedule file (${newRecord.file_name}). Open your Schedule page to print or download it.`,
           author: teacherName,
           priority: 'high',
           target_audience: 'students',
           created_at: new Date().toISOString(),
           action_url: '/student/schedule',
-          action_label: 'Print / Download Schedule',
+          action_label: 'Download / View Schedule',
         };
         localStorage.setItem(
           LOCAL_BROADCAST_KEY,
@@ -649,7 +678,7 @@ export const TeacherClassesPage: React.FC = () => {
         // ignore
       }
 
-      // Best-effort update to Supabase sections table so students instantly see the official schedule
+      // Save to Supabase sections table so students instantly see the official schedule
       try {
         if (activeClassForSchedule.id) {
           await supabase.from('sections').update({
@@ -666,15 +695,15 @@ export const TeacherClassesPage: React.FC = () => {
         console.warn('Section schedule update note:', secErr);
       }
 
-      // Best-effort insert to Supabase notifications
+      // Save to Supabase notifications table for all students
       try {
         await supabase.from('notifications').insert([
           {
-            title: `📅 Class Schedule File Sent (${activeClassForSchedule.grade_level} - ${activeClassForSchedule.name})`,
-            message: `${teacherName} sent the class schedule file "${newRecord.file_name}". You can now print or download it from your Schedule page.`,
+            title: `📅 Class Schedule Attached: ${activeClassForSchedule.grade_level} - Section ${activeClassForSchedule.name}`,
+            message: `${teacherName} attached your official class schedule file "${newRecord.file_name}". You can now view, print, or download it from your Schedule page.`,
             role: 'student',
             type: 'schedule',
-            link: '/student/schedule',
+            priority: 'high',
           },
         ]);
       } catch {
@@ -694,6 +723,9 @@ export const TeacherClassesPage: React.FC = () => {
       } catch {
         // ignore
       }
+
+      window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
+      window.dispatchEvent(new Event('plsnhs:notification-sent'));
 
       setNotice({
         type: 'success',

@@ -390,6 +390,19 @@ export const NotificationCenter: React.FC = () => {
           if (isScheduleNotif && role === 'teacher') {
             // Every teacher receives class schedule notifications
             matchesUser = true;
+          } else if (isScheduleNotif && (role === 'student' || user?.role === 'student')) {
+            // Students receive schedule notifications sent to students or matching their grade/section
+            const studentSection = String(user?.student_section || '').toLowerCase();
+            const studentGrade = String(user?.student_grade || '').toLowerCase();
+            if (targetRole === 'student' || targetRole === 'students' || targetRole === 'all') {
+              matchesUser = true;
+            } else if (studentSection && (titleLower.includes(studentSection) || msgLower.includes(studentSection))) {
+              matchesUser = true;
+            } else if (studentGrade && (titleLower.includes(studentGrade) || msgLower.includes(studentGrade))) {
+              matchesUser = true;
+            } else {
+              matchesUser = isAudienceMatch(targetRole, role);
+            }
           } else if (targetUserId) {
             matchesUser = userIds.has(targetUserId);
           } else if (isCredentialsNotice) {
@@ -432,16 +445,22 @@ export const NotificationCenter: React.FC = () => {
               : '/admin/enrollments'
             : isScheduleNotif && role === 'teacher'
             ? '/teacher/class-program'
+            : isScheduleNotif && (role === 'student' || user?.role === 'student')
+            ? '/student/schedule'
             : undefined;
 
           const defaultActionLabel = isEnrollmentNotif
             ? 'Review & Approve Application'
             : isScheduleNotif && role === 'teacher'
             ? 'Open Class Program'
+            : isScheduleNotif && (role === 'student' || user?.role === 'student')
+            ? 'Download / View Schedule'
             : undefined;
 
           const resolvedSenderRole = isScheduleNotif
-            ? msgLower.includes('registrar')
+            ? msgLower.includes('teacher') || titleLower.includes('teacher') || n.role === 'student'
+              ? 'TEACHER'
+              : msgLower.includes('registrar')
               ? 'REGISTRAR'
               : 'ADMIN'
             : (n.sender_role || n.type || 'ADMIN').toUpperCase();
@@ -456,6 +475,8 @@ export const NotificationCenter: React.FC = () => {
               n.sender ||
               (isEnrollmentNotif
                 ? 'Online Admissions Portal'
+                : isScheduleNotif && (msgLower.includes('teacher') || titleLower.includes('teacher') || n.role === 'student')
+                ? 'Class Adviser / Subject Teacher'
                 : isScheduleNotif && msgLower.includes('registrar')
                 ? 'School Registrar • Office of the Registrar'
                 : 'School Administration'),
@@ -593,6 +614,99 @@ export const NotificationCenter: React.FC = () => {
             });
           }
         });
+      } catch {
+        // ignore
+      }
+    }
+
+    // 5. For students: always surface official class schedules attached by their teacher in the Notifications dropdown
+    if (role === 'student' || user?.role === 'student') {
+      try {
+        const studentSec = String(user?.student_section || '').toLowerCase();
+        const studentGrd = String(user?.student_grade || '').toLowerCase();
+
+        // Source A: Check Supabase sections table for attached schedule
+        try {
+          const { data: secRows } = await supabase
+            .from('sections')
+            .select('name, grade_level, schedule_doc_url, schedule_doc_name, schedule_doc_uploaded_by, schedule_doc_updated_at')
+            .not('schedule_doc_url', 'is', null)
+            .limit(10);
+
+          if (secRows && secRows.length > 0) {
+            secRows.forEach((secRow: any, idx: number) => {
+              const secNameLower = String(secRow.name || '').toLowerCase();
+              const secGradeLower = String(secRow.grade_level || '').toLowerCase();
+              const isMatch =
+                !studentSec ||
+                secNameLower.includes(studentSec) ||
+                studentSec.includes(secNameLower) ||
+                (studentGrd && (secGradeLower.includes(studentGrd) || studentGrd.includes(secGradeLower)));
+
+              if (isMatch && secRow.schedule_doc_url) {
+                const uid = `sec_sched_db_${secRow.name}`;
+                if (!unifiedMap.has(uid)) {
+                  const isRead = readIds.includes(uid) && !unreadOverrides.includes(uid);
+                  const notifTime = secRow.schedule_doc_updated_at || new Date(Date.now() - idx * 60000).toISOString();
+                  unifiedMap.set(uid, {
+                    uid,
+                    rawId: `sched-${secRow.name}`,
+                    source: 'notification',
+                    title: `📅 Class Schedule Attached: Section ${secRow.name}`,
+                    content: `${secRow.schedule_doc_uploaded_by || 'Your Class Adviser'} attached the official class schedule "${secRow.schedule_doc_name || `Section_${secRow.name}_Schedule.pdf`}". Click to view or download it.`,
+                    senderName: `${secRow.schedule_doc_uploaded_by || 'Class Adviser'} • Faculty Teacher`,
+                    senderRole: 'TEACHER',
+                    priority: 'high',
+                    targetAudience: 'student',
+                    createdAt: notifTime,
+                    isRead,
+                    actionUrl: '/student/schedule',
+                    actionLabel: 'Download / View Schedule',
+                  });
+                }
+              }
+            });
+          }
+        } catch {
+          // ignore
+        }
+
+        // Source B: Check local storage sent schedules
+        const sentSchedRaw = localStorage.getItem('plsnhs_sent_schedules_v1');
+        const parsedSentSched = sentSchedRaw ? JSON.parse(sentSchedRaw) : [];
+        if (Array.isArray(parsedSentSched)) {
+          parsedSentSched.forEach((item: any, idx: number) => {
+            const matchesSec =
+              !studentSec ||
+              String(item.section || '').toLowerCase().includes(studentSec) ||
+              studentSec.includes(String(item.section || '').toLowerCase());
+            const matchesGrd =
+              !studentGrd || String(item.grade_level || '').toLowerCase().includes(studentGrd);
+
+            if (matchesSec || matchesGrd || item.recipient_mode === 'all') {
+              const uid = `stu_sent_sched_${item.id || item.section}`;
+              if (!unifiedMap.has(uid)) {
+                const isRead = readIds.includes(uid) && !unreadOverrides.includes(uid);
+                const notifTime = item.sent_at || new Date(Date.now() - idx * 60000).toISOString();
+                unifiedMap.set(uid, {
+                  uid,
+                  rawId: item.id || `sent-${idx}`,
+                  source: 'notification',
+                  title: `📅 Class Schedule Attached: Section ${item.section}`,
+                  content: `${item.teacher_name || 'Your Teacher'} attached the official class schedule "${item.file_name || 'Class_Schedule.pdf'}". Click to view or download it.`,
+                  senderName: `${item.teacher_name || 'Class Adviser'} • Faculty Teacher`,
+                  senderRole: 'TEACHER',
+                  priority: 'high',
+                  targetAudience: 'student',
+                  createdAt: notifTime,
+                  isRead,
+                  actionUrl: '/student/schedule',
+                  actionLabel: 'Download / View Schedule',
+                });
+              }
+            }
+          });
+        }
       } catch {
         // ignore
       }

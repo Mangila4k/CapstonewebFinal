@@ -22,6 +22,7 @@ import {
   Copy,
   Check,
   ShieldAlert,
+  Download,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useAuth } from '../../context/AuthContext';
@@ -89,6 +90,13 @@ export const StudentDashboardPage: React.FC = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedLrn, setCopiedLrn] = useState(false);
   const [subjectGradesMap, setSubjectGradesMap] = useState<Record<string, { grade: number; term: string }>>({});
+  const [attachedSchedule, setAttachedSchedule] = useState<{
+    teacher_name: string;
+    file_name: string;
+    file_url?: string;
+    section: string;
+    grade_level: string;
+  } | null>(null);
 
   useEffect(() => {
     async function loadStudentDashboardData() {
@@ -108,6 +116,10 @@ export const StudentDashboardPage: React.FC = () => {
 
         // Also fetch student's full record if available for parent/guardian details on ID
         let resolvedLrn = user?.student_lrn;
+        let resolvedSecId: string | null = null;
+        let resolvedSecName: string = user?.student_section || '';
+        let resolvedGrade: string = user?.student_grade || 'Grade 10';
+
         if (user?.student_lrn || user?.email) {
           const { data: stData } = await supabase
             .from('students')
@@ -121,7 +133,65 @@ export const StudentDashboardPage: React.FC = () => {
           if (stData) {
             setStudentRecord(stData);
             if (stData.lrn) resolvedLrn = stData.lrn;
+            if (stData.section_id) resolvedSecId = stData.section_id;
+            if (stData.section) resolvedSecName = stData.section;
+            if (stData.grade_level) resolvedGrade = stData.grade_level;
           }
+        }
+
+        // Check if teacher has attached an official class schedule
+        try {
+          let matchedSec: any = null;
+          if (resolvedSecId) {
+            const { data: sById } = await supabase
+              .from('sections')
+              .select('*')
+              .eq('id', resolvedSecId)
+              .maybeSingle();
+            matchedSec = sById;
+          }
+          if (!matchedSec && resolvedSecName) {
+            const cleanSecName = resolvedSecName.replace(/^Section\s*/i, '').trim();
+            const { data: sByName } = await supabase
+              .from('sections')
+              .select('*')
+              .ilike('name', `%${cleanSecName}%`)
+              .maybeSingle();
+            matchedSec = sByName;
+          }
+
+          if (matchedSec?.schedule_doc_url) {
+            setAttachedSchedule({
+              teacher_name:
+                matchedSec.schedule_doc_uploaded_by ||
+                matchedSec.adviser_name ||
+                'Class Adviser',
+              file_name:
+                matchedSec.schedule_doc_name ||
+                `PLSNHS_Section_${matchedSec.name}_Schedule.pdf`,
+              file_url: matchedSec.schedule_doc_url,
+              section: matchedSec.name,
+              grade_level: matchedSec.grade_level || resolvedGrade,
+            });
+          } else {
+            // Check local sent schedules
+            const sentRaw = localStorage.getItem('plsnhs_sent_schedules_v1');
+            if (sentRaw) {
+              const list = JSON.parse(sentRaw);
+              if (Array.isArray(list) && list.length > 0) {
+                const s = list[0];
+                setAttachedSchedule({
+                  teacher_name: s.teacher_name || 'Class Adviser',
+                  file_name: s.file_name || 'Class_Schedule.pdf',
+                  file_url: s.file_data_url || undefined,
+                  section: s.section,
+                  grade_level: s.grade_level || resolvedGrade,
+                });
+              }
+            }
+          }
+        } catch (secErr) {
+          console.warn('Dashboard schedule check notice:', secErr);
         }
 
         // Load latest teacher-submitted grades for enrolled subjects
@@ -150,8 +220,12 @@ export const StudentDashboardPage: React.FC = () => {
     }
     loadStudentDashboardData();
     window.addEventListener('plshs_grades_updated', loadStudentDashboardData);
+    window.addEventListener('plsnhs-schedule-files-updated', loadStudentDashboardData);
+    window.addEventListener('storage', loadStudentDashboardData);
     return () => {
       window.removeEventListener('plshs_grades_updated', loadStudentDashboardData);
+      window.removeEventListener('plsnhs-schedule-files-updated', loadStudentDashboardData);
+      window.removeEventListener('storage', loadStudentDashboardData);
     };
   }, [user]);
 
@@ -311,6 +385,56 @@ export const StudentDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Official Class Schedule Attached by Teacher Banner */}
+      {attachedSchedule && (
+        <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase px-2 py-0.5 border border-emerald-200">
+                  <CheckCircle2 className="h-3 w-3" /> Teacher Schedule Attached
+                </span>
+                <span className="text-xs font-bold text-slate-500">
+                  {attachedSchedule.grade_level} - Section {attachedSchedule.section}
+                </span>
+              </div>
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug">
+                Official Class Timetable Released by {attachedSchedule.teacher_name}
+              </h3>
+              <p className="text-xs text-slate-600">
+                Attachment:{' '}
+                <strong className="text-emerald-800 font-semibold font-mono">
+                  {attachedSchedule.file_name}
+                </strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 pt-1 sm:pt-0">
+            {attachedSchedule.file_url ? (
+              <a
+                href={attachedSchedule.file_url}
+                download={attachedSchedule.file_name}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download Schedule</span>
+              </a>
+            ) : null}
+            <Link
+              to="/student/schedule"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+            >
+              <span>View Timetable</span>
+              <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Main 12-Column Balanced Workspace (6 + 6 on lg/xl so both columns sit side-by-side) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 items-start">
