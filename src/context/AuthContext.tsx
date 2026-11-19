@@ -326,6 +326,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const uLast = (u.last_name || '').trim();
             if (uLast && uLast === cleanPass) return true;
           }
+
+          // Special verification for Mrs. Ramas / Rimas account
+          const uEmail = (u.email || '').toLowerCase().trim();
+          if (
+            (uEmail === 'ramas@plsnhs.edu.ph' || uEmail === 'rimas@plsnhs.edu.ph') &&
+            (cleanPass === 'Rimas' || cleanPass === 'Ramas')
+          ) {
+            return true;
+          }
           return false;
         });
 
