@@ -20,6 +20,7 @@ import { supabase } from '../../lib/supabase';
 import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
 import { PageHeaderNotificationSlot } from '../../components/common/NotificationCenter';
+import { fetchSavedScheduleFilesFromDatabase } from '../../lib/teacherScheduleService';
 
 export interface AdminSentTeacherScheduleFile {
   id: string;
@@ -1102,119 +1103,72 @@ export const TeacherClassProgramPage: React.FC = () => {
 
   // Load admin schedule files
   useEffect(() => {
-    const loadFiles = () => {
+    const syncScheduleFiles = async () => {
       try {
-        const raw = localStorage.getItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setAdminFiles(parsed);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('Failed parsing local admin teacher schedule files:', e);
-      }
-      setAdminFiles(DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES);
-    };
+        const merged = await fetchSavedScheduleFilesFromDatabase(
+          DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES
+        );
 
-    loadFiles();
-
-    const handleStorage = (e: StorageEvent | CustomEvent) => {
-      if ('key' in e && e.key && e.key !== ADMIN_TEACHER_SCHEDULE_FILES_KEY) return;
-      loadFiles();
-    };
-
-    window.addEventListener('storage', handleStorage as EventListener);
-    window.addEventListener('plsnhs-schedule-files-updated', handleStorage as EventListener);
-
-    async function loadSupabaseWorkloads() {
-      try {
-        const { data: workloads, error } = await supabase
-          .from('teacher_workloads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (!error && workloads && workloads.length > 0) {
-          const sbFiles: AdminSentTeacherScheduleFile[] = workloads.map((tw: any) => {
-            const isPersonal = tw.teacher_id && user?.id && String(tw.teacher_id) === String(user.id);
-            return {
-              id: `sb-tw-${tw.id}`,
-              title: tw.title || 'Official Faculty Class Program & Workload',
-              fileName: tw.file_name || 'Faculty_Teaching_Schedule.pdf',
-              fileSize: tw.file_size ? `${Math.round(tw.file_size / 1024)} KB` : '480 KB',
-              fileType: tw.file_type?.includes('image') ? 'IMAGE' : 'PDF',
-              fileDataUrl: tw.file_url,
-              schoolYear: 'S.Y. 2026–2027',
-              semester: 'Full Academic Year',
-              recipientType: tw.teacher_id ? 'selected' : 'all',
-              recipientTeacherNames: isPersonal
-                ? [teacherName]
-                : tw.teacher_name
-                ? [tw.teacher_name]
-                : ['All Faculty Teachers'],
-              sentBy: tw.uploaded_by || 'Admin Office',
-              sentAt: new Date(tw.created_at).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              }),
-              notes: 'Official DepEd teaching assignment and class program document.',
-            };
-          });
-
-          setAdminFiles((prev) => {
-            const existingIds = new Set(prev.map((f) => f.id));
-            const newFiles = sbFiles.filter((f) => !existingIds.has(f.id));
-            return [...newFiles, ...prev];
-          });
-        }
-
-        // Also query teachers table for direct teacher_load_url
+        // Also query teachers table for direct teacher_load_url if attached specifically to this teacher
         if (user?.id) {
           const { data: teacherRow } = await supabase
             .from('teachers')
             .select(
               'teacher_load_url, teacher_load_name, teacher_load_file_type, teacher_load_updated_at'
             )
-            .eq('user_id', user.id)
+            .or(`user_id.eq.${user.id},id.eq.${user.id}`)
             .maybeSingle();
 
           if (teacherRow?.teacher_load_url && teacherRow?.teacher_load_name) {
-            const directFile: AdminSentTeacherScheduleFile = {
-              id: `direct-teacher-load-${user.id}`,
-              title: 'Official Faculty Teaching Schedule & Class Program',
-              fileName: teacherRow.teacher_load_name,
-              fileSize: '480 KB',
-              fileType: teacherRow.teacher_load_file_type || 'PDF',
-              fileDataUrl: teacherRow.teacher_load_url,
-              schoolYear: 'S.Y. 2026–2027',
-              semester: '1st & 2nd Semester',
-              recipientType: 'selected',
-              recipientTeacherNames: [teacherName],
-              sentBy: 'School Administrator • Office of the Principal',
-              sentAt: teacherRow.teacher_load_updated_at
-                ? new Date(teacherRow.teacher_load_updated_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : 'Recent',
-              notes:
-                'Official DepEd teaching assignment and schedule file attached by School Administration.',
-            };
-
-            setAdminFiles((prev) => [
-              directFile,
-              ...prev.filter((f) => f.id !== directFile.id),
-            ]);
+            const alreadyInList = merged.some(
+              (f) =>
+                f.fileName === teacherRow.teacher_load_name &&
+                f.fileDataUrl === teacherRow.teacher_load_url
+            );
+            if (!alreadyInList) {
+              const directFile: AdminSentTeacherScheduleFile = {
+                id: `direct-teacher-load-${user.id}`,
+                title: `Official Faculty Teaching Schedule — ${teacherName}`,
+                fileName: teacherRow.teacher_load_name,
+                fileSize: '480 KB',
+                fileType: teacherRow.teacher_load_file_type || 'PDF',
+                fileDataUrl: teacherRow.teacher_load_url,
+                schoolYear: 'S.Y. 2026–2027',
+                semester: '1st & 2nd Semester',
+                recipientType: 'selected',
+                recipientTeacherNames: [teacherName],
+                sentBy: 'School Administrator • Office of the Principal',
+                sentAt: teacherRow.teacher_load_updated_at
+                  ? new Date(teacherRow.teacher_load_updated_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'Recent',
+                notes:
+                  'Official DepEd teaching assignment and schedule file attached by School Administration.',
+              };
+              setAdminFiles([directFile, ...merged]);
+              return;
+            }
           }
         }
+
+        setAdminFiles(merged);
       } catch (err) {
         console.warn('Teacher workloads fetch warning:', err);
       }
-    }
-    loadSupabaseWorkloads();
+    };
+
+    syncScheduleFiles();
+
+    const handleStorage = (e: StorageEvent | CustomEvent) => {
+      if ('key' in e && e.key && e.key !== ADMIN_TEACHER_SCHEDULE_FILES_KEY) return;
+      syncScheduleFiles();
+    };
+
+    window.addEventListener('storage', handleStorage as EventListener);
+    window.addEventListener('plsnhs-schedule-files-updated', handleStorage as EventListener);
 
     return () => {
       window.removeEventListener('storage', handleStorage as EventListener);
@@ -1792,13 +1746,40 @@ export const TeacherClassProgramPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Document Preview Sheet */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3 max-h-[65vh] overflow-y-auto">
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: generateBondPaperHtml(facultyProfile, teacherName, teachingLoads, paperSize),
-                }}
-              />
+            {/* Document Preview Sheet — renders the actual Admin-attached file if present */}
+            <div className="rounded-xl border border-slate-200 bg-slate-100 p-3 max-h-[68vh] overflow-y-auto">
+              {previewFile.fileDataUrl &&
+              (previewFile.fileDataUrl.startsWith('data:image/') ||
+                /\.(png|jpe?g|webp|gif)$/i.test(previewFile.fileName)) ? (
+                <div className="flex justify-center bg-white rounded-xl p-4 shadow-xs">
+                  <img
+                    src={previewFile.fileDataUrl}
+                    alt={previewFile.title}
+                    className="max-h-[60vh] object-contain rounded-lg"
+                  />
+                </div>
+              ) : previewFile.fileDataUrl &&
+                (previewFile.fileDataUrl.startsWith('data:application/pdf') ||
+                  previewFile.fileDataUrl.startsWith('http')) ? (
+                <iframe
+                  src={previewFile.fileDataUrl}
+                  title={previewFile.title}
+                  className="w-full h-[62vh] rounded-xl border border-slate-300 bg-white shadow-xs"
+                />
+              ) : (
+                <div className="bg-white rounded-xl p-3">
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: generateBondPaperHtml(
+                        facultyProfile,
+                        teacherName,
+                        teachingLoads,
+                        paperSize
+                      ),
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </Modal>

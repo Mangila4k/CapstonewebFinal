@@ -27,10 +27,10 @@ import { supabase } from '../../lib/supabase';
 import { StatCard } from '../../components/common/StatCard';
 import { Badge } from '../../components/common/Badge';
 import {
-  ADMIN_TEACHER_SCHEDULE_FILES_KEY,
-  DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
+   DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES,
   type AdminSentTeacherScheduleFile,
 } from './TeacherClassProgramPage';
+import { fetchSavedScheduleFilesFromDatabase } from '../../lib/teacherScheduleService';
 
 interface TeacherClassLoad {
   id: string;
@@ -107,7 +107,7 @@ export const TeacherDashboardPage: React.FC = () => {
   const [latestScheduleNotif, setLatestScheduleNotif] =
     useState<AdminSentTeacherScheduleFile | null>(null);
 
-  const loadTeacherScheduleNotification = useCallback(() => {
+  const loadTeacherScheduleNotification = useCallback(async () => {
     const teacherName = user?.full_name || 'Faculty Teacher';
     const stripHonorific = (str: string) =>
       String(str || '')
@@ -118,18 +118,7 @@ export const TeacherDashboardPage: React.FC = () => {
     const cleanTeacher = stripHonorific(teacherName);
     const teacherTokens = cleanTeacher.split(/\s+/).filter((t) => t.length >= 3);
 
-    let files: AdminSentTeacherScheduleFile[] = DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES;
-    try {
-      const saved = localStorage.getItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          files = parsed;
-        }
-      }
-    } catch {
-      // ignore
-    }
+    const files = await fetchSavedScheduleFilesFromDatabase(DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES);
 
     const matched = files.filter((file) => {
       if (user?.id && String(file.id).includes(String(user.id))) return true;

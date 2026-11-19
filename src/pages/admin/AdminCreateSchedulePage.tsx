@@ -38,6 +38,9 @@ import {
 import {
   uploadAndAttachTeacherSchedule,
   notifyTeachersOfScheduleFile,
+  saveScheduleEntryToDatabase,
+  fetchSavedScheduleFilesFromDatabase,
+  deleteScheduleEntryFromDatabase,
 } from '../../lib/teacherScheduleService';
 
 export const AdminCreateSchedulePage: React.FC = () => {
@@ -51,6 +54,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
   const preselectedTeacher = searchParams.get('teacher');
 
   const [isSendFileModalOpen, setIsSendFileModalOpen] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   const [viewingFile, setViewingFile] = useState<AdminSentTeacherScheduleFile | null>(null);
   const [teachersList, setTeachersList] = useState<FacultyRecord[]>(loadCachedTeachers);
   const [sectionsList, setSectionsList] = useState<Section[]>(() => {
@@ -101,6 +105,25 @@ export const AdminCreateSchedulePage: React.FC = () => {
     fileDataUrl: '',
     rawFile: null as File | null,
   });
+
+  // Load saved schedule files from Supabase database (public.teacher_workloads) so attached files are never lost
+  const loadSchedulesFromDb = async () => {
+    const merged = await fetchSavedScheduleFilesFromDatabase(DEFAULT_ADMIN_TEACHER_SCHEDULE_FILES);
+    setSentScheduleFiles(merged);
+  };
+
+  useEffect(() => {
+    loadSchedulesFromDb();
+    const handleSync = () => {
+      loadSchedulesFromDb();
+    };
+    window.addEventListener('plsnhs-schedule-files-updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('plsnhs-schedule-files-updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   // Handle pre-selected teacher from query param (e.g., from Teachers page "Send Schedule" action)
   useEffect(() => {
@@ -222,10 +245,20 @@ export const AdminCreateSchedulePage: React.FC = () => {
     return sentScheduleFiles.filter((file) => {
       if (file.targetGradeLevel === selectedYearLevelFilter) return true;
       if (file.title.toLowerCase().includes(selectedYearLevelFilter.toLowerCase())) return true;
-      if (file.recipientType === 'all') return true;
       return false;
     });
   }, [sentScheduleFiles, selectedYearLevelFilter]);
+
+  const openSendModalForYearLevel = (gradeLevel?: string) => {
+    const targetGrade =
+      gradeLevel && gradeLevel !== 'all'
+        ? gradeLevel
+        : selectedYearLevelFilter !== 'all'
+        ? selectedYearLevelFilter
+        : 'All Year Levels';
+    handleGradeLevelChange(targetGrade);
+    setIsSendFileModalOpen(true);
+  };
 
   const handleGradeLevelChange = (newGrade: string) => {
     let newTitle = fileForm.title;
@@ -270,132 +303,106 @@ export const AdminCreateSchedulePage: React.FC = () => {
 
   const handleSendScheduleFileToTeachers = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newEntry: AdminSentTeacherScheduleFile = {
-      id: `adm-sched-${Date.now()}`,
-      title: fileForm.title.trim() || 'Official Faculty Class Program',
-      fileName:
-        fileForm.fileName ||
-        'PLSNHS_Official_Faculty_Teaching_Schedule_SY2026-2027.pdf',
-      fileSize: fileForm.fileSize || '440 KB',
-      fileType: fileForm.fileType || 'PDF',
-      fileDataUrl: fileForm.fileDataUrl || undefined,
-      schoolYear: fileForm.schoolYear,
-      semester: fileForm.semester,
-      targetGradeLevel: fileForm.targetGradeLevel,
-      recipientType: fileForm.recipientType,
-      recipientTeacherNames:
-        fileForm.recipientType === 'all'
-          ? ['All Faculty Teachers']
-          : fileForm.selectedTeachers.length > 0
-          ? fileForm.selectedTeachers
-          : ['All Faculty Teachers'],
-      sentBy: senderLabel,
-      sentAt: new Date().toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      notes: fileForm.notes,
-    };
+    setIsSavingSchedule(true);
 
-    const next = [newEntry, ...sentScheduleFiles];
-    setSentScheduleFiles(next);
     try {
-      localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(next));
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
-    } catch {
-      // ignore
-    }
+      const draftEntry: AdminSentTeacherScheduleFile = {
+        id: `adm-sched-${Date.now()}`,
+        title: fileForm.title.trim() || 'Official Faculty Class Program',
+        fileName:
+          fileForm.fileName ||
+          'PLSNHS_Official_Faculty_Teaching_Schedule_SY2026-2027.pdf',
+        fileSize: fileForm.fileSize || '440 KB',
+        fileType: fileForm.fileType || 'PDF',
+        fileDataUrl: fileForm.fileDataUrl || undefined,
+        schoolYear: fileForm.schoolYear,
+        semester: fileForm.semester,
+        targetGradeLevel: fileForm.targetGradeLevel,
+        recipientType: fileForm.recipientType,
+        recipientTeacherNames:
+          fileForm.recipientType === 'all'
+            ? ['All Faculty Teachers']
+            : fileForm.selectedTeachers.length > 0
+            ? fileForm.selectedTeachers
+            : ['All Faculty Teachers'],
+        sentBy: senderLabel,
+        sentAt: new Date().toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        notes: fileForm.notes,
+      };
 
-    // Dispatch instant notification to every targeted teacher's dashboard & Notification Bell
-    await notifyTeachersOfScheduleFile(newEntry, isRegistrar ? 'REGISTRAR' : 'ADMIN');
+      // 1. Upload file to Supabase Storage (teacher-schedules) and save permanently into Supabase database (public.teacher_workloads & public.teachers)
+      const savedEntry = await saveScheduleEntryToDatabase(draftEntry, fileForm.rawFile);
 
-    // If a real file was uploaded, sync to Supabase storage & target teachers
-    if (fileForm.rawFile && fileForm.recipientType === 'selected') {
-      for (const tName of fileForm.selectedTeachers) {
-        const foundTeacher = teachersList.find(
-          (t) =>
-            `${t.first_name} ${t.last_name}`.toLowerCase().includes(tName.toLowerCase()) ||
-            tName.toLowerCase().includes(`${t.first_name} ${t.last_name}`.toLowerCase())
-        );
-        if (foundTeacher) {
-          uploadAndAttachTeacherSchedule({
-            teacherId: foundTeacher.user_id || foundTeacher.id,
-            teacherName: `${foundTeacher.first_name} ${foundTeacher.last_name}`.trim(),
-            teacherTableId: foundTeacher.teacher_table_id,
-            file: fileForm.rawFile,
-            title: fileForm.title,
-            schoolYear: fileForm.schoolYear,
-            semester: fileForm.semester,
-            notes: fileForm.notes,
-            uploadedBy: senderLabel,
-          }).catch((err) => console.warn('Teacher attach schedule error:', err));
+      // 2. Replace any previous/default file for the same specific targetGradeLevel (or same title/fileName)
+      // so the file the Admin attached is the one that is there
+      const filteredExisting = sentScheduleFiles.filter((existing) => {
+        if (
+          savedEntry.targetGradeLevel &&
+          savedEntry.targetGradeLevel !== 'All Year Levels' &&
+          existing.targetGradeLevel === savedEntry.targetGradeLevel
+        ) {
+          return false; // Replace old file for this Year Level
         }
-      }
-    } else {
-      // Persist to Supabase teacher_workloads
+        if (
+          existing.title.toLowerCase() === savedEntry.title.toLowerCase() ||
+          existing.fileName === savedEntry.fileName
+        ) {
+          return false; // Replace old file with same title or filename
+        }
+        return true;
+      });
+
+      const next = [savedEntry, ...filteredExisting];
+      setSentScheduleFiles(next);
       try {
-        let targetTeacherId: string | null = null;
-        if (newEntry.recipientType === 'selected' && fileForm.selectedTeachers.length > 0) {
-          const foundTeacher = teachersList.find((t) =>
-            fileForm.selectedTeachers.some((name) =>
-              `${t.first_name} ${t.last_name}`.toLowerCase().includes(name.toLowerCase())
-            )
-          );
-          if (foundTeacher) targetTeacherId = foundTeacher.user_id || foundTeacher.id;
-        }
-
-        supabase
-          .from('teacher_workloads')
-          .insert([
-            {
-              teacher_id: targetTeacherId,
-              file_name: newEntry.fileName,
-              file_url:
-                newEntry.fileDataUrl ||
-                'https://tuujlqrfyuazvbvoribz.supabase.co/storage/v1/object/public/teacher-schedules/faculty_load.pdf',
-              file_type: newEntry.fileType === 'PDF' ? 'application/pdf' : 'image/jpeg',
-              uploaded_by: isRegistrar ? 'Registrar' : 'Admin',
-            },
-          ])
-          .then(({ error }) => {
-            if (error) console.warn('Supabase teacher_workloads insert notice:', error);
-          });
+        localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(next));
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('plsnhs-schedule-files-updated'));
       } catch {
         // ignore
       }
-    }
 
-    // Log to activity_logs
-    try {
-      const recipientStr =
-        newEntry.recipientType === 'all'
-          ? 'All Faculty Teachers'
-          : newEntry.recipientTeacherNames.join(', ');
-      const logRecord = {
-        role: isRegistrar ? 'registrar' : 'admin',
-        action: 'Faculty Schedule Sent',
-        details: `${isRegistrar ? 'Registrar' : 'Admin'} sent schedule file "${newEntry.fileName}" (${newEntry.fileType}, ${newEntry.fileSize}) to ${recipientStr} and notified teachers.`,
-        timestamp: new Date().toISOString(),
-      };
-      supabase.from('activity_logs').insert([logRecord]).then(() => {});
-      window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
-    } catch {
-      // ignore
-    }
+      // 3. Dispatch instant notification to every teacher's dashboard & Notification Bell
+      await notifyTeachersOfScheduleFile(savedEntry, isRegistrar ? 'REGISTRAR' : 'ADMIN');
 
-    setNotice({
-      type: 'success',
-      message: `Class schedule "${newEntry.fileName}" sent to ${
-        newEntry.recipientType === 'all'
-          ? 'All Faculty Teachers'
-          : newEntry.recipientTeacherNames.join(', ')
-      } and notified in every teacher's dashboard notification bell!`,
-    });
-    setIsSendFileModalOpen(false);
+      // 4. Log to activity_logs
+      try {
+        const recipientStr =
+          savedEntry.recipientType === 'all'
+            ? 'All Faculty Teachers'
+            : savedEntry.recipientTeacherNames.join(', ');
+        const logRecord = {
+          role: isRegistrar ? 'registrar' : 'admin',
+          action: 'Faculty Schedule Sent',
+          details: `${isRegistrar ? 'Registrar' : 'Admin'} attached and saved schedule file "${savedEntry.fileName}" (${savedEntry.fileType}, ${savedEntry.fileSize}) to database for ${recipientStr} and notified teachers.`,
+          timestamp: new Date().toISOString(),
+        };
+        supabase.from('activity_logs').insert([logRecord]).then(() => {});
+        window.dispatchEvent(new CustomEvent('plsnhs-activity-logged', { detail: logRecord }));
+      } catch {
+        // ignore
+      }
+
+      setNotice({
+        type: 'success',
+        message: `Schedule file "${savedEntry.fileName}" saved to Supabase database for ${
+          savedEntry.targetGradeLevel || 'All Year Levels'
+        } (${
+          savedEntry.recipientType === 'all'
+            ? 'All Faculty Teachers'
+            : savedEntry.recipientTeacherNames.join(', ')
+        }) and notified on every teacher's dashboard!`,
+      });
+      setIsSendFileModalOpen(false);
+    } finally {
+      setIsSavingSchedule(false);
+    }
   };
 
   const handleNotifyTeachersForFile = async (file: AdminSentTeacherScheduleFile) => {
@@ -664,9 +671,13 @@ export const AdminCreateSchedulePage: React.FC = () => {
     setViewingFile(file);
   };
 
-  const handleDeleteSentFile = (id: string) => {
+  const handleDeleteSentFile = async (id: string) => {
+    const targetFile = sentScheduleFiles.find((f) => f.id === id);
     const next = sentScheduleFiles.filter((f) => f.id !== id);
     setSentScheduleFiles(next);
+    if (targetFile) {
+      await deleteScheduleEntryFromDatabase(targetFile);
+    }
     try {
       localStorage.setItem(ADMIN_TEACHER_SCHEDULE_FILES_KEY, JSON.stringify(next));
       window.dispatchEvent(new Event('storage'));
@@ -705,7 +716,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
             <div className="hidden sm:flex items-center gap-2.5">
               <button
                 type="button"
-                onClick={() => setIsSendFileModalOpen(true)}
+                onClick={() => openSendModalForYearLevel()}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer whitespace-nowrap"
               >
                 <Send className="h-4 w-4" /> Send Schedule File
@@ -719,7 +730,7 @@ export const AdminCreateSchedulePage: React.FC = () => {
         <div className="sm:hidden mt-3 flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setIsSendFileModalOpen(true)}
+            onClick={() => openSendModalForYearLevel()}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-xs hover:bg-amber-400 transition-all cursor-pointer"
           >
             <Send className="h-4 w-4" /> Send Schedule File
@@ -848,6 +859,15 @@ export const AdminCreateSchedulePage: React.FC = () => {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to Teacher Class Program
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openSendModalForYearLevel(file.targetGradeLevel)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 text-blue-800 font-bold transition-colors cursor-pointer shadow-2xs"
+                    title="Attach or replace schedule file for this year level"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-blue-700" />
+                    Attach File
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleNotifyTeachersForFile(file)}
@@ -1147,10 +1167,11 @@ export const AdminCreateSchedulePage: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 cursor-pointer"
+              disabled={isSavingSchedule}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 disabled:opacity-60 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 cursor-pointer"
             >
               <Send className="h-3.5 w-3.5" />
-              Send Schedule File to Teacher(s)
+              {isSavingSchedule ? 'Saving to Database & Sending...' : 'Send Schedule File to Teacher(s)'}
             </button>
           </div>
         </form>
